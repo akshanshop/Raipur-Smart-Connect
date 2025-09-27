@@ -16,7 +16,7 @@ export default function Landing() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-primary squircle-lg flex items-center justify-center">
                 <i className="fas fa-city text-white text-xl"></i>
               </div>
               <span className="text-2xl font-bold text-white">Raipur Smart Connect</span>
@@ -63,6 +63,18 @@ export default function Landing() {
 
       {/* Hero Section */}
       <section className="hero-enhanced min-h-screen flex items-center pattern-overlay">
+        {/* Floating Particles */}
+        <div className="floating-particles">
+          <div className="particle particle-1"></div>
+          <div className="particle particle-2"></div>
+          <div className="particle particle-3"></div>
+          <div className="particle particle-4"></div>
+          <div className="particle particle-5"></div>
+          <div className="particle particle-6"></div>
+        </div>
+        {/* Morphing Background Elements */}
+        <div className="morphing-bg"></div>
+        <div className="morphing-bg-2"></div>
         <div className="container mx-auto px-6 text-center text-white">
           <div className="max-w-4xl mx-auto">
             <motion.div 
@@ -73,7 +85,7 @@ export default function Landing() {
             >
               <div className="inline-block">
                 <motion.div 
-                  className="w-24 h-24 bg-white bg-opacity-20 rounded-3xl flex items-center justify-center mb-6 mx-auto pulse-glow glow-on-hover"
+                  className="w-24 h-24 bg-white bg-opacity-20 icon-squircle-xl flex items-center justify-center mb-6 mx-auto pulse-glow glow-on-hover"
                   whileHover={{ scale: 1.1, rotate: 5 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -115,7 +127,7 @@ export default function Landing() {
                 <Button 
                   onClick={() => window.location.href = '/api/login'}
                   size="lg"
-                  className="modern-button magnetic-button ripple glow-on-hover bg-white text-primary hover:bg-gray-100 px-12 py-6 text-xl font-semibold rounded-2xl"
+                  className="modern-button magnetic-button ripple glow-on-hover bg-white text-primary hover:bg-gray-100 px-12 py-6 text-xl font-semibold btn-squircle-lg"
                   data-testid="button-get-started"
                 >
                   <motion.i 
@@ -130,7 +142,7 @@ export default function Landing() {
                 <Button 
                   variant="outline"
                   size="lg"
-                  className="modern-button magnetic-button ripple border-2 border-white text-white hover:bg-white hover:text-primary px-12 py-6 text-xl font-semibold rounded-2xl"
+                  className="modern-button magnetic-button ripple border-2 border-white text-white hover:bg-white hover:text-primary px-12 py-6 text-xl font-semibold btn-squircle-lg"
                 >
                   <motion.i 
                     className="fas fa-play mr-3"
@@ -155,7 +167,7 @@ export default function Landing() {
               }}
             >
               <motion.div 
-                className="glass-modern rounded-2xl p-6 floating-card glow-on-hover"
+                className="glass-modern card-squircle-lg p-6 floating-card glow-on-hover"
                 variants={{
                   hidden: { y: 50, opacity: 0 },
                   visible: { y: 0, opacity: 1 }
@@ -172,7 +184,7 @@ export default function Landing() {
                 <div className="text-lg opacity-90">Active Citizens</div>
               </motion.div>
               <motion.div 
-                className="glass-modern rounded-2xl p-6 floating-card glow-on-hover"
+                className="glass-modern card-squircle-lg p-6 floating-card glow-on-hover"
                 variants={{
                   hidden: { y: 50, opacity: 0 },
                   visible: { y: 0, opacity: 1 }
@@ -189,7 +201,7 @@ export default function Landing() {
                 <div className="text-lg opacity-90">Issues Resolved</div>
               </motion.div>
               <motion.div 
-                className="glass-modern rounded-2xl p-6 floating-card glow-on-hover"
+                className="glass-modern card-squircle-lg p-6 floating-card glow-on-hover"
                 variants={{
                   hidden: { y: 50, opacity: 0 },
                   visible: { y: 0, opacity: 1 }
@@ -266,7 +278,7 @@ export default function Landing() {
             >
               <Card className="floating-card neon-border p-8 card-3d magnetic-button">
                 <CardContent className="text-center">
-                  <div className="w-20 h-20 bg-primary rounded-3xl flex items-center justify-center mx-auto mb-6 pulse-glow">
+                  <div className="w-20 h-20 bg-primary icon-squircle-xl flex items-center justify-center mx-auto mb-6 pulse-glow">
                     <i className="fas fa-robot text-3xl text-white"></i>
                   </div>
                   <h3 className="text-2xl font-bold mb-4 text-foreground">AI-Powered Assistant</h3>
@@ -291,7 +303,7 @@ export default function Landing() {
             >
               <Card className="floating-card neon-border p-8 card-3d magnetic-button">
                 <CardContent className="text-center">
-                  <div className="w-20 h-20 bg-secondary rounded-3xl flex items-center justify-center mx-auto mb-6">
+                  <div className="w-20 h-20 bg-secondary icon-squircle-xl flex items-center justify-center mx-auto mb-6">
                     <i className="fas fa-file-alt text-3xl text-white"></i>
                   </div>
                   <h3 className="text-2xl font-bold mb-4 text-foreground">Smart Complaint System</h3>
@@ -316,7 +328,7 @@ export default function Landing() {
             >
               <Card className="floating-card neon-border p-8 card-3d magnetic-button">
                 <CardContent className="text-center">
-                  <div className="w-20 h-20 bg-accent rounded-3xl flex items-center justify-center mx-auto mb-6">
+                  <div className="w-20 h-20 bg-accent icon-squircle-xl flex items-center justify-center mx-auto mb-6">
                     <i className="fas fa-users text-3xl text-white"></i>
                   </div>
                   <h3 className="text-2xl font-bold mb-4 text-foreground">Community Collaboration</h3>
@@ -391,7 +403,7 @@ export default function Landing() {
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
               <motion.div 
-                className="glass-modern w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-bold glow-on-hover magnetic-button"
+                className="glass-modern w-24 h-24 squircle-full flex items-center justify-center mx-auto mb-6 text-3xl font-bold glow-on-hover magnetic-button"
                 whileHover={{ scale: 1.2, rotate: 360 }}
                 whileTap={{ scale: 0.9 }}
                 transition={{ type: "spring", stiffness: 200 }}
@@ -408,7 +420,7 @@ export default function Landing() {
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
               <motion.div 
-                className="glass-modern w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-bold glow-on-hover magnetic-button"
+                className="glass-modern w-24 h-24 squircle-full flex items-center justify-center mx-auto mb-6 text-3xl font-bold glow-on-hover magnetic-button"
                 whileHover={{ scale: 1.2, rotate: 360 }}
                 whileTap={{ scale: 0.9 }}
                 transition={{ type: "spring", stiffness: 200 }}
@@ -425,7 +437,7 @@ export default function Landing() {
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
               <motion.div 
-                className="glass-modern w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-bold glow-on-hover magnetic-button"
+                className="glass-modern w-24 h-24 squircle-full flex items-center justify-center mx-auto mb-6 text-3xl font-bold glow-on-hover magnetic-button"
                 whileHover={{ scale: 1.2, rotate: 360 }}
                 whileTap={{ scale: 0.9 }}
                 transition={{ type: "spring", stiffness: 200 }}
@@ -442,7 +454,7 @@ export default function Landing() {
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
               <motion.div 
-                className="glass-modern w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-bold glow-on-hover magnetic-button"
+                className="glass-modern w-24 h-24 squircle-full flex items-center justify-center mx-auto mb-6 text-3xl font-bold glow-on-hover magnetic-button"
                 whileHover={{ scale: 1.2, rotate: 360 }}
                 whileTap={{ scale: 0.9 }}
                 transition={{ type: "spring", stiffness: 200 }}
@@ -464,22 +476,22 @@ export default function Landing() {
             </p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div className="text-center floating-card bg-card p-8 rounded-3xl">
+            <div className="text-center floating-card bg-card p-8 icon-squircle-xl">
               <div className="text-6xl font-bold text-primary mb-4">15K+</div>
               <div className="text-xl font-semibold text-foreground mb-2">Active Citizens</div>
               <div className="text-muted-foreground">Engaged daily</div>
             </div>
-            <div className="text-center floating-card bg-card p-8 rounded-3xl">
+            <div className="text-center floating-card bg-card p-8 icon-squircle-xl">
               <div className="text-6xl font-bold text-secondary mb-4">8.2K</div>
               <div className="text-xl font-semibold text-foreground mb-2">Issues Resolved</div>
               <div className="text-muted-foreground">This year</div>
             </div>
-            <div className="text-center floating-card bg-card p-8 rounded-3xl">
+            <div className="text-center floating-card bg-card p-8 icon-squircle-xl">
               <div className="text-6xl font-bold text-accent mb-4">18h</div>
               <div className="text-xl font-semibold text-foreground mb-2">Avg Response</div>
               <div className="text-muted-foreground">Time</div>
             </div>
-            <div className="text-center floating-card bg-card p-8 rounded-3xl">
+            <div className="text-center floating-card bg-card p-8 icon-squircle-xl">
               <div className="text-6xl font-bold text-primary mb-4">96%</div>
               <div className="text-xl font-semibold text-foreground mb-2">Satisfaction</div>
               <div className="text-muted-foreground">Rate</div>
@@ -511,7 +523,7 @@ export default function Landing() {
                   "The AI assistant helped me resolve my water bill issue in minutes. No more waiting in long queues!"
                 </p>
                 <div className="flex items-center">
-                  <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4">
+                  <div className="w-12 h-12 bg-white bg-opacity-20 squircle-full flex items-center justify-center mr-4">
                     <i className="fas fa-user"></i>
                   </div>
                   <div>
@@ -535,7 +547,7 @@ export default function Landing() {
                   "Finally, a platform where my voice matters. The community voting feature helps prioritize real issues."
                 </p>
                 <div className="flex items-center">
-                  <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4">
+                  <div className="w-12 h-12 bg-white bg-opacity-20 squircle-full flex items-center justify-center mr-4">
                     <i className="fas fa-user"></i>
                   </div>
                   <div>
@@ -559,7 +571,7 @@ export default function Landing() {
                   "The real-time tracking gave me confidence that my street lighting complaint was being handled."
                 </p>
                 <div className="flex items-center">
-                  <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4">
+                  <div className="w-12 h-12 bg-white bg-opacity-20 squircle-full flex items-center justify-center mr-4">
                     <i className="fas fa-user"></i>
                   </div>
                   <div>
@@ -605,7 +617,7 @@ export default function Landing() {
 
             <Card className="floating-card p-8 relative border-2 border-primary cool-shadow">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <div className="bg-primary text-white px-6 py-2 rounded-full text-sm font-semibold">
+                <div className="bg-primary text-white px-6 py-2 squircle-full text-sm font-semibold">
                   Most Popular
                 </div>
               </div>
@@ -736,7 +748,7 @@ export default function Landing() {
               <Button 
                 onClick={() => window.location.href = '/api/login'}
                 size="lg"
-                className="modern-button px-12 py-6 text-xl font-semibold rounded-2xl"
+                className="modern-button px-12 py-6 text-xl font-semibold card-squircle-lg"
                 data-testid="button-join-now"
               >
                 <i className="fas fa-rocket mr-3"></i>
@@ -745,7 +757,7 @@ export default function Landing() {
               <Button 
                 variant="outline"
                 size="lg"
-                className="modern-button px-12 py-6 text-xl font-semibold rounded-2xl"
+                className="modern-button px-12 py-6 text-xl font-semibold card-squircle-lg"
               >
                 <i className="fas fa-envelope mr-3"></i>
                 Contact Support
@@ -761,7 +773,7 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
             <div>
               <div className="flex items-center space-x-3 mb-6">
-                <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-primary card-squircle-lg flex items-center justify-center">
                   <i className="fas fa-city text-white text-xl"></i>
                 </div>
                 <span className="text-2xl font-bold text-gradient">Raipur Smart Connect</span>

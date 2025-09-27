@@ -499,3 +499,226 @@
   animation: float 20s linear infinite;
   pointer-events: none;
 }
+
+/* Floating Particles */
+@keyframes particle-float-1 {
+  0%, 100% { transform: translateY(0px) translateX(0px) rotate(0deg); }
+  25% { transform: translateY(-20px) translateX(10px) rotate(90deg); }
+  50% { transform: translateY(-40px) translateX(-5px) rotate(180deg); }
+  75% { transform: translateY(-20px) translateX(-10px) rotate(270deg); }
+}
+
+@keyframes particle-float-2 {
+  0%, 100% { transform: translateY(0px) translateX(0px) rotate(0deg); }
+  33% { transform: translateY(-30px) translateX(-15px) rotate(120deg); }
+  66% { transform: translateY(-15px) translateX(20px) rotate(240deg); }
+}
+
+@keyframes particle-float-3 {
+  0%, 100% { transform: translateY(0px) translateX(0px) scale(1) rotate(0deg); }
+  50% { transform: translateY(-25px) translateX(15px) scale(1.2) rotate(180deg); }
+}
+
+.floating-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  backdrop-filter: blur(2px);
+}
+
+.particle-1 {
+  width: 4px;
+  height: 4px;
+  top: 20%;
+  left: 10%;
+  animation: particle-float-1 15s ease-in-out infinite;
+}
+
+.particle-2 {
+  width: 6px;
+  height: 6px;
+  top: 60%;
+  left: 80%;
+  animation: particle-float-2 20s ease-in-out infinite reverse;
+}
+
+.particle-3 {
+  width: 3px;
+  height: 3px;
+  top: 40%;
+  left: 30%;
+  animation: particle-float-3 18s ease-in-out infinite;
+}
+
+.particle-4 {
+  width: 5px;
+  height: 5px;
+  top: 80%;
+  left: 70%;
+  animation: particle-float-1 22s ease-in-out infinite;
+}
+
+.particle-5 {
+  width: 7px;
+  height: 7px;
+  top: 15%;
+  left: 85%;
+  animation: particle-float-2 16s ease-in-out infinite;
+}
+
+.particle-6 {
+  width: 4px;
+  height: 4px;
+  top: 70%;
+  left: 15%;
+  animation: particle-float-3 25s ease-in-out infinite reverse;
+}
+
+/* Parallax Effects */
+.parallax-bg {
+  background-attachment: fixed;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+/* Advanced Section Transitions */
+.section-transition {
+  position: relative;
+}
+
+.section-transition::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  left: 0;
+  width: 100%;
+  height: 100px;
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.1));
+  pointer-events: none;
+}
+
+/* Morphing Background */
+@keyframes morph-bg {
+  0%, 100% {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  }
+  50% {
+    border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+  }
+}
+
+.morphing-bg {
+  position: absolute;
+  top: 10%;
+  right: 10%;
+  width: 300px;
+  height: 300px;
+  background: linear-gradient(45deg, rgba(255, 204, 0, 0.1), rgba(255, 165, 0, 0.1));
+  animation: morph-bg 20s ease-in-out infinite;
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+.morphing-bg-2 {
+  position: absolute;
+  bottom: 20%;
+  left: 5%;
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 204, 0, 0.1));
+  animation: morph-bg 25s ease-in-out infinite reverse;
+  filter: blur(30px);
+  pointer-events: none;
+}
+
+/* Squircle Shapes - Smooth Rounded Corners */
+.squircle-sm {
+  border-radius: 20px;
+}
+
+.squircle-md {
+  border-radius: 24px;
+}
+
+.squircle-lg {
+  border-radius: 32px;
+}
+
+.squircle-xl {
+  border-radius: 40px;
+}
+
+.squircle-2xl {
+  border-radius: 48px;
+}
+
+.squircle-3xl {
+  border-radius: 56px;
+}
+
+.squircle-full {
+  border-radius: 50%;
+}
+
+/* Icon Container Squircle Styles */
+.icon-squircle-sm {
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.icon-squircle-md {
+  border-radius: 20px;
+  padding: 16px;
+}
+
+.icon-squircle-lg {
+  border-radius: 24px;
+  padding: 20px;
+}
+
+.icon-squircle-xl {
+  border-radius: 28px;
+  padding: 24px;
+}
+
+/* Button Squircle Styles */
+.btn-squircle {
+  border-radius: 20px !important;
+}
+
+.btn-squircle-lg {
+  border-radius: 24px !important;
+}
+
+/* Card Squircle Styles */
+.card-squircle {
+  border-radius: 28px !important;
+}
+
+.card-squircle-lg {
+  border-radius: 32px !important;
+}
+
+/* Override default border radius */
+.rounded-2xl {
+  border-radius: 28px !important;
+}
+
+.rounded-3xl {
+  border-radius: 36px !important;
+}
+
+.rounded-full {
+  border-radius: 50% !important;
+}
