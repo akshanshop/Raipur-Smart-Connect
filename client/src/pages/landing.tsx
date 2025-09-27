@@ -526,7 +526,7 @@ export default function Landing() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="glass-effect border-white/20 p-8">
+            <Card className="glass-effect border-white/20 p-8 card-squircle-lg">
               <CardContent className="text-white">
                 <div className="flex mb-4">
                   <i className="fas fa-star text-yellow-400"></i>
@@ -550,7 +550,7 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="glass-effect border-white/20 p-8">
+            <Card className="glass-effect border-white/20 p-8 card-squircle-lg">
               <CardContent className="text-white">
                 <div className="flex mb-4">
                   <i className="fas fa-star text-yellow-400"></i>
@@ -574,7 +574,7 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="glass-effect border-white/20 p-8">
+            <Card className="glass-effect border-white/20 p-8 card-squircle-lg">
               <CardContent className="text-white">
                 <div className="flex mb-4">
                   <i className="fas fa-star text-yellow-400"></i>
