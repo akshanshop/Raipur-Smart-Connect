@@ -257,7 +257,8 @@ export default function Landing() {
             </motion.p>
           </motion.div>
           <motion.div 
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+            className="grid grid-cols-1 md:grid-cols-3 gap-8" 
+            style={{ gridAutoRows: '1fr' }}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-50px" }}
@@ -276,8 +277,8 @@ export default function Landing() {
               }}
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
-              <Card className="floating-card neon-border p-8 card-3d magnetic-button">
-                <CardContent className="text-center">
+              <Card className="floating-card neon-border p-8 card-3d magnetic-button card-squircle-lg h-full">
+                <CardContent className="text-center h-full flex flex-col justify-between">
                   <div className="w-20 h-20 bg-primary icon-squircle-xl flex items-center justify-center mx-auto mb-6 pulse-glow">
                     <i className="fas fa-robot text-3xl text-white"></i>
                   </div>
@@ -301,8 +302,8 @@ export default function Landing() {
               }}
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
-              <Card className="floating-card neon-border p-8 card-3d magnetic-button">
-                <CardContent className="text-center">
+              <Card className="floating-card neon-border p-8 card-3d magnetic-button card-squircle-lg h-full">
+                <CardContent className="text-center h-full flex flex-col justify-between">
                   <div className="w-20 h-20 bg-secondary icon-squircle-xl flex items-center justify-center mx-auto mb-6">
                     <i className="fas fa-file-alt text-3xl text-white"></i>
                   </div>
@@ -326,8 +327,8 @@ export default function Landing() {
               }}
               transition={{ duration: 0.8, ease: "easeOut" }}
             >
-              <Card className="floating-card neon-border p-8 card-3d magnetic-button">
-                <CardContent className="text-center">
+              <Card className="floating-card neon-border p-8 card-3d magnetic-button card-squircle-lg h-full">
+                <CardContent className="text-center h-full flex flex-col justify-between">
                   <div className="w-20 h-20 bg-accent icon-squircle-xl flex items-center justify-center mx-auto mb-6">
                     <i className="fas fa-users text-3xl text-white"></i>
                   </div>
