@@ -611,7 +611,7 @@ export default function Landing() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <Card className="floating-card p-8 relative">
+            <Card className="floating-card p-8 relative card-squircle-lg">
               <CardContent>
                 <div className="text-center mb-8">
                   <h3 className="text-2xl font-bold mb-4">Citizen</h3>
@@ -631,7 +631,7 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="floating-card p-8 relative border-2 border-primary cool-shadow">
+            <Card className="floating-card p-8 relative border-2 border-primary cool-shadow card-squircle-lg">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                 <div className="bg-primary text-white px-6 py-2 squircle-full text-sm font-semibold">
                   Most Popular
@@ -656,7 +656,7 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="floating-card p-8 relative">
+            <Card className="floating-card p-8 relative card-squircle-lg">
               <CardContent>
                 <div className="text-center mb-8">
                   <h3 className="text-2xl font-bold mb-4">Enterprise</h3>
