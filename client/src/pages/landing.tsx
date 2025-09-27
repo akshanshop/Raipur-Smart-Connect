@@ -22,18 +22,40 @@ export default function Landing() {
               <span className="text-2xl font-bold text-white">Raipur Smart Connect</span>
             </div>
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="text-white hover:text-accent transition-colors">Features</a>
-              <a href="#how-it-works" className="text-white hover:text-accent transition-colors">How It Works</a>
-              <a href="#stats" className="text-white hover:text-accent transition-colors">Impact</a>
-              <a href="#pricing" className="text-white hover:text-accent transition-colors">Pricing</a>
-              <Button 
-                onClick={() => window.location.href = '/api/login'}
-                className="modern-button bg-white text-primary hover:bg-gray-100 px-6 py-2"
-                data-testid="button-login"
-              >
-                <i className="fas fa-sign-in-alt mr-2"></i>
-                Login
-              </Button>
+              <motion.a 
+                href="#features" 
+                className="text-white hover:text-accent transition-colors magnetic-button"
+                whileHover={{ y: -2, scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >Features</motion.a>
+              <motion.a 
+                href="#how-it-works" 
+                className="text-white hover:text-accent transition-colors magnetic-button"
+                whileHover={{ y: -2, scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >How It Works</motion.a>
+              <motion.a 
+                href="#stats" 
+                className="text-white hover:text-accent transition-colors magnetic-button"
+                whileHover={{ y: -2, scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >Impact</motion.a>
+              <motion.a 
+                href="#pricing" 
+                className="text-white hover:text-accent transition-colors magnetic-button"
+                whileHover={{ y: -2, scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >Pricing</motion.a>
+              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                <Button 
+                  onClick={() => window.location.href = '/api/login'}
+                  className="modern-button magnetic-button ripple bg-white text-primary hover:bg-gray-100 px-6 py-2"
+                  data-testid="button-login"
+                >
+                  <i className="fas fa-sign-in-alt mr-2"></i>
+                  Login
+                </Button>
+              </motion.div>
             </div>
           </div>
         </div>
@@ -91,23 +113,31 @@ export default function Landing() {
             >
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button 
-                onClick={() => window.location.href = '/api/login'}
-                size="lg"
-                className="modern-button bg-white text-primary hover:bg-gray-100 px-12 py-6 text-xl font-semibold rounded-2xl"
-                data-testid="button-get-started"
-              >
-                <i className="fas fa-rocket mr-3"></i>
-                Get Started Free
+                  onClick={() => window.location.href = '/api/login'}
+                  size="lg"
+                  className="modern-button magnetic-button ripple glow-on-hover bg-white text-primary hover:bg-gray-100 px-12 py-6 text-xl font-semibold rounded-2xl"
+                  data-testid="button-get-started"
+                >
+                  <motion.i 
+                    className="fas fa-rocket mr-3"
+                    animate={{ rotate: [0, 10, -10, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                  />
+                  Get Started Free
                 </Button>
               </motion.div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button 
-                variant="outline"
-                size="lg"
-                className="modern-button border-2 border-white text-white hover:bg-white hover:text-primary px-12 py-6 text-xl font-semibold rounded-2xl"
-              >
-                <i className="fas fa-play mr-3"></i>
-                Watch Demo
+                  variant="outline"
+                  size="lg"
+                  className="modern-button magnetic-button ripple border-2 border-white text-white hover:bg-white hover:text-primary px-12 py-6 text-xl font-semibold rounded-2xl"
+                >
+                  <motion.i 
+                    className="fas fa-play mr-3"
+                    whileHover={{ scale: 1.2 }}
+                    transition={{ type: "spring", stiffness: 400 }}
+                  />
+                  Watch Demo
                 </Button>
               </motion.div>
             </motion.div>
@@ -306,38 +336,123 @@ export default function Landing() {
       </motion.section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-24 modern-gradient text-white">
+      <motion.section 
+        id="how-it-works" 
+        className="py-24 modern-gradient text-white"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.8 }}
+      >
         <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-5xl font-bold mb-6">How It Works</h2>
-            <p className="text-xl opacity-90 max-w-3xl mx-auto">
+          <motion.div 
+            className="text-center mb-16"
+            initial={{ y: 50, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <motion.h2 
+              className="text-5xl font-bold mb-6 animate-gradient"
+              initial={{ y: 30, opacity: 0 }}
+              whileInView={{ y: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >How It Works</motion.h2>
+            <motion.p 
+              className="text-xl opacity-90 max-w-3xl mx-auto"
+              initial={{ y: 20, opacity: 0 }}
+              whileInView={{ y: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2, duration: 0.8 }}
+            >
               Simple, intuitive, and powerful. Get started in minutes and see results immediately.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="glass-effect w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-bold">1</div>
+            </motion.p>
+          </motion.div>
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-4 gap-8"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            variants={{
+              visible: {
+                transition: {
+                  staggerChildren: 0.2
+                }
+              }
+            }}
+          >
+            <motion.div 
+              className="text-center"
+              variants={{
+                hidden: { y: 80, opacity: 0, scale: 0.8 },
+                visible: { y: 0, opacity: 1, scale: 1 }
+              }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
+              <motion.div 
+                className="glass-modern w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-bold glow-on-hover magnetic-button"
+                whileHover={{ scale: 1.2, rotate: 360 }}
+                whileTap={{ scale: 0.9 }}
+                transition={{ type: "spring", stiffness: 200 }}
+              >1</motion.div>
               <h3 className="text-2xl font-bold mb-4">Sign Up</h3>
               <p className="opacity-90">Create your free account in seconds using social login or email verification.</p>
-            </div>
-            <div className="text-center">
-              <div className="glass-effect w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-bold">2</div>
+            </motion.div>
+            <motion.div 
+              className="text-center"
+              variants={{
+                hidden: { y: 80, opacity: 0, scale: 0.8 },
+                visible: { y: 0, opacity: 1, scale: 1 }
+              }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
+              <motion.div 
+                className="glass-modern w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-bold glow-on-hover magnetic-button"
+                whileHover={{ scale: 1.2, rotate: 360 }}
+                whileTap={{ scale: 0.9 }}
+                transition={{ type: "spring", stiffness: 200 }}
+              >2</motion.div>
               <h3 className="text-2xl font-bold mb-4">Report Issues</h3>
               <p className="opacity-90">Use our smart forms to report civic issues with photos, location, and detailed descriptions.</p>
-            </div>
-            <div className="text-center">
-              <div className="glass-effect w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-bold">3</div>
+            </motion.div>
+            <motion.div 
+              className="text-center"
+              variants={{
+                hidden: { y: 80, opacity: 0, scale: 0.8 },
+                visible: { y: 0, opacity: 1, scale: 1 }
+              }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
+              <motion.div 
+                className="glass-modern w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-bold glow-on-hover magnetic-button"
+                whileHover={{ scale: 1.2, rotate: 360 }}
+                whileTap={{ scale: 0.9 }}
+                transition={{ type: "spring", stiffness: 200 }}
+              >3</motion.div>
               <h3 className="text-2xl font-bold mb-4">Track Progress</h3>
               <p className="opacity-90">Get real-time updates on your complaints and see the impact of your civic participation.</p>
-            </div>
-            <div className="text-center">
-              <div className="glass-effect w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-bold">4</div>
+            </motion.div>
+            <motion.div 
+              className="text-center"
+              variants={{
+                hidden: { y: 80, opacity: 0, scale: 0.8 },
+                visible: { y: 0, opacity: 1, scale: 1 }
+              }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
+              <motion.div 
+                className="glass-modern w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl font-bold glow-on-hover magnetic-button"
+                whileHover={{ scale: 1.2, rotate: 360 }}
+                whileTap={{ scale: 0.9 }}
+                transition={{ type: "spring", stiffness: 200 }}
+              >4</motion.div>
               <h3 className="text-2xl font-bold mb-4">Build Community</h3>
               <p className="opacity-90">Collaborate with neighbors, vote on priorities, and create positive change together.</p>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Stats Section */}
       <section id="stats" className="py-24 bg-background">
@@ -482,7 +597,7 @@ export default function Landing() {
                   <div className="flex items-center"><i className="fas fa-check text-primary mr-3"></i>Community Features</div>
                   <div className="flex items-center"><i className="fas fa-check text-primary mr-3"></i>Mobile App</div>
                 </div>
-                <Button className="w-full modern-button" size="lg">
+                <Button className="w-full modern-button magnetic-button ripple glow-on-hover" size="lg">
                   Get Started Free
                 </Button>
               </CardContent>
@@ -507,7 +622,7 @@ export default function Landing() {
                   <div className="flex items-center"><i className="fas fa-check text-primary mr-3"></i>Custom Branding</div>
                   <div className="flex items-center"><i className="fas fa-check text-primary mr-3"></i>API Access</div>
                 </div>
-                <Button className="w-full modern-button" size="lg">
+                <Button className="w-full modern-button magnetic-button ripple glow-on-hover" size="lg">
                   Start Free Trial
                 </Button>
               </CardContent>
@@ -527,7 +642,7 @@ export default function Landing() {
                   <div className="flex items-center"><i className="fas fa-check text-primary mr-3"></i>Custom Integrations</div>
                   <div className="flex items-center"><i className="fas fa-check text-primary mr-3"></i>SLA Guarantee</div>
                 </div>
-                <Button variant="outline" className="w-full modern-button" size="lg">
+                <Button variant="outline" className="w-full modern-button magnetic-button ripple" size="lg">
                   Contact Sales
                 </Button>
               </CardContent>
