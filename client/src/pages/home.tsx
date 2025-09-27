@@ -130,7 +130,12 @@ export default function Home() {
                 <div className="space-y-4">
                   <Button 
                     className="w-full h-16 modern-button bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-between rounded-xl text-lg font-semibold"
-                    onClick={() => window.scrollTo({ top: document.querySelector('#complaint-form')?.offsetTop, behavior: 'smooth' })}
+                    onClick={() => {
+                      const element = document.querySelector('#complaint-form') as HTMLElement;
+                      if (element) {
+                        window.scrollTo({ top: element.offsetTop, behavior: 'smooth' });
+                      }
+                    }}
                     data-testid="button-new-complaint"
                   >
                     <span className="flex items-center">

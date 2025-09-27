@@ -137,14 +137,29 @@ export default function Dashboard() {
       <Header />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            <i className="fas fa-tachometer-alt text-primary mr-3"></i>
-            Personal Dashboard
-          </h1>
-          <p className="text-muted-foreground">
-            Welcome back, {user?.firstName || user?.email || 'User'}! Here's your civic engagement overview.
-          </p>
+        {/* Enhanced Hero Header */}
+        <div className="mb-8">
+          <div className="relative rounded-3xl overflow-hidden hero-enhanced p-8 text-white pattern-overlay cool-shadow animate-fade-in-up">
+            <div className="floating-particles">
+              <div className="particle particle-1"></div>
+              <div className="particle particle-2"></div>
+              <div className="particle particle-3"></div>
+              <div className="particle particle-4"></div>
+              <div className="particle particle-5"></div>
+              <div className="particle particle-6"></div>
+            </div>
+            <div className="morphing-bg"></div>
+            <div className="morphing-bg-2"></div>
+            <div className="relative z-10">
+              <h1 className="text-4xl font-bold mb-3 animate-fade-in-up delay-100">
+                <i className="fas fa-tachometer-alt mr-3 animate-float"></i>
+                Personal Dashboard
+              </h1>
+              <p className="text-xl opacity-95 animate-fade-in-up delay-200">
+                Welcome back, {user?.firstName || user?.email || 'User'}! Here's your civic engagement overview.
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -152,27 +167,27 @@ export default function Dashboard() {
           {/* Left Column: User Stats & Achievement */}
           <div className="space-y-6">
             
-            {/* User Profile Card */}
-            <Card>
+            {/* Enhanced User Profile Card */}
+            <Card className="floating-card glass-modern card-squircle animate-fade-in-left delay-300">
               <CardContent className="p-6">
                 <div className="flex items-center space-x-4 mb-4">
                   {user?.profileImageUrl ? (
                     <img 
                       src={user.profileImageUrl} 
                       alt="Profile" 
-                      className="w-16 h-16 rounded-full object-cover"
+                      className="w-16 h-16 rounded-full object-cover glow-on-hover transition-all duration-300"
                     />
                   ) : (
-                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-                      <i className="fas fa-user text-2xl text-muted-foreground"></i>
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center glow-on-hover transition-all duration-300">
+                      <i className="fas fa-user text-2xl text-white"></i>
                     </div>
                   )}
                   <div>
-                    <h3 className="text-lg font-semibold text-foreground" data-testid="text-user-profile-name">
+                    <h3 className="text-lg font-semibold text-foreground text-gradient" data-testid="text-user-profile-name">
                       {user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user?.email || 'User'}
                     </h3>
                     <p className="text-sm text-muted-foreground">{user?.email}</p>
-                    <Badge className={contributionLevel.color + " mt-1"}>
+                    <Badge className={contributionLevel.color + " mt-1 pulse-glow"}>
                       {contributionLevel.level}
                     </Badge>
                   </div>
@@ -195,90 +210,104 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Quick Stats */}
-            <Card>
+            {/* Enhanced Quick Stats */}
+            <Card className="floating-card neon-border card-squircle animate-fade-in-left delay-400">
               <CardHeader>
-                <CardTitle className="text-lg">My Activity</CardTitle>
+                <CardTitle className="text-lg text-gradient flex items-center">
+                  <i className="fas fa-chart-line mr-2 animate-float"></i>
+                  My Activity
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <i className="fas fa-file-alt text-primary"></i>
-                    <span className="text-sm text-muted-foreground">Complaints Filed</span>
+                <div className="flex items-center justify-between magnetic-button p-3 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 hover:from-primary/20 hover:to-primary/10 transition-all duration-300">
+                  <div className="flex items-center space-x-3">
+                    <div className="icon-squircle-sm bg-primary text-white">
+                      <i className="fas fa-file-alt"></i>
+                    </div>
+                    <span className="text-sm font-medium text-foreground">Complaints Filed</span>
                   </div>
-                  <span className="font-semibold text-foreground" data-testid="text-complaints-count">
+                  <span className="font-bold text-xl text-gradient" data-testid="text-complaints-count">
                     {userStats?.activeComplaints + userStats?.resolvedComplaints || 0}
                   </span>
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <i className="fas fa-check-circle text-secondary"></i>
-                    <span className="text-sm text-muted-foreground">Issues Resolved</span>
+                <div className="flex items-center justify-between magnetic-button p-3 rounded-xl bg-gradient-to-r from-secondary/10 to-secondary/5 hover:from-secondary/20 hover:to-secondary/10 transition-all duration-300">
+                  <div className="flex items-center space-x-3">
+                    <div className="icon-squircle-sm bg-secondary text-white">
+                      <i className="fas fa-check-circle"></i>
+                    </div>
+                    <span className="text-sm font-medium text-foreground">Issues Resolved</span>
                   </div>
-                  <span className="font-semibold text-foreground" data-testid="text-resolved-count">
+                  <span className="font-bold text-xl text-gradient" data-testid="text-resolved-count">
                     {userStats?.resolvedComplaints || 0}
                   </span>
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <i className="fas fa-thumbs-up text-accent"></i>
-                    <span className="text-sm text-muted-foreground">Upvotes Given</span>
+                <div className="flex items-center justify-between magnetic-button p-3 rounded-xl bg-gradient-to-r from-accent/10 to-accent/5 hover:from-accent/20 hover:to-accent/10 transition-all duration-300">
+                  <div className="flex items-center space-x-3">
+                    <div className="icon-squircle-sm bg-accent text-accent-foreground">
+                      <i className="fas fa-thumbs-up"></i>
+                    </div>
+                    <span className="text-sm font-medium text-foreground">Upvotes Given</span>
                   </div>
-                  <span className="font-semibold text-foreground" data-testid="text-upvotes-count">
+                  <span className="font-bold text-xl text-gradient" data-testid="text-upvotes-count">
                     {userStats?.upvotesGiven || 0}
                   </span>
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <i className="fas fa-clock text-yellow-500"></i>
-                    <span className="text-sm text-muted-foreground">Active Issues</span>
+                <div className="flex items-center justify-between magnetic-button p-3 rounded-xl bg-gradient-to-r from-yellow-500/10 to-yellow-500/5 hover:from-yellow-500/20 hover:to-yellow-500/10 transition-all duration-300">
+                  <div className="flex items-center space-x-3">
+                    <div className="icon-squircle-sm bg-yellow-500 text-white">
+                      <i className="fas fa-clock"></i>
+                    </div>
+                    <span className="text-sm font-medium text-foreground">Active Issues</span>
                   </div>
-                  <span className="font-semibold text-foreground" data-testid="text-active-count">
+                  <span className="font-bold text-xl text-gradient" data-testid="text-active-count">
                     {userStats?.activeComplaints || 0}
                   </span>
                 </div>
               </CardContent>
             </Card>
 
-            {/* City Overview */}
-            <Card>
+            {/* Enhanced City Overview */}
+            <Card className="floating-card glass-modern card-squircle animate-fade-in-left delay-500">
               <CardHeader>
-                <CardTitle className="text-lg">City Overview</CardTitle>
+                <CardTitle className="text-lg text-gradient flex items-center">
+                  <i className="fas fa-city mr-2 animate-float"></i>
+                  City Overview
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-destructive" data-testid="text-city-high-priority">
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="text-center magnetic-button p-4 rounded-xl bg-gradient-to-br from-red-500/10 to-red-500/5 hover:from-red-500/20 hover:to-red-500/10 transition-all duration-300">
+                    <div className="text-2xl font-bold text-red-500 animate-scale-in" data-testid="text-city-high-priority">
                       {cityStats?.highPriorityCount || 0}
                     </div>
-                    <div className="text-xs text-muted-foreground">High Priority</div>
+                    <div className="text-xs text-muted-foreground font-medium">High Priority</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-accent">
+                  <div className="text-center magnetic-button p-4 rounded-xl bg-gradient-to-br from-accent/10 to-accent/5 hover:from-accent/20 hover:to-accent/10 transition-all duration-300">
+                    <div className="text-2xl font-bold text-accent animate-scale-in delay-100">
                       {cityStats?.mediumPriorityCount || 0}
                     </div>
-                    <div className="text-xs text-muted-foreground">Medium Priority</div>
+                    <div className="text-xs text-muted-foreground font-medium">Medium Priority</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-secondary">
+                  <div className="text-center magnetic-button p-4 rounded-xl bg-gradient-to-br from-secondary/10 to-secondary/5 hover:from-secondary/20 hover:to-secondary/10 transition-all duration-300">
+                    <div className="text-2xl font-bold text-secondary animate-scale-in delay-200">
                       {cityStats?.lowPriorityCount || 0}
                     </div>
-                    <div className="text-xs text-muted-foreground">Low Priority</div>
+                    <div className="text-xs text-muted-foreground font-medium">Low Priority</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-primary">
+                  <div className="text-center magnetic-button p-4 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 hover:from-primary/20 hover:to-primary/10 transition-all duration-300">
+                    <div className="text-2xl font-bold text-primary animate-scale-in delay-300">
                       {cityStats?.resolvedComplaints || 0}
                     </div>
-                    <div className="text-xs text-muted-foreground">Resolved</div>
+                    <div className="text-xs text-muted-foreground font-medium">Resolved</div>
                   </div>
                 </div>
                 
-                <div className="pt-3 border-t border-border text-center">
-                  <div className="text-sm text-muted-foreground">Average Response Time</div>
-                  <div className="text-lg font-semibold text-foreground">
+                <div className="pt-4 border-t border-border/50 text-center">
+                  <div className="text-sm text-muted-foreground font-medium">Average Response Time</div>
+                  <div className="text-2xl font-bold text-gradient pulse-glow">
                     {cityStats?.averageResponseTime || "N/A"}
                   </div>
                 </div>
@@ -289,19 +318,19 @@ export default function Dashboard() {
           {/* Center & Right Columns: Notifications & Recent Activity */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* Notifications */}
-            <Card>
+            {/* Enhanced Notifications */}
+            <Card className="floating-card glass-modern card-squircle animate-fade-in-right delay-300">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg flex items-center">
-                  <i className="fas fa-bell text-primary mr-2"></i>
+                <CardTitle className="text-lg flex items-center text-gradient">
+                  <i className="fas fa-bell mr-3 animate-float"></i>
                   Recent Notifications
                   {unreadNotifications.length > 0 && (
-                    <Badge className="ml-2 bg-destructive text-destructive-foreground">
+                    <Badge className="ml-3 bg-destructive text-destructive-foreground pulse-glow">
                       {unreadNotifications.length} new
                     </Badge>
                   )}
                 </CardTitle>
-                <Button variant="outline" size="sm" data-testid="button-view-all-notifications">
+                <Button variant="outline" size="sm" className="modern-button" data-testid="button-view-all-notifications">
                   View All
                 </Button>
               </CardHeader>
@@ -316,12 +345,12 @@ export default function Dashboard() {
                     {recentNotifications.map((notification: Notification) => (
                       <div 
                         key={notification.id}
-                        className={`flex items-start space-x-3 p-3 rounded-lg transition-colors ${
-                          notification.isRead ? 'bg-muted/50' : 'bg-muted'
+                        className={`flex items-start space-x-3 p-4 rounded-xl transition-all duration-300 magnetic-button ${
+                          notification.isRead ? 'bg-muted/30 hover:bg-muted/50' : 'bg-gradient-to-r from-primary/10 to-primary/5 hover:from-primary/20 hover:to-primary/10 glow-on-hover'
                         }`}
                         data-testid={`notification-${notification.id}`}
                       >
-                        <div className={`rounded-full w-8 h-8 flex items-center justify-center text-xs flex-shrink-0 ${
+                        <div className={`icon-squircle-sm flex items-center justify-center text-sm flex-shrink-0 glow-on-hover transition-all duration-300 ${
                           notification.type === 'complaint_update' ? 'bg-secondary text-secondary-foreground' :
                           notification.type === 'status_change' ? 'bg-primary text-primary-foreground' :
                           'bg-accent text-accent-foreground'
@@ -351,13 +380,17 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Recent Complaints */}
-            <Card>
+            {/* Enhanced Recent Complaints */}
+            <Card className="floating-card glass-modern card-squircle animate-fade-in-right delay-400">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-lg">My Recent Complaints</CardTitle>
+                <CardTitle className="text-lg text-gradient flex items-center">
+                  <i className="fas fa-file-alt mr-3 animate-float"></i>
+                  My Recent Complaints
+                </CardTitle>
                 <Button 
                   variant="outline" 
                   size="sm" 
+                  className="modern-button"
                   onClick={() => window.location.href = '/complaints'}
                   data-testid="button-view-all-complaints"
                 >
@@ -379,7 +412,7 @@ export default function Dashboard() {
                     {myRecentComplaints.map((complaint: Complaint) => (
                       <div 
                         key={complaint.id}
-                        className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                        className="flex items-center justify-between p-4 bg-gradient-to-r from-muted/50 to-muted/30 rounded-xl magnetic-button hover:from-muted/70 hover:to-muted/50 transition-all duration-300"
                         data-testid={`recent-complaint-${complaint.id}`}
                       >
                         <div className="flex-1 min-w-0">
@@ -408,39 +441,42 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Quick Actions */}
-            <Card>
+            {/* Enhanced Quick Actions */}
+            <Card className="floating-card neon-border card-squircle animate-fade-in-right delay-500">
               <CardHeader>
-                <CardTitle className="text-lg">Quick Actions</CardTitle>
+                <CardTitle className="text-lg text-gradient flex items-center">
+                  <i className="fas fa-bolt mr-3 animate-float"></i>
+                  Quick Actions
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Button 
-                    className="h-16 flex flex-col items-center justify-center space-y-1"
+                    className="h-20 modern-button flex flex-col items-center justify-center space-y-2 bg-primary hover:bg-primary/90 btn-squircle-lg text-white font-semibold"
                     onClick={() => window.location.href = '/'}
                     data-testid="button-dashboard-new-complaint"
                   >
-                    <i className="fas fa-plus-circle text-lg"></i>
+                    <i className="fas fa-plus-circle text-xl animate-scale-in"></i>
                     <span className="text-sm">New Complaint</span>
                   </Button>
                   
                   <Button 
                     variant="secondary"
-                    className="h-16 flex flex-col items-center justify-center space-y-1"
+                    className="h-20 modern-button flex flex-col items-center justify-center space-y-2 btn-squircle-lg font-semibold"
                     onClick={() => window.location.href = '/community'}
                     data-testid="button-dashboard-browse-community"
                   >
-                    <i className="fas fa-users text-lg"></i>
+                    <i className="fas fa-users text-xl animate-scale-in delay-100"></i>
                     <span className="text-sm">Browse Community</span>
                   </Button>
                   
                   <Button 
                     variant="outline"
-                    className="h-16 flex flex-col items-center justify-center space-y-1"
+                    className="h-20 modern-button flex flex-col items-center justify-center space-y-2 btn-squircle-lg font-semibold"
                     onClick={() => window.location.href = '#maps'}
                     data-testid="button-dashboard-view-map"
                   >
-                    <i className="fas fa-map text-lg"></i>
+                    <i className="fas fa-map text-xl animate-scale-in delay-200"></i>
                     <span className="text-sm">View Issues Map</span>
                   </Button>
                 </div>

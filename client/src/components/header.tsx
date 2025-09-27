@@ -7,12 +7,12 @@ export default function Header() {
   const { user } = useAuth();
   const [selectedLanguage, setSelectedLanguage] = useState("en");
 
-  const { data: notifications } = useQuery({
+  const { data: notifications = [] } = useQuery({
     queryKey: ["/api/notifications"],
     retry: false,
   });
 
-  const unreadCount = notifications?.filter((n: any) => !n.isRead).length || 0;
+  const unreadCount = Array.isArray(notifications) ? notifications.filter((n: any) => !n.isRead).length : 0;
 
   return (
     <header className="sticky top-0 z-50 glass-effect border-b border-border/50 cool-shadow">
