@@ -142,7 +142,7 @@ export default function Landing() {
                 <Button 
                   variant="outline"
                   size="lg"
-                  className="modern-button magnetic-button ripple border-2 border-white text-white hover:bg-white hover:text-primary px-12 py-6 text-xl font-semibold btn-squircle-lg"
+                  className="modern-button magnetic-button ripple border-2 border-white bg-white/10 text-white hover:bg-white hover:text-primary px-12 py-6 text-xl font-semibold btn-squircle-lg"
                 >
                   <motion.i 
                     className="fas fa-play mr-3"
