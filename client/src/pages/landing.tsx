@@ -1,11 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { motion, useInView } from "framer-motion";
+import { useRef } from "react";
 
 export default function Landing() {
   return (
     <div className="min-h-screen">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 glass-effect border-b border-white/20">
+      <motion.nav 
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="fixed top-0 w-full z-50 glass-modern border-b border-white/20"
+      >
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -30,30 +37,60 @@ export default function Landing() {
             </div>
           </div>
         </div>
-      </nav>
+      </motion.nav>
 
       {/* Hero Section */}
-      <section className="hero-gradient min-h-screen flex items-center pattern-overlay">
+      <section className="hero-enhanced min-h-screen flex items-center pattern-overlay">
         <div className="container mx-auto px-6 text-center text-white">
           <div className="max-w-4xl mx-auto">
-            <div className="mb-8">
+            <motion.div 
+              className="mb-8"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.8, ease: "easeOut" }}
+            >
               <div className="inline-block">
-                <div className="w-24 h-24 bg-white bg-opacity-20 rounded-3xl flex items-center justify-center mb-6 mx-auto pulse-glow">
+                <motion.div 
+                  className="w-24 h-24 bg-white bg-opacity-20 rounded-3xl flex items-center justify-center mb-6 mx-auto pulse-glow glow-on-hover"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  whileTap={{ scale: 0.95 }}
+                >
                   <i className="fas fa-city text-4xl"></i>
-                </div>
+                </motion.div>
               </div>
-            </div>
-            <h1 className="text-7xl font-bold mb-6 leading-tight">
+            </motion.div>
+            <motion.h1 
+              className="text-7xl font-bold mb-6 leading-tight"
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.8, ease: "easeOut" }}
+            >
               Transform Your
-              <span className="block text-gradient bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
+              <motion.span 
+                className="block text-gradient bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent"
+                initial={{ x: -50, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.6, duration: 0.8, ease: "easeOut" }}
+              >
                 Civic Experience
-              </span>
-            </h1>
-            <p className="text-2xl mb-12 opacity-90 max-w-3xl mx-auto leading-relaxed">
+              </motion.span>
+            </motion.h1>
+            <motion.p 
+              className="text-2xl mb-12 opacity-90 max-w-3xl mx-auto leading-relaxed"
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.8, duration: 0.8, ease: "easeOut" }}
+            >
               Join thousands of citizens using AI-powered solutions to create a smarter, more responsive city. Report issues, track progress, and build community.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
-              <Button 
+            </motion.p>
+            <motion.div 
+              className="flex flex-col sm:flex-row gap-6 justify-center mb-16"
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 1.0, duration: 0.8, ease: "easeOut" }}
+            >
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button 
                 onClick={() => window.location.href = '/api/login'}
                 size="lg"
                 className="modern-button bg-white text-primary hover:bg-gray-100 px-12 py-6 text-xl font-semibold rounded-2xl"
@@ -61,97 +98,212 @@ export default function Landing() {
               >
                 <i className="fas fa-rocket mr-3"></i>
                 Get Started Free
-              </Button>
-              <Button 
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button 
                 variant="outline"
                 size="lg"
                 className="modern-button border-2 border-white text-white hover:bg-white hover:text-primary px-12 py-6 text-xl font-semibold rounded-2xl"
               >
                 <i className="fas fa-play mr-3"></i>
                 Watch Demo
-              </Button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-              <div className="glass-effect rounded-2xl p-6 floating-card">
-                <div className="text-4xl font-bold mb-2 text-yellow-300">10K+</div>
+                </Button>
+              </motion.div>
+            </motion.div>
+            <motion.div 
+              className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto"
+              initial="hidden"
+              animate="visible"
+              variants={{
+                visible: {
+                  transition: {
+                    staggerChildren: 0.2,
+                    delayChildren: 1.2
+                  }
+                }
+              }}
+            >
+              <motion.div 
+                className="glass-modern rounded-2xl p-6 floating-card glow-on-hover"
+                variants={{
+                  hidden: { y: 50, opacity: 0 },
+                  visible: { y: 0, opacity: 1 }
+                }}
+                whileHover={{ y: -10, scale: 1.05 }}
+                transition={{ duration: 0.3 }}
+              >
+                <motion.div 
+                  className="text-4xl font-bold mb-2 text-yellow-300"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 1.5, type: "spring", stiffness: 200 }}
+                >10K+</motion.div>
                 <div className="text-lg opacity-90">Active Citizens</div>
-              </div>
-              <div className="glass-effect rounded-2xl p-6 floating-card">
-                <div className="text-4xl font-bold mb-2 text-green-300">95%</div>
+              </motion.div>
+              <motion.div 
+                className="glass-modern rounded-2xl p-6 floating-card glow-on-hover"
+                variants={{
+                  hidden: { y: 50, opacity: 0 },
+                  visible: { y: 0, opacity: 1 }
+                }}
+                whileHover={{ y: -10, scale: 1.05 }}
+                transition={{ duration: 0.3 }}
+              >
+                <motion.div 
+                  className="text-4xl font-bold mb-2 text-green-300"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 1.7, type: "spring", stiffness: 200 }}
+                >95%</motion.div>
                 <div className="text-lg opacity-90">Issues Resolved</div>
-              </div>
-              <div className="glass-effect rounded-2xl p-6 floating-card">
-                <div className="text-4xl font-bold mb-2 text-blue-300">24h</div>
+              </motion.div>
+              <motion.div 
+                className="glass-modern rounded-2xl p-6 floating-card glow-on-hover"
+                variants={{
+                  hidden: { y: 50, opacity: 0 },
+                  visible: { y: 0, opacity: 1 }
+                }}
+                whileHover={{ y: -10, scale: 1.05 }}
+                transition={{ duration: 0.3 }}
+              >
+                <motion.div 
+                  className="text-4xl font-bold mb-2 text-blue-300"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 1.9, type: "spring", stiffness: 200 }}
+                >24h</motion.div>
                 <div className="text-lg opacity-90">Avg Response</div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-24 bg-background">
+      <motion.section 
+        id="features" 
+        className="py-24 bg-background"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.8 }}
+      >
         <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-5xl font-bold text-gradient mb-6">Powerful Features</h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <motion.div 
+            className="text-center mb-16"
+            initial={{ y: 50, opacity: 0 }}
+            whileInView={{ y: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <motion.h2 
+              className="text-5xl font-bold text-gradient mb-6 animate-gradient"
+              initial={{ y: 30, opacity: 0 }}
+              whileInView={{ y: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >Powerful Features</motion.h2>
+            <motion.p 
+              className="text-xl text-muted-foreground max-w-3xl mx-auto"
+              initial={{ y: 20, opacity: 0 }}
+              whileInView={{ y: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2, duration: 0.8 }}
+            >
               Experience the future of civic engagement with our comprehensive suite of tools designed for modern citizens.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="floating-card neon-border p-8">
-              <CardContent className="text-center">
-                <div className="w-20 h-20 bg-primary rounded-3xl flex items-center justify-center mx-auto mb-6 pulse-glow">
-                  <i className="fas fa-robot text-3xl text-white"></i>
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-foreground">AI-Powered Assistant</h3>
-                <p className="text-muted-foreground mb-6">
-                  Get instant help with water bills, tax deadlines, bus schedules, and more through our multilingual chatbot powered by advanced AI.
-                </p>
-                <div className="space-y-2 text-sm text-left">
-                  <div className="flex items-center"><i className="fas fa-check text-primary mr-2"></i> 24/7 Availability</div>
-                  <div className="flex items-center"><i className="fas fa-check text-primary mr-2"></i> Multi-language Support</div>
-                  <div className="flex items-center"><i className="fas fa-check text-primary mr-2"></i> Smart Recommendations</div>
-                </div>
-              </CardContent>
-            </Card>
+            </motion.p>
+          </motion.div>
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            variants={{
+              visible: {
+                transition: {
+                  staggerChildren: 0.2
+                }
+              }
+            }}
+          >
+            <motion.div
+              variants={{
+                hidden: { y: 80, opacity: 0 },
+                visible: { y: 0, opacity: 1 }
+              }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
+              <Card className="floating-card neon-border p-8 card-3d magnetic-button">
+                <CardContent className="text-center">
+                  <div className="w-20 h-20 bg-primary rounded-3xl flex items-center justify-center mx-auto mb-6 pulse-glow">
+                    <i className="fas fa-robot text-3xl text-white"></i>
+                  </div>
+                  <h3 className="text-2xl font-bold mb-4 text-foreground">AI-Powered Assistant</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Get instant help with water bills, tax deadlines, bus schedules, and more through our multilingual chatbot powered by advanced AI.
+                  </p>
+                  <div className="space-y-2 text-sm text-left">
+                    <div className="flex items-center"><i className="fas fa-check text-primary mr-2"></i> 24/7 Availability</div>
+                    <div className="flex items-center"><i className="fas fa-check text-primary mr-2"></i> Multi-language Support</div>
+                    <div className="flex items-center"><i className="fas fa-check text-primary mr-2"></i> Smart Recommendations</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-            <Card className="floating-card neon-border p-8">
-              <CardContent className="text-center">
-                <div className="w-20 h-20 bg-secondary rounded-3xl flex items-center justify-center mx-auto mb-6">
-                  <i className="fas fa-file-alt text-3xl text-white"></i>
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-foreground">Smart Complaint System</h3>
-                <p className="text-muted-foreground mb-6">
-                  Register complaints with photos, GPS location, and track real-time status updates with unique ticket IDs and automated categorization.
-                </p>
-                <div className="space-y-2 text-sm text-left">
-                  <div className="flex items-center"><i className="fas fa-check text-primary mr-2"></i> Photo & Video Upload</div>
-                  <div className="flex items-center"><i className="fas fa-check text-primary mr-2"></i> GPS Location Tracking</div>
-                  <div className="flex items-center"><i className="fas fa-check text-primary mr-2"></i> Real-time Updates</div>
-                </div>
-              </CardContent>
-            </Card>
+            <motion.div
+              variants={{
+                hidden: { y: 80, opacity: 0 },
+                visible: { y: 0, opacity: 1 }
+              }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
+              <Card className="floating-card neon-border p-8 card-3d magnetic-button">
+                <CardContent className="text-center">
+                  <div className="w-20 h-20 bg-secondary rounded-3xl flex items-center justify-center mx-auto mb-6">
+                    <i className="fas fa-file-alt text-3xl text-white"></i>
+                  </div>
+                  <h3 className="text-2xl font-bold mb-4 text-foreground">Smart Complaint System</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Register complaints with photos, GPS location, and track real-time status updates with unique ticket IDs and automated categorization.
+                  </p>
+                  <div className="space-y-2 text-sm text-left">
+                    <div className="flex items-center"><i className="fas fa-check text-primary mr-2"></i> Photo & Video Upload</div>
+                    <div className="flex items-center"><i className="fas fa-check text-primary mr-2"></i> GPS Location Tracking</div>
+                    <div className="flex items-center"><i className="fas fa-check text-primary mr-2"></i> Real-time Updates</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-            <Card className="floating-card neon-border p-8">
-              <CardContent className="text-center">
-                <div className="w-20 h-20 bg-accent rounded-3xl flex items-center justify-center mx-auto mb-6">
-                  <i className="fas fa-users text-3xl text-white"></i>
-                </div>
-                <h3 className="text-2xl font-bold mb-4 text-foreground">Community Collaboration</h3>
-                <p className="text-muted-foreground mb-6">
-                  Upvote community issues, collaborate on solutions, and help prioritize city-wide problems with democratic participation.
-                </p>
-                <div className="space-y-2 text-sm text-left">
-                  <div className="flex items-center"><i className="fas fa-check text-primary mr-2"></i> Community Voting</div>
-                  <div className="flex items-center"><i className="fas fa-check text-primary mr-2"></i> Solution Sharing</div>
-                  <div className="flex items-center"><i className="fas fa-check text-primary mr-2"></i> Impact Tracking</div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+            <motion.div
+              variants={{
+                hidden: { y: 80, opacity: 0 },
+                visible: { y: 0, opacity: 1 }
+              }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            >
+              <Card className="floating-card neon-border p-8 card-3d magnetic-button">
+                <CardContent className="text-center">
+                  <div className="w-20 h-20 bg-accent rounded-3xl flex items-center justify-center mx-auto mb-6">
+                    <i className="fas fa-users text-3xl text-white"></i>
+                  </div>
+                  <h3 className="text-2xl font-bold mb-4 text-foreground">Community Collaboration</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Upvote community issues, collaborate on solutions, and help prioritize city-wide problems with democratic participation.
+                  </p>
+                  <div className="space-y-2 text-sm text-left">
+                    <div className="flex items-center"><i className="fas fa-check text-primary mr-2"></i> Community Voting</div>
+                    <div className="flex items-center"><i className="fas fa-check text-primary mr-2"></i> Solution Sharing</div>
+                    <div className="flex items-center"><i className="fas fa-check text-primary mr-2"></i> Impact Tracking</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
 
       {/* How It Works Section */}
       <section id="how-it-works" className="py-24 modern-gradient text-white">
