@@ -1,16 +1,31 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, useInView } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 
 export default function Landing() {
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      setIsScrolled(scrollPosition > 50);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <div className="min-h-screen">
       {/* Navigation */}
       <motion.nav 
         initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+        animate={{ 
+          y: isScrolled ? 0 : -100, 
+          opacity: isScrolled ? 1 : 0 
+        }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
         className="fixed top-0 w-full z-50 glass-modern border-b border-white/20"
       >
         <div className="container mx-auto px-6 py-4">
