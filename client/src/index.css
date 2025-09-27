@@ -94,8 +94,103 @@
 }
 
 .glass-effect {
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(20px) saturate(180%);
   background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.modern-gradient {
+  background: linear-gradient(135deg, hsl(45, 85%, 55%) 0%, hsl(30, 85%, 60%) 50%, hsl(50, 90%, 65%) 100%);
+}
+
+.hero-gradient {
+  background: linear-gradient(135deg, hsl(45, 85%, 55%) 0%, hsl(30, 85%, 60%) 30%, hsl(50, 90%, 65%) 70%, hsl(40, 80%, 70%) 100%);
+  position: relative;
+}
+
+.hero-gradient::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.2) 0%, transparent 50%),
+              radial-gradient(circle at 70% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.floating-card {
+  transform: translateY(0);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.floating-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.neon-border {
+  position: relative;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, hsl(45, 85%, 55%), hsl(30, 85%, 60%)) padding-box,
+              linear-gradient(135deg, hsl(45, 85%, 55%), hsl(50, 90%, 65%)) border-box;
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-glow {
+  from {
+    box-shadow: 0 0 20px rgba(255, 204, 0, 0.3);
+  }
+  to {
+    box-shadow: 0 0 30px rgba(255, 204, 0, 0.6), 0 0 40px rgba(255, 204, 0, 0.3);
+  }
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, hsl(45, 85%, 45%), hsl(30, 85%, 50%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.modern-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.modern-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.modern-button:hover::before {
+  left: 100%;
+}
+
+.cool-shadow {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 
+              0 4px 6px -2px rgba(0, 0, 0, 0.05),
+              0 0 0 1px rgba(255, 204, 0, 0.1);
+}
+
+.pattern-overlay {
+  background-image: 
+    radial-gradient(circle at 25px 25px, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
+    radial-gradient(circle at 75px 75px, rgba(255, 255, 255, 0.05) 2px, transparent 2px);
+  background-size: 100px 100px;
 }
 
 .status-open { 

@@ -15,14 +15,18 @@ export default function Header() {
   const unreadCount = notifications?.filter((n: any) => !n.isRead).length || 0;
 
   return (
-    <header className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
+    <header className="sticky top-0 z-50 glass-effect border-b border-border/50 cool-shadow">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-20">
           <div className="flex items-center space-x-4">
             <div className="flex-shrink-0">
-              <h1 className="text-xl font-bold text-primary">
-                <i className="fas fa-city mr-2"></i>
-                Raipur Smart Connect
+              <h1 className="text-2xl font-bold text-gradient">
+                <div className="flex items-center">
+                  <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center mr-3">
+                    <i className="fas fa-city text-white"></i>
+                  </div>
+                  Raipur Smart Connect
+                </div>
               </h1>
             </div>
             <nav className="hidden md:flex space-x-6">
