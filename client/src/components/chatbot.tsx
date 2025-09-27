@@ -144,26 +144,26 @@ export default function Chatbot() {
   };
 
   return (
-    <Card id="chatbot">
+    <Card id="chatbot" className="floating-card glass-modern card-squircle-lg animate-fade-in-up delay-100">
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-foreground">
-            <i className="fas fa-robot text-primary mr-2"></i>
+          <h3 className="text-lg font-semibold text-gradient flex items-center">
+            <i className="fas fa-robot mr-3 animate-float"></i>
             AI Assistant
           </h3>
-          <span className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-full">
+          <span className="bg-secondary text-secondary-foreground text-xs px-3 py-1 squircle-full pulse-glow">
             Online
           </span>
         </div>
         
         {/* Chat Messages */}
-        <div className="h-64 overflow-y-auto mb-4 space-y-3 bg-muted rounded-lg p-3" data-testid="chat-messages">
+        <div className="h-64 overflow-y-auto mb-4 space-y-3 bg-gradient-to-b from-muted/30 to-muted/50 squircle-lg p-3 pattern-overlay" data-testid="chat-messages">
           {messages.length === 0 && (
             <div className="flex items-start space-x-2">
-              <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-sm">
+              <div className="bg-primary text-primary-foreground squircle-full w-8 h-8 flex items-center justify-center text-sm glow-on-hover">
                 <i className="fas fa-robot"></i>
               </div>
-              <div className="bg-card rounded-lg p-3 max-w-xs shadow-sm">
+              <div className="bg-card squircle-lg p-3 max-w-xs shadow-sm floating-card">
                 <p className="text-sm">
                   Hello! I'm your civic assistant. I can help you with water bills, tax deadlines, bus schedules, and more. How can I assist you today?
                 </p>
@@ -174,19 +174,19 @@ export default function Chatbot() {
           {messages.map((msg) => (
             <div key={msg.id} className={`flex items-start space-x-2 ${msg.isUser ? 'justify-end' : ''}`}>
               {!msg.isUser && (
-                <div className="bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center text-sm">
+                <div className="bg-primary text-primary-foreground squircle-full w-8 h-8 flex items-center justify-center text-sm glow-on-hover">
                   <i className="fas fa-robot"></i>
                 </div>
               )}
-              <div className={`rounded-lg p-3 max-w-xs shadow-sm ${
+              <div className={`squircle-lg p-3 max-w-xs shadow-sm floating-card transition-all duration-300 ${
                 msg.isUser 
-                  ? 'bg-primary text-primary-foreground' 
+                  ? 'bg-primary text-primary-foreground glow-on-hover' 
                   : 'bg-card'
               }`}>
                 <p className="text-sm">{msg.message}</p>
               </div>
               {msg.isUser && (
-                <div className="bg-muted-foreground text-background rounded-full w-8 h-8 flex items-center justify-center text-sm">
+                <div className="bg-muted-foreground text-background squircle-full w-8 h-8 flex items-center justify-center text-sm glow-on-hover">
                   <i className="fas fa-user"></i>
                 </div>
               )}

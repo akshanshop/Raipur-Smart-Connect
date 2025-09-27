@@ -146,10 +146,10 @@ export default function ComplaintForm() {
   };
 
   return (
-    <Card id="complaint-form">
+    <Card id="complaint-form" className="floating-card glass-modern card-squircle-lg animate-fade-in-up">
       <CardContent className="p-6">
-        <h3 className="text-lg font-semibold text-foreground mb-4">
-          <i className="fas fa-file-alt text-primary mr-2"></i>
+        <h3 className="text-lg font-semibold text-gradient mb-4 flex items-center">
+          <i className="fas fa-file-alt mr-3 animate-float"></i>
           Register Complaint
         </h3>
         
@@ -278,7 +278,7 @@ export default function ComplaintForm() {
             {/* File Upload */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Photos/Videos</label>
-              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors">
+              <div className="border-2 border-dashed border-border squircle-lg p-6 text-center hover:border-primary transition-all duration-300 magnetic-button">
                 <input 
                   type="file" 
                   multiple 
@@ -299,14 +299,14 @@ export default function ComplaintForm() {
               {selectedFiles.length > 0 && (
                 <div className="mt-3 grid grid-cols-3 gap-2">
                   {selectedFiles.map((file, index) => (
-                    <div key={index} className="relative bg-muted rounded-lg p-2">
+                    <div key={index} className="relative bg-muted squircle-md p-2 floating-card">
                       <div className="text-xs text-center text-muted-foreground truncate">
                         {file.name}
                       </div>
                       <button 
                         type="button"
                         onClick={() => removeFile(index)}
-                        className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                        className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground squircle-full w-5 h-5 flex items-center justify-center text-xs modern-button"
                         data-testid={`button-remove-file-${index}`}
                       >
                         ×
@@ -321,6 +321,7 @@ export default function ComplaintForm() {
               <Button 
                 type="submit" 
                 disabled={complaintMutation.isPending}
+                className="modern-button btn-squircle-lg h-12 px-6"
                 data-testid="button-submit-complaint"
               >
                 {complaintMutation.isPending ? (
@@ -338,6 +339,7 @@ export default function ComplaintForm() {
               <Button 
                 type="button" 
                 variant="outline"
+                className="modern-button btn-squircle-lg h-12 px-6"
                 onClick={() => {
                   // TODO: Implement save as draft functionality
                   toast({

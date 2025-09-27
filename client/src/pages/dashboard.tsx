@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -7,8 +7,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
+
+// Import new feature components
+import AdvancedSearch from "@/components/advanced-search";
+import UserSettings from "@/components/user-settings";
+import RealTimeNotifications from "@/components/real-time-notifications";
+import DataAnalytics from "@/components/data-analytics";
+import SocialFeatures from "@/components/social-features";
+import ComplaintForm from "@/components/complaint-form";
+import CommunityFeed from "@/components/community-feed";
+import Chatbot from "@/components/chatbot";
 
 interface Notification {
   id: string;
@@ -31,6 +42,8 @@ interface Complaint {
 export default function Dashboard() {
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const [activeTab, setActiveTab] = useState("overview");
+  const [searchFilters, setSearchFilters] = useState(null);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -315,11 +328,29 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* Center & Right Columns: Notifications & Recent Activity */}
+          {/* Center & Right Columns: Enhanced Feature Tabs */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* Enhanced Notifications */}
-            <Card className="floating-card glass-modern card-squircle animate-fade-in-right delay-300">
+            {/* Enhanced Feature Navigation */}
+            <Card className="floating-card glass-modern card-squircle-lg animate-fade-in-right delay-200">
+              <CardContent className="p-6">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <TabsList className="grid w-full grid-cols-6 lg:grid-cols-8 squircle-lg mb-6">
+                    <TabsTrigger value="overview" className="squircle-md text-xs">Overview</TabsTrigger>
+                    <TabsTrigger value="search" className="squircle-md text-xs">Search</TabsTrigger>
+                    <TabsTrigger value="notifications" className="squircle-md text-xs">Alerts</TabsTrigger>
+                    <TabsTrigger value="analytics" className="squircle-md text-xs">Analytics</TabsTrigger>
+                    <TabsTrigger value="social" className="squircle-md text-xs">Social</TabsTrigger>
+                    <TabsTrigger value="settings" className="squircle-md text-xs">Settings</TabsTrigger>
+                    <TabsTrigger value="complaint" className="squircle-md text-xs">File Issue</TabsTrigger>
+                    <TabsTrigger value="community" className="squircle-md text-xs">Community</TabsTrigger>
+                  </TabsList>
+
+                  {/* Overview Tab - Original Dashboard Content */}
+                  <TabsContent value="overview" className="space-y-6">
+            
+                    {/* Enhanced Notifications */}
+                    <Card className="floating-card glass-modern card-squircle animate-fade-in-right delay-300">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg flex items-center text-gradient">
                   <i className="fas fa-bell mr-3 animate-float"></i>
@@ -380,8 +411,8 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Enhanced Recent Complaints */}
-            <Card className="floating-card glass-modern card-squircle animate-fade-in-right delay-400">
+                    {/* Enhanced Recent Complaints */}
+                    <Card className="floating-card glass-modern card-squircle animate-fade-in-right delay-400">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg text-gradient flex items-center">
                   <i className="fas fa-file-alt mr-3 animate-float"></i>
@@ -441,8 +472,8 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Enhanced Quick Actions */}
-            <Card className="floating-card neon-border card-squircle animate-fade-in-right delay-500">
+                    {/* Enhanced Quick Actions */}
+                    <Card className="floating-card neon-border card-squircle animate-fade-in-right delay-500">
               <CardHeader>
                 <CardTitle className="text-lg text-gradient flex items-center">
                   <i className="fas fa-bolt mr-3 animate-float"></i>
@@ -480,6 +511,63 @@ export default function Dashboard() {
                     <span className="text-sm">View Issues Map</span>
                   </Button>
                 </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  {/* Advanced Search Tab */}
+                  <TabsContent value="search" className="space-y-6">
+                    <AdvancedSearch 
+                      onSearch={(filters) => {
+                        setSearchFilters(filters);
+                        toast({
+                          title: "Search Applied",
+                          description: "Filters have been applied to your search.",
+                        });
+                      }}
+                      onClearFilters={() => {
+                        setSearchFilters(null);
+                        toast({
+                          title: "Filters Cleared",
+                          description: "All search filters have been cleared.",
+                        });
+                      }}
+                    />
+                  </TabsContent>
+
+                  {/* Enhanced Notifications Tab */}
+                  <TabsContent value="notifications" className="space-y-6">
+                    <RealTimeNotifications />
+                  </TabsContent>
+
+                  {/* Data Analytics Tab */}
+                  <TabsContent value="analytics" className="space-y-6">
+                    <DataAnalytics />
+                  </TabsContent>
+
+                  {/* Social Features Tab */}
+                  <TabsContent value="social" className="space-y-6">
+                    <SocialFeatures />
+                  </TabsContent>
+
+                  {/* User Settings Tab */}
+                  <TabsContent value="settings" className="space-y-6">
+                    <UserSettings />
+                  </TabsContent>
+
+                  {/* Complaint Form Tab */}
+                  <TabsContent value="complaint" className="space-y-6">
+                    <ComplaintForm />
+                    <div className="mt-6">
+                      <Chatbot />
+                    </div>
+                  </TabsContent>
+
+                  {/* Community Feed Tab */}
+                  <TabsContent value="community" className="space-y-6">
+                    <CommunityFeed />
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </div>

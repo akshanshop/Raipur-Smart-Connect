@@ -184,11 +184,11 @@ export default function CommunityFeed() {
   }
 
   return (
-    <Card id="community">
+    <Card id="community" className="floating-card glass-modern card-squircle-lg animate-fade-in-up delay-200">
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-foreground">
-            <i className="fas fa-users text-primary mr-2"></i>
+          <h3 className="text-lg font-semibold text-gradient flex items-center">
+            <i className="fas fa-users mr-3 animate-float"></i>
             Community Issues
           </h3>
           <div className="flex space-x-2">
@@ -232,15 +232,15 @@ export default function CommunityFeed() {
             sortedIssues.map((issue: CommunityIssue) => (
               <div 
                 key={issue.id} 
-                className={`bg-muted rounded-lg p-4 ${getPriorityClass(issue.priority)}`}
+                className={`bg-gradient-to-r from-muted/50 to-muted/30 squircle-lg p-4 floating-card magnetic-button hover:from-muted/70 hover:to-muted/50 transition-all duration-300 ${getPriorityClass(issue.priority)}`}
                 data-testid={`card-issue-${issue.id}`}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center space-x-2">
-                    <span className={`text-xs px-2 py-1 rounded-full ${getPriorityBadgeColor(issue.priority)}`}>
+                    <span className={`text-xs px-3 py-1 squircle-full ${getPriorityBadgeColor(issue.priority)} glow-on-hover transition-all duration-300`}>
                       {issue.priority.charAt(0).toUpperCase() + issue.priority.slice(1)} Priority
                     </span>
-                    <span className={`text-xs px-2 py-1 rounded-full ${getCategoryBadgeColor(issue.category)}`}>
+                    <span className={`text-xs px-3 py-1 squircle-full ${getCategoryBadgeColor(issue.category)} glow-on-hover transition-all duration-300`}>
                       {issue.category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                     </span>
                   </div>
@@ -264,7 +264,7 @@ export default function CommunityFeed() {
                         key={index}
                         src={url} 
                         alt={`Issue media ${index + 1}`}
-                        className="w-16 h-12 object-cover rounded"
+                        className="w-16 h-12 object-cover squircle-md floating-card"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                         }}
@@ -302,7 +302,7 @@ export default function CommunityFeed() {
                       {issue.location}
                     </span>
                   </div>
-                  <span className={`text-white text-xs px-2 py-1 rounded-full ${getStatusClass(issue.status)}`}>
+                  <span className={`text-white text-xs px-3 py-1 squircle-full ${getStatusClass(issue.status)} pulse-glow`}>
                     {issue.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </span>
                 </div>
