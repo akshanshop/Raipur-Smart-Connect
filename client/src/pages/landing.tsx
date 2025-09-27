@@ -674,7 +674,7 @@ export default function Landing() {
             </p>
           </div>
           <div className="max-w-4xl mx-auto space-y-6">
-            <Card className="glass-effect border-white/20 p-6">
+            <Card className="glass-effect border-white/20 p-6 card-squircle-lg">
               <CardContent className="text-white">
                 <h3 className="text-xl font-bold mb-3 flex items-center">
                   <i className="fas fa-question-circle mr-3 text-accent"></i>
@@ -686,7 +686,7 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="glass-effect border-white/20 p-6">
+            <Card className="glass-effect border-white/20 p-6 card-squircle-lg">
               <CardContent className="text-white">
                 <h3 className="text-xl font-bold mb-3 flex items-center">
                   <i className="fas fa-question-circle mr-3 text-accent"></i>
@@ -698,7 +698,7 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="glass-effect border-white/20 p-6">
+            <Card className="glass-effect border-white/20 p-6 card-squircle-lg">
               <CardContent className="text-white">
                 <h3 className="text-xl font-bold mb-3 flex items-center">
                   <i className="fas fa-question-circle mr-3 text-accent"></i>
@@ -710,7 +710,7 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="glass-effect border-white/20 p-6">
+            <Card className="glass-effect border-white/20 p-6 card-squircle-lg">
               <CardContent className="text-white">
                 <h3 className="text-xl font-bold mb-3 flex items-center">
                   <i className="fas fa-question-circle mr-3 text-accent"></i>
@@ -722,7 +722,7 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="glass-effect border-white/20 p-6">
+            <Card className="glass-effect border-white/20 p-6 card-squircle-lg">
               <CardContent className="text-white">
                 <h3 className="text-xl font-bold mb-3 flex items-center">
                   <i className="fas fa-question-circle mr-3 text-accent"></i>
