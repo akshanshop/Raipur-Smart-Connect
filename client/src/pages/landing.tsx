@@ -39,32 +39,32 @@ export default function Landing() {
             <div className="hidden md:flex items-center space-x-8">
               <motion.a 
                 href="#features" 
-                className="text-white hover:text-accent transition-colors magnetic-button"
+                className="text-white hover:text-accent transition-colors magnetic-button px-4 py-2 bg-white/10 hover:bg-white/20 squircle-md"
                 whileHover={{ y: -2, scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >Features</motion.a>
               <motion.a 
                 href="#how-it-works" 
-                className="text-white hover:text-accent transition-colors magnetic-button"
+                className="text-white hover:text-accent transition-colors magnetic-button px-4 py-2 bg-white/10 hover:bg-white/20 squircle-md"
                 whileHover={{ y: -2, scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >How It Works</motion.a>
               <motion.a 
                 href="#stats" 
-                className="text-white hover:text-accent transition-colors magnetic-button"
+                className="text-white hover:text-accent transition-colors magnetic-button px-4 py-2 bg-white/10 hover:bg-white/20 squircle-md"
                 whileHover={{ y: -2, scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >Impact</motion.a>
               <motion.a 
                 href="#pricing" 
-                className="text-white hover:text-accent transition-colors magnetic-button"
+                className="text-white hover:text-accent transition-colors magnetic-button px-4 py-2 bg-white/10 hover:bg-white/20 squircle-md"
                 whileHover={{ y: -2, scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >Pricing</motion.a>
               <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
                 <Button 
                   onClick={() => window.location.href = '/api/login'}
-                  className="modern-button magnetic-button ripple bg-white text-primary hover:bg-gray-100 px-6 py-2"
+                  className="modern-button magnetic-button ripple bg-white text-primary hover:bg-gray-100 px-6 py-2 btn-squircle"
                   data-testid="button-login"
                 >
                   <i className="fas fa-sign-in-alt mr-2"></i>
