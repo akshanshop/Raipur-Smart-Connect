@@ -77,7 +77,7 @@ export default function Landing() {
       </motion.nav>
 
       {/* Hero Section */}
-      <section className="hero-enhanced min-h-screen flex items-center pattern-overlay">
+      <section className="hero-enhanced min-h-screen flex items-center pattern-overlay pb-24">
         {/* Floating Particles */}
         <div className="floating-particles">
           <div className="particle particle-1"></div>
