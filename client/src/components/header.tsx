@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 export default function Header() {
   const { user } = useAuth();
   const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const { data: notifications = [] } = useQuery({
     queryKey: ["/api/notifications"],
@@ -66,6 +67,15 @@ export default function Header() {
                 Maps
               </a>
             </nav>
+
+            {/* Mobile menu button */}
+            <button
+              className="md:hidden p-2 rounded-squircle-xs text-foreground hover:text-primary transition-colors"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              data-testid="button-mobile-menu"
+            >
+              <i className={`fas ${isMobileMenuOpen ? 'fa-times' : 'fa-bars'} text-xl`}></i>
+            </button>
           </div>
           
           <div className="flex items-center space-x-4">
@@ -116,13 +126,80 @@ export default function Header() {
                 size="sm"
                 onClick={() => window.location.href = '/api/logout'}
                 data-testid="button-logout"
-                className="rounded-squircle-xs hover:bg-destructive/10 hover:text-destructive transition-all duration-300"
+                className="rounded-squircle-xs hover:bg-destructive/10 hover:text-destructive transition-all duration-300 px-3 py-2"
+                title="Sign out of your account"
               >
-                <i className="fas fa-sign-out-alt text-lg"></i>
+                <i className="fas fa-sign-out-alt mr-2"></i>
+                <span className="hidden sm:inline">Logout</span>
               </Button>
             </div>
           </div>
         </div>
+
+        {/* Mobile Navigation Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-border/50 bg-background/95 backdrop-blur-sm">
+            <div className="px-4 py-6 space-y-4">
+              <a 
+                href="/" 
+                className="block text-foreground hover:text-primary font-medium transition-colors py-2"
+                data-testid="mobile-link-dashboard"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <i className="fas fa-tachometer-alt mr-3"></i>
+                Dashboard
+              </a>
+              <a 
+                href="#chatbot" 
+                className="block text-foreground hover:text-primary font-medium transition-colors py-2"
+                data-testid="mobile-link-chatbot"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <i className="fas fa-robot mr-3"></i>
+                Ask AI
+              </a>
+              <a 
+                href="/complaints" 
+                className="block text-foreground hover:text-primary font-medium transition-colors py-2"
+                data-testid="mobile-link-complaints"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <i className="fas fa-file-alt mr-3"></i>
+                Complaints
+              </a>
+              <a 
+                href="/community" 
+                className="block text-foreground hover:text-primary font-medium transition-colors py-2"
+                data-testid="mobile-link-community"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <i className="fas fa-users mr-3"></i>
+                Community
+              </a>
+              <a 
+                href="#maps" 
+                className="block text-foreground hover:text-primary font-medium transition-colors py-2"
+                data-testid="mobile-link-maps"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <i className="fas fa-map mr-3"></i>
+                Maps
+              </a>
+              
+              {/* Mobile Logout Button */}
+              <div className="pt-4 border-t border-border/50">
+                <Button
+                  onClick={() => window.location.href = '/api/logout'}
+                  className="w-full bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all duration-300 rounded-squircle-md"
+                  data-testid="mobile-button-logout"
+                >
+                  <i className="fas fa-sign-out-alt mr-3"></i>
+                  Sign Out
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </header>
   );
