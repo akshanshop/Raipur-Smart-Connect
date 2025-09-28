@@ -6,6 +6,14 @@ export default {
   theme: {
     extend: {
       borderRadius: {
+        'squircle-xs': '12px',
+        'squircle-sm': '16px',
+        'squircle': '20px',
+        'squircle-md': '24px',
+        'squircle-lg': '28px',
+        'squircle-xl': '32px',
+        'squircle-2xl': '40px',
+        'squircle-3xl': '48px',
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
