@@ -181,40 +181,8 @@ export default function Landing() {
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 1.2, duration: 0.8 }}
               >
-                <p className="text-white/80 text-sm mb-4 text-center">Sign in with your preferred method:</p>
-                <div className="flex flex-wrap justify-center gap-3">
-                  <motion.div 
-                    whileHover={{ scale: 1.1, y: -2 }} 
-                    whileTap={{ scale: 0.95 }}
-                    className="group"
-                  >
-                    <Button 
-                      onClick={() => window.location.href = '/api/auth/google'}
-                      variant="outline"
-                      size="sm"
-                      className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
-                      data-testid="button-login-google"
-                    >
-                      <i className="fab fa-google mr-2"></i>
-                      Google
-                    </Button>
-                  </motion.div>
-                  <motion.div 
-                    whileHover={{ scale: 1.1, y: -2 }} 
-                    whileTap={{ scale: 0.95 }}
-                    className="group"
-                  >
-                    <Button 
-                      onClick={() => window.location.href = '/api/auth/github'}
-                      variant="outline"
-                      size="sm"
-                      className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
-                      data-testid="button-login-github"
-                    >
-                      <i className="fab fa-github mr-2"></i>
-                      GitHub
-                    </Button>
-                  </motion.div>
+                <p className="text-white/80 text-sm mb-4 text-center">Sign in with Google, GitHub, or your preferred method:</p>
+                <div className="flex justify-center">
                   <motion.div 
                     whileHover={{ scale: 1.1, y: -2 }} 
                     whileTap={{ scale: 0.95 }}
@@ -223,12 +191,12 @@ export default function Landing() {
                     <Button 
                       onClick={() => window.location.href = '/api/login'}
                       variant="outline"
-                      size="sm"
-                      className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
-                      data-testid="button-login-replit"
+                      size="lg"
+                      className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-8 py-3 btn-squircle transition-all duration-300 group-hover:shadow-lg"
+                      data-testid="button-login"
                     >
-                      <i className="fas fa-laptop-code mr-2"></i>
-                      Replit
+                      <i className="fas fa-sign-in-alt mr-3"></i>
+                      Sign In
                     </Button>
                   </motion.div>
                 </div>
