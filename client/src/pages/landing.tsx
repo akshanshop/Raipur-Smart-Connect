@@ -75,7 +75,7 @@ export default function Landing() {
                   Sign In
                 </Button>
                 <div className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/10 backdrop-blur-sm rounded-lg p-2 text-sm text-white/80 whitespace-nowrap">
-                  Google • GitHub • X • Apple • Email
+                  Replit • Google • GitHub
                 </div>
               </motion.div>
             </div>
@@ -225,30 +225,14 @@ export default function Landing() {
                     className="group"
                   >
                     <Button 
-                      onClick={() => window.location.href = '/api/auth/twitter'}
+                      onClick={() => window.location.href = '/api/login'}
                       variant="outline"
                       size="sm"
                       className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
-                      data-testid="button-login-twitter"
+                      data-testid="button-login-replit"
                     >
-                      <i className="fab fa-x-twitter mr-2"></i>
-                      X
-                    </Button>
-                  </motion.div>
-                  <motion.div 
-                    whileHover={{ scale: 1.1, y: -2 }} 
-                    whileTap={{ scale: 0.95 }}
-                    className="group"
-                  >
-                    <Button 
-                      onClick={() => window.location.href = '/api/auth/facebook'}
-                      variant="outline"
-                      size="sm"
-                      className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
-                      data-testid="button-login-facebook"
-                    >
-                      <i className="fab fa-facebook mr-2"></i>
-                      Facebook
+                      <i className="fas fa-code mr-2"></i>
+                      Replit
                     </Button>
                   </motion.div>
                 </div>

@@ -7,8 +7,6 @@ import { storage } from "./storage";
 // Import OAuth strategies using ES module imports
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Strategy as GitHubStrategy } from "passport-github2";
-import { Strategy as TwitterStrategy } from "passport-twitter";
-import { Strategy as FacebookStrategy } from "passport-facebook";
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
@@ -70,38 +68,6 @@ export async function setupOAuth(app: Express) {
     }));
   }
 
-  // Twitter OAuth Strategy
-  if (process.env.TWITTER_CONSUMER_KEY && process.env.TWITTER_CONSUMER_SECRET) {
-    passport.use(new TwitterStrategy({
-      consumerKey: process.env.TWITTER_CONSUMER_KEY,
-      consumerSecret: process.env.TWITTER_CONSUMER_SECRET,
-      callbackURL: "/api/auth/twitter/callback"
-    }, async (token: string, tokenSecret: string, profile: any, done: any) => {
-      try {
-        const user = await handleOAuthUser(profile, 'twitter');
-        return done(null, user);
-      } catch (error) {
-        return done(error, null);
-      }
-    }));
-  }
-
-  // Facebook OAuth Strategy
-  if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
-    passport.use(new FacebookStrategy({
-      clientID: process.env.FACEBOOK_APP_ID,
-      clientSecret: process.env.FACEBOOK_APP_SECRET,
-      callbackURL: "/api/auth/facebook/callback",
-      profileFields: ['id', 'displayName', 'photos', 'email', 'first_name', 'last_name']
-    }, async (accessToken: string, refreshToken: string, profile: any, done: any) => {
-      try {
-        const user = await handleOAuthUser(profile, 'facebook');
-        return done(null, user);
-      } catch (error) {
-        return done(error, null);
-      }
-    }));
-  }
 
   passport.serializeUser((user: any, cb) => cb(null, user));
   passport.deserializeUser((user: any, cb) => cb(null, user));
@@ -161,19 +127,6 @@ function setupOAuthRoutes(app: Express) {
     (req, res) => res.redirect('/')
   );
 
-  // Twitter OAuth
-  app.get('/api/auth/twitter', passport.authenticate('twitter'));
-  app.get('/api/auth/twitter/callback', 
-    passport.authenticate('twitter', { failureRedirect: '/login?error=twitter_failed' }),
-    (req, res) => res.redirect('/')
-  );
-
-  // Facebook OAuth
-  app.get('/api/auth/facebook', passport.authenticate('facebook', { scope: ['email'] }));
-  app.get('/api/auth/facebook/callback', 
-    passport.authenticate('facebook', { failureRedirect: '/login?error=facebook_failed' }),
-    (req, res) => res.redirect('/')
-  );
 
   // Logout route
   app.get('/api/auth/logout', (req, res) => {
