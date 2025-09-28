@@ -64,7 +64,6 @@ export default function Landing() {
               <motion.div 
                 whileHover={{ scale: 1.1 }} 
                 whileTap={{ scale: 0.95 }}
-                className="relative group"
               >
                 <Button 
                   onClick={() => window.location.href = '/api/login'}
@@ -74,9 +73,6 @@ export default function Landing() {
                   <i className="fas fa-sign-in-alt mr-2"></i>
                   Sign In
                 </Button>
-                <div className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/10 backdrop-blur-sm rounded-lg p-2 text-sm text-white/80 whitespace-nowrap">
-                  Replit • Google • GitHub
-                </div>
               </motion.div>
             </div>
           </div>
@@ -231,7 +227,7 @@ export default function Landing() {
                       className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
                       data-testid="button-login-replit"
                     >
-                      <i className="fas fa-code mr-2"></i>
+                      <i className="fas fa-terminal mr-2"></i>
                       Replit
                     </Button>
                   </motion.div>
