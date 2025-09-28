@@ -25,9 +25,17 @@ File handling is managed through Multer middleware with support for image and vi
 The API follows REST conventions with proper HTTP status codes and JSON responses, including pagination support for data-heavy endpoints and proper error responses with meaningful messages.
 
 ## Authentication System
-Authentication is implemented using Replit's OpenID Connect (OIDC) integration with Passport.js strategy. The system maintains user sessions using express-session with PostgreSQL session storage via connect-pg-simple.
+Authentication is implemented using independent OAuth 2.0 integration with multiple providers (Google, GitHub, Twitter, Facebook) through Passport.js strategies. The system maintains user sessions using express-session with PostgreSQL session storage via connect-pg-simple.
 
-User data is automatically synced from Replit's authentication provider, with local user profiles extended to include civic engagement metrics like contribution scores, complaint counts, and upvote tracking. Session management includes proper security configurations with HTTP-only cookies and CSRF protection.
+The database schema supports multiple OAuth providers with fields for oauthProvider and oauthId to track provider-specific user identities. User profiles include civic engagement metrics like contribution scores, complaint counts, and upvote tracking. Session management includes proper security configurations with HTTP-only cookies and CSRF protection.
+
+OAuth routes are available at:
+- `/api/auth/google` - Google OAuth authentication
+- `/api/auth/github` - GitHub OAuth authentication  
+- `/api/auth/twitter` - Twitter OAuth authentication
+- `/api/auth/facebook` - Facebook OAuth authentication
+
+Each provider requires client credentials (client ID and client secret) to be configured as environment variables.
 
 ## Database Design
 The data layer uses Drizzle ORM with PostgreSQL as the primary database, configured to work with Neon's serverless PostgreSQL offering. The database schema includes comprehensive tables for users, complaints, community issues, upvotes, comments, notifications, and chat messages.
@@ -53,8 +61,11 @@ The notification system categorizes messages by type (complaint_update, communit
 ## Database Services
 - **Neon PostgreSQL**: Serverless PostgreSQL database with connection pooling via @neondatabase/serverless driver, providing scalable and managed database hosting with WebSocket support for real-time connections
 
-## Authentication Provider
-- **Replit Authentication**: OpenID Connect integration for user authentication and profile management, providing secure login flows and user identity management with automatic profile synchronization
+## Authentication Providers
+- **Google OAuth 2.0**: OAuth integration for Google account authentication with profile and email access
+- **GitHub OAuth 2.0**: OAuth integration for GitHub account authentication with user profile access
+- **Twitter OAuth 1.0a**: OAuth integration for Twitter account authentication with user profile access
+- **Facebook OAuth 2.0**: OAuth integration for Facebook account authentication with profile and email access
 
 ## AI Services
 - **OpenAI API**: GPT-5 model integration for multilingual chatbot functionality, natural language processing, and automated content generation including complaint analysis and response generation
