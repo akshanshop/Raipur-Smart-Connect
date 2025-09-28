@@ -27,10 +27,6 @@ localPort = 38733
 externalPort = 3000
 
 [[ports]]
-localPort = 41625
-externalPort = 4200
-
-[[ports]]
 localPort = 44813
 externalPort = 3003
 
@@ -39,6 +35,7 @@ PORT = "5000"
 
 [agent]
 integrations = ["javascript_openai:1.0.0", "javascript_database:1.0.0", "javascript_log_in_with_replit:1.0.0"]
+expertMode = true
 
 [workflows]
 runButton = "Project"
