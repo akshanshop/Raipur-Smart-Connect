@@ -43,7 +43,7 @@ export default function Dashboard() {
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
-  const [searchFilters, setSearchFilters] = useState(null);
+  const [searchFilters, setSearchFilters] = useState<any>(null);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -60,22 +60,22 @@ export default function Dashboard() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: userStats } = useQuery({
+  const { data: userStats = {} } = useQuery<any>({
     queryKey: ["/api/stats/user"],
     retry: false,
   });
 
-  const { data: cityStats } = useQuery({
+  const { data: cityStats = {} } = useQuery<any>({
     queryKey: ["/api/stats/city"],
     retry: false,
   });
 
-  const { data: notifications = [] } = useQuery({
+  const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ["/api/notifications"],
     retry: false,
   });
 
-  const { data: recentComplaints = [] } = useQuery({
+  const { data: recentComplaints = [] } = useQuery<Complaint[]>({
     queryKey: ["/api/complaints"],
     retry: false,
   });

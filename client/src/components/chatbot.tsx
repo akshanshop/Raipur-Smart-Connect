@@ -31,7 +31,7 @@ export default function Chatbot() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  const { data: chatHistory } = useQuery({
+  const { data: chatHistory = [] } = useQuery<any[]>({
     queryKey: ["/api/chat/history"],
     retry: false,
   });

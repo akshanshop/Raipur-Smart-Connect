@@ -29,7 +29,7 @@ export default function CommunityFeed() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: issues = [], isLoading } = useQuery({
+  const { data: issues = [], isLoading } = useQuery<CommunityIssue[]>({
     queryKey: ["/api/community-issues"],
     retry: false,
   });

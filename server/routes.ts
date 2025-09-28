@@ -330,6 +330,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Advanced analytics endpoints
+  app.get('/api/analytics/complaints', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const includePersonal = req.query.personal === 'true';
+      const analytics = await storage.getComplaintAnalytics(includePersonal ? userId : undefined);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching complaint analytics:", error);
+      res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
+  // Bulk operations endpoint
+  app.post('/api/complaints/bulk-update', isAuthenticated, async (req: any, res) => {
+    try {
+      const { ids, updates } = req.body;
+      
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "Invalid complaint IDs" });
+      }
+      
+      await storage.updateMultipleComplaints(ids, updates);
+      
+      res.json({ message: `Updated ${ids.length} complaints successfully` });
+    } catch (error) {
+      console.error("Error bulk updating complaints:", error);
+      res.status(500).json({ message: "Failed to update complaints" });
+    }
+  });
+
+  // Advanced filtering endpoint
+  app.get('/api/complaints/search', isAuthenticated, async (req: any, res) => {
+    try {
+      const filters = {
+        category: req.query.category as string,
+        priority: req.query.priority as string,
+        status: req.query.status as string,
+        dateFrom: req.query.dateFrom ? new Date(req.query.dateFrom as string) : undefined,
+        dateTo: req.query.dateTo ? new Date(req.query.dateTo as string) : undefined,
+        location: req.query.location as string,
+      };
+      
+      const complaints = await storage.getComplaintsByFilters(filters);
+      res.json(complaints);
+    } catch (error) {
+      console.error("Error searching complaints:", error);
+      res.status(500).json({ message: "Failed to search complaints" });
+    }
+  });
+
+  // Priority escalation endpoint
+  app.post('/api/complaints/:id/escalate', isAuthenticated, async (req: any, res) => {
+    try {
+      const { priority, reason } = req.body;
+      
+      if (!priority || !reason) {
+        return res.status(400).json({ message: "Priority and reason are required" });
+      }
+      
+      await storage.escalateComplaint(req.params.id, priority, reason);
+      res.json({ message: "Complaint escalated successfully" });
+    } catch (error) {
+      console.error("Error escalating complaint:", error);
+      res.status(500).json({ message: "Failed to escalate complaint" });
+    }
+  });
+
+  // Enhanced chatbot with more civic services
+  app.post('/api/chat/civic-services', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { service, parameters } = req.body;
+      
+      let response;
+      
+      switch (service) {
+        case 'bill-inquiry':
+          response = {
+            message: `Your current water bill is ₹${Math.floor(Math.random() * 1000) + 200}. Due date: ${new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toLocaleDateString()}`,
+            type: 'info',
+            actions: [{ label: 'Pay Now', action: 'payment', data: { amount: 450 } }]
+          };
+          break;
+        case 'bus-schedule':
+          response = {
+            message: 'Next buses from your location: Bus #42 at 2:15 PM, Bus #18 at 2:30 PM, Bus #7 at 2:45 PM',
+            type: 'info',
+            actions: [{ label: 'Set Reminder', action: 'reminder', data: { time: '2:15 PM' } }]
+          };
+          break;
+        case 'document-status':
+          response = {
+            message: 'Your birth certificate application is under review. Expected completion: 3-5 business days.',
+            type: 'info'
+          };
+          break;
+        default:
+          response = await processChatMessage(parameters.message || 'Hello', parameters.language || 'en', userId);
+      }
+      
+      await storage.saveChatMessage({
+        userId,
+        message: `Service: ${service}`,
+        response: response.message,
+        language: parameters.language || 'en'
+      });
+      
+      res.json(response);
+    } catch (error) {
+      console.error("Civic services error:", error);
+      res.status(500).json({ message: "Failed to process civic service request" });
+    }
+  });
+
   // Serve uploaded files
   app.use('/uploads', express.static('uploads'));
 
