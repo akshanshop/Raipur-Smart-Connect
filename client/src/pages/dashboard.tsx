@@ -19,7 +19,8 @@ import DataAnalytics from "@/components/data-analytics";
 import SocialFeatures from "@/components/social-features";
 import ComplaintForm from "@/components/complaint-form";
 import CommunityFeed from "@/components/community-feed";
-import Chatbot from "@/components/chatbot";
+import EnhancedChatbot from "@/components/enhanced-chatbot";
+import AnalyticsDashboard from "@/components/analytics-dashboard";
 
 interface Notification {
   id: string;
@@ -540,9 +541,9 @@ export default function Dashboard() {
                     <RealTimeNotifications />
                   </TabsContent>
 
-                  {/* Data Analytics Tab */}
+                  {/* Advanced Analytics Tab */}
                   <TabsContent value="analytics" className="space-y-6">
-                    <DataAnalytics />
+                    <AnalyticsDashboard />
                   </TabsContent>
 
                   {/* Social Features Tab */}
@@ -558,9 +559,6 @@ export default function Dashboard() {
                   {/* Complaint Form Tab */}
                   <TabsContent value="complaint" className="space-y-6">
                     <ComplaintForm />
-                    <div className="mt-6">
-                      <Chatbot />
-                    </div>
                   </TabsContent>
 
                   {/* Community Feed Tab */}
@@ -573,6 +571,9 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+
+      {/* Enhanced Floating Chatbot */}
+      <EnhancedChatbot />
     </div>
   );
 }
