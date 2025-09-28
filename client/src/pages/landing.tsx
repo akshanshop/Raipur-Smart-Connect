@@ -193,7 +193,7 @@ export default function Landing() {
                     className="group"
                   >
                     <Button 
-                      onClick={() => window.location.href = '/api/login'}
+                      onClick={() => window.location.href = '/api/auth/google'}
                       variant="outline"
                       size="sm"
                       className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
@@ -209,7 +209,7 @@ export default function Landing() {
                     className="group"
                   >
                     <Button 
-                      onClick={() => window.location.href = '/api/login'}
+                      onClick={() => window.location.href = '/api/auth/github'}
                       variant="outline"
                       size="sm"
                       className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
@@ -225,7 +225,7 @@ export default function Landing() {
                     className="group"
                   >
                     <Button 
-                      onClick={() => window.location.href = '/api/login'}
+                      onClick={() => window.location.href = '/api/auth/twitter'}
                       variant="outline"
                       size="sm"
                       className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
@@ -241,30 +241,14 @@ export default function Landing() {
                     className="group"
                   >
                     <Button 
-                      onClick={() => window.location.href = '/api/login'}
+                      onClick={() => window.location.href = '/api/auth/facebook'}
                       variant="outline"
                       size="sm"
                       className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
-                      data-testid="button-login-apple"
+                      data-testid="button-login-facebook"
                     >
-                      <i className="fab fa-apple mr-2"></i>
-                      Apple
-                    </Button>
-                  </motion.div>
-                  <motion.div 
-                    whileHover={{ scale: 1.1, y: -2 }} 
-                    whileTap={{ scale: 0.95 }}
-                    className="group"
-                  >
-                    <Button 
-                      onClick={() => window.location.href = '/api/login'}
-                      variant="outline"
-                      size="sm"
-                      className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
-                      data-testid="button-login-email"
-                    >
-                      <i className="fas fa-envelope mr-2"></i>
-                      Email
+                      <i className="fab fa-facebook mr-2"></i>
+                      Facebook
                     </Button>
                   </motion.div>
                 </div>
