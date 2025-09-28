@@ -4,7 +4,7 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import path from "path";
 import { storage } from "./storage";
-import { setupOAuth, isAuthenticated } from "./oauthAuth";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import { processChatMessage, generateComplaintSummary } from "./openai";
 import { insertComplaintSchema, insertCommunityIssueSchema, insertCommentSchema, insertChatMessageSchema } from "@shared/schema";
 
@@ -33,12 +33,12 @@ const upload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
-  await setupOAuth(app);
+  await setupAuth(app);
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -50,7 +50,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Chat routes
   app.post('/api/chat', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const { message, language = 'en' } = req.body;
 
       if (!message) {
@@ -76,7 +76,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/chat/history', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const history = await storage.getUserChatHistory(userId);
       res.json(history);
     } catch (error) {
@@ -88,7 +88,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Complaint routes
   app.post('/api/complaints', isAuthenticated, upload.array('media'), async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const complaintData = insertComplaintSchema.parse(req.body);
 
       // Handle uploaded files
@@ -129,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/complaints', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const complaints = await storage.getUserComplaints(userId);
       res.json(complaints);
     } catch (error) {
@@ -187,7 +187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Community issue routes
   app.post('/api/community-issues', isAuthenticated, upload.array('media'), async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const issueData = insertCommunityIssueSchema.parse(req.body);
 
       const mediaUrls = req.files ? req.files.map((file: any) => `/uploads/${file.filename}`) : [];
@@ -218,7 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Upvote routes
   app.post('/api/upvote', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const { complaintId, communityIssueId } = req.body;
 
       const hasUpvoted = await storage.hasUserUpvoted(userId, complaintId, communityIssueId);
@@ -238,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/upvote/status', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const { complaintId, communityIssueId } = req.query;
 
       const hasUpvoted = await storage.hasUserUpvoted(
@@ -257,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Comment routes
   app.post('/api/comments', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const commentData = insertCommentSchema.parse(req.body);
 
       const comment = await storage.addComment({
@@ -289,7 +289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Notification routes
   app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const notifications = await storage.getUserNotifications(userId);
       res.json(notifications);
     } catch (error) {
@@ -311,7 +311,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats routes
   app.get('/api/stats/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const stats = await storage.getUserStats(userId);
       res.json(stats);
     } catch (error) {
@@ -333,7 +333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Advanced analytics endpoints
   app.get('/api/analytics/complaints', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const includePersonal = req.query.personal === 'true';
       const analytics = await storage.getComplaintAnalytics(includePersonal ? userId : undefined);
       res.json(analytics);
@@ -401,7 +401,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Enhanced chatbot with more civic services
   app.post('/api/chat/civic-services', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user.claims.sub;
       const { service, parameters } = req.body;
       
       let response;
