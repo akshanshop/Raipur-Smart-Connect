@@ -34,6 +34,8 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  oauthProvider: varchar("oauth_provider"), // google, github, twitter, facebook
+  oauthId: varchar("oauth_id"), // provider-specific user ID
   contributionScore: integer("contribution_score").default(0),
   complaintsCount: integer("complaints_count").default(0),
   upvotesCount: integer("upvotes_count").default(0),

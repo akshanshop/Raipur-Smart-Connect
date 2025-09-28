@@ -27,6 +27,9 @@ import { eq, desc, and, count, sql } from "drizzle-orm";
 export interface IStorage {
   // User operations (IMPORTANT: mandatory for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByOAuth(provider: string, oauthId: string): Promise<User | undefined>;
+  updateUser(id: string, updates: Partial<User>): Promise<void>;
   upsertUser(user: UpsertUser): Promise<User>;
   
   // Complaint operations
@@ -111,12 +114,31 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async getUserByOAuth(provider: string, oauthId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(
+      and(eq(users.oauthProvider, provider), eq(users.oauthId, oauthId))
+    );
+    return user;
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<void> {
+    await db
+      .update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, id));
+  }
+
   async upsertUser(userData: UpsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
       .values(userData)
       .onConflictDoUpdate({
-        target: users.id,
+        target: users.email,
         set: {
           ...userData,
           updatedAt: new Date(),
