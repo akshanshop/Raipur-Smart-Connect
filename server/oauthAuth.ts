@@ -4,12 +4,11 @@ import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-// Import OAuth strategies with require to avoid TypeScript issues
-
-const GoogleStrategy = require("passport-google-oauth20").Strategy;
-const GitHubStrategy = require("passport-github2").Strategy;
-const TwitterStrategy = require("passport-twitter").Strategy;
-const FacebookStrategy = require("passport-facebook").Strategy;
+// Import OAuth strategies using ES module imports
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { Strategy as GitHubStrategy } from "passport-github2";
+import { Strategy as TwitterStrategy } from "passport-twitter";
+import { Strategy as FacebookStrategy } from "passport-facebook";
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week

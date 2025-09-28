@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
 // the newest OpenAI model is "gpt-5" which was released August 7, 2025. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
 export interface ChatbotResponse {
   message: string;
@@ -18,6 +18,19 @@ export async function processChatMessage(
   language: string = 'en',
   userId: string
 ): Promise<ChatbotResponse> {
+  if (!openai) {
+    const fallbackMessage = language === 'hi' 
+      ? "माफ करें, AI सहायक उपलब्ध नहीं है। कृपया बाद में पुनः प्रयास करें।"
+      : language === 'mr'
+      ? "माफ करा, AI सहाय्यक उपलब्ध नाही. कृपया नंतर पुन्हा प्रयत्न करा."
+      : "AI assistant is not available. Please try again later.";
+    
+    return {
+      message: fallbackMessage,
+      type: 'error'
+    };
+  }
+  
   try {
     const systemPrompt = `You are a helpful civic assistant for Raipur Smart Connect, a digital platform for civic engagement. 
 
@@ -82,6 +95,10 @@ export async function generateComplaintSummary(
   category: string,
   location: string
 ): Promise<string> {
+  if (!openai) {
+    return `${category} Issue - ${location}`;
+  }
+  
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-5",
