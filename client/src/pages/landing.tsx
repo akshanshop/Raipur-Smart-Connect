@@ -61,15 +61,22 @@ export default function Landing() {
                 whileHover={{ y: -2, scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >Pricing</motion.a>
-              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+              <motion.div 
+                whileHover={{ scale: 1.1 }} 
+                whileTap={{ scale: 0.95 }}
+                className="relative group"
+              >
                 <Button 
                   onClick={() => window.location.href = '/api/login'}
                   className="modern-button magnetic-button ripple bg-white text-primary hover:bg-gray-100 px-6 py-2 btn-squircle"
                   data-testid="button-login"
                 >
                   <i className="fas fa-sign-in-alt mr-2"></i>
-                  Login
+                  Sign In
                 </Button>
+                <div className="absolute top-full mt-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/10 backdrop-blur-sm rounded-lg p-2 text-sm text-white/80 whitespace-nowrap">
+                  Google • GitHub • X • Apple • Email
+                </div>
               </motion.div>
             </div>
           </div>
@@ -133,39 +140,134 @@ export default function Landing() {
               Join thousands of citizens using AI-powered solutions to create a smarter, more responsive city. Report issues, track progress, and build community.
             </motion.p>
             <motion.div 
-              className="flex flex-col sm:flex-row gap-6 justify-center mb-16"
+              className="flex flex-col items-center gap-8 justify-center mb-16"
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 1.0, duration: 0.8, ease: "easeOut" }}
             >
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button 
-                  onClick={() => window.location.href = '/api/login'}
-                  size="lg"
-                  className="modern-button magnetic-button ripple glow-on-hover bg-white text-primary hover:bg-gray-100 px-12 py-6 text-xl font-semibold btn-squircle-lg"
-                  data-testid="button-get-started"
-                >
-                  <motion.i 
-                    className="fas fa-rocket mr-3"
-                    animate={{ rotate: [0, 10, -10, 0] }}
-                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                  />
-                  Get Started Free
-                </Button>
+              {/* Primary action */}
+              <motion.div className="flex flex-col sm:flex-row gap-6 justify-center">
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button 
+                    onClick={() => window.location.href = '/api/login'}
+                    size="lg"
+                    className="modern-button magnetic-button ripple glow-on-hover bg-white text-primary hover:bg-gray-100 px-12 py-6 text-xl font-semibold btn-squircle-lg"
+                    data-testid="button-get-started"
+                  >
+                    <motion.i 
+                      className="fas fa-rocket mr-3"
+                      animate={{ rotate: [0, 10, -10, 0] }}
+                      transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                    />
+                    Get Started Free
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button 
+                    variant="outline"
+                    size="lg"
+                    className="modern-button magnetic-button ripple border-2 border-white bg-white/10 text-white hover:bg-white hover:text-primary px-12 py-6 text-xl font-semibold btn-squircle-lg"
+                  >
+                    <motion.i 
+                      className="fas fa-play mr-3"
+                      whileHover={{ scale: 1.2 }}
+                      transition={{ type: "spring", stiffness: 400 }}
+                    />
+                    Watch Demo
+                  </Button>
+                </motion.div>
               </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button 
-                  variant="outline"
-                  size="lg"
-                  className="modern-button magnetic-button ripple border-2 border-white bg-white/10 text-white hover:bg-white hover:text-primary px-12 py-6 text-xl font-semibold btn-squircle-lg"
-                >
-                  <motion.i 
-                    className="fas fa-play mr-3"
-                    whileHover={{ scale: 1.2 }}
-                    transition={{ type: "spring", stiffness: 400 }}
-                  />
-                  Watch Demo
-                </Button>
+
+              {/* Login options */}
+              <motion.div 
+                className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 glass-modern"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 1.2, duration: 0.8 }}
+              >
+                <p className="text-white/80 text-sm mb-4 text-center">Sign in with your preferred method:</p>
+                <div className="flex flex-wrap justify-center gap-3">
+                  <motion.div 
+                    whileHover={{ scale: 1.1, y: -2 }} 
+                    whileTap={{ scale: 0.95 }}
+                    className="group"
+                  >
+                    <Button 
+                      onClick={() => window.location.href = '/api/login'}
+                      variant="outline"
+                      size="sm"
+                      className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
+                      data-testid="button-login-google"
+                    >
+                      <i className="fab fa-google mr-2"></i>
+                      Google
+                    </Button>
+                  </motion.div>
+                  <motion.div 
+                    whileHover={{ scale: 1.1, y: -2 }} 
+                    whileTap={{ scale: 0.95 }}
+                    className="group"
+                  >
+                    <Button 
+                      onClick={() => window.location.href = '/api/login'}
+                      variant="outline"
+                      size="sm"
+                      className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
+                      data-testid="button-login-github"
+                    >
+                      <i className="fab fa-github mr-2"></i>
+                      GitHub
+                    </Button>
+                  </motion.div>
+                  <motion.div 
+                    whileHover={{ scale: 1.1, y: -2 }} 
+                    whileTap={{ scale: 0.95 }}
+                    className="group"
+                  >
+                    <Button 
+                      onClick={() => window.location.href = '/api/login'}
+                      variant="outline"
+                      size="sm"
+                      className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
+                      data-testid="button-login-twitter"
+                    >
+                      <i className="fab fa-x-twitter mr-2"></i>
+                      X
+                    </Button>
+                  </motion.div>
+                  <motion.div 
+                    whileHover={{ scale: 1.1, y: -2 }} 
+                    whileTap={{ scale: 0.95 }}
+                    className="group"
+                  >
+                    <Button 
+                      onClick={() => window.location.href = '/api/login'}
+                      variant="outline"
+                      size="sm"
+                      className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
+                      data-testid="button-login-apple"
+                    >
+                      <i className="fab fa-apple mr-2"></i>
+                      Apple
+                    </Button>
+                  </motion.div>
+                  <motion.div 
+                    whileHover={{ scale: 1.1, y: -2 }} 
+                    whileTap={{ scale: 0.95 }}
+                    className="group"
+                  >
+                    <Button 
+                      onClick={() => window.location.href = '/api/login'}
+                      variant="outline"
+                      size="sm"
+                      className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
+                      data-testid="button-login-email"
+                    >
+                      <i className="fas fa-envelope mr-2"></i>
+                      Email
+                    </Button>
+                  </motion.div>
+                </div>
               </motion.div>
             </motion.div>
             <motion.div 
@@ -425,7 +527,7 @@ export default function Landing() {
                 transition={{ type: "spring", stiffness: 200 }}
               >1</motion.div>
               <h3 className="text-2xl font-bold mb-4">Sign Up</h3>
-              <p className="opacity-90">Create your free account in seconds using social login or email verification.</p>
+              <p className="opacity-90">Create your free account instantly with Google, GitHub, X (Twitter), Apple, or email - no lengthy forms required.</p>
             </motion.div>
             <motion.div 
               className="text-center"
