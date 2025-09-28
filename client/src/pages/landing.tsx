@@ -227,7 +227,7 @@ export default function Landing() {
                       className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
                       data-testid="button-login-replit"
                     >
-                      <i className="fas fa-terminal mr-2"></i>
+                      <i className="fas fa-laptop-code mr-2"></i>
                       Replit
                     </Button>
                   </motion.div>
