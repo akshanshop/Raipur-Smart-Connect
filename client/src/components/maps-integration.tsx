@@ -1,9 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
+import { Loader } from "@googlemaps/js-api-loader";
+import type { Complaint, CommunityIssue } from "@shared/schema";
+
+/// <reference types="google.maps" />
 
 interface MapIssue {
   id: string;
@@ -11,10 +15,11 @@ interface MapIssue {
   priority: string;
   status: string;
   location: string;
-  latitude: number;
-  longitude: number;
+  latitude: string | null;
+  longitude: string | null;
   category: string;
-  upvotes: number;
+  upvotes: number | null;
+  type: 'complaint' | 'community_issue';
 }
 
 export default function MapsIntegration() {
@@ -22,6 +27,10 @@ export default function MapsIntegration() {
   const [areaFilter, setAreaFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const markersRef = useRef<google.maps.Marker[]>([]);
+  const heatmapRef = useRef<google.maps.visualization.HeatmapLayer | null>(null);
 
   const { data: complaints = [] } = useQuery({
     queryKey: ["/api/complaints/all"],
@@ -40,9 +49,31 @@ export default function MapsIntegration() {
 
   // Combine complaints and community issues for map display
   const allIssues: MapIssue[] = [
-    ...complaints.map((c: any) => ({ ...c, type: 'complaint' })),
-    ...communityIssues.map((i: any) => ({ ...i, type: 'community_issue' }))
-  ].filter((issue: any) => issue.latitude && issue.longitude);
+    ...(complaints as Complaint[]).map((c) => ({ 
+      id: c.id,
+      title: c.title,
+      priority: c.priority,
+      status: c.status,
+      location: c.location,
+      latitude: c.latitude,
+      longitude: c.longitude,
+      category: c.category,
+      upvotes: c.upvotes,
+      type: 'complaint' as const 
+    })),
+    ...(communityIssues as CommunityIssue[]).map((i) => ({ 
+      id: i.id,
+      title: i.title,
+      priority: i.priority,
+      status: i.status,
+      location: i.location,
+      latitude: i.latitude,
+      longitude: i.longitude,
+      category: i.category,
+      upvotes: i.upvotes,
+      type: 'community_issue' as const 
+    }))
+  ].filter((issue) => issue.latitude && issue.longitude);
 
   const filteredIssues = allIssues.filter((issue: MapIssue) => {
     const matchesPriority = priorityFilter === "all" || issue.priority === priorityFilter;
@@ -78,13 +109,150 @@ export default function MapsIntegration() {
     }
   };
 
-  // Simulate map initialization
+  // Initialize Google Maps
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsMapLoaded(true);
-    }, 1000);
-    return () => clearTimeout(timer);
+    initializeMap();
+    
+    // Cleanup function
+    return () => {
+      if (heatmapRef.current) {
+        heatmapRef.current.setMap(null);
+      }
+      markersRef.current.forEach(marker => marker.setMap(null));
+      markersRef.current = [];
+    };
   }, []);
+
+  // Update markers when filtered issues change or map loads
+  useEffect(() => {
+    if (mapInstanceRef.current && isMapLoaded) {
+      updateMapMarkers();
+    }
+  }, [filteredIssues, viewMode, isMapLoaded]);
+
+  const initializeMap = async () => {
+    if (!mapRef.current) return;
+
+    try {
+      const loader = new Loader({
+        apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY!,
+        version: "weekly",
+        libraries: ["visualization"],
+      });
+
+      await loader.load();
+
+      // Raipur, Chhattisgarh coordinates (21.2514, 81.6296)
+      const raipurCenter = { lat: 21.2514, lng: 81.6296 };
+
+      const map = new google.maps.Map(mapRef.current, {
+        center: raipurCenter,
+        zoom: 12,
+        mapTypeId: google.maps.MapTypeId.ROADMAP,
+        styles: [
+          {
+            featureType: "poi",
+            elementType: "labels",
+            stylers: [{ visibility: "on" }],
+          },
+        ],
+      });
+
+      mapInstanceRef.current = map;
+      setIsMapLoaded(true);
+    } catch (error) {
+      console.error("Error loading Google Maps:", error);
+    }
+  };
+
+  const updateMapMarkers = () => {
+    if (!mapInstanceRef.current) return;
+
+    // Clear existing markers
+    markersRef.current.forEach(marker => marker.setMap(null));
+    markersRef.current = [];
+
+    // Clear existing heatmap
+    if (heatmapRef.current) {
+      heatmapRef.current.setMap(null);
+      heatmapRef.current = null;
+    }
+
+    if (viewMode === "heatmap") {
+      createHeatmap();
+    } else {
+      createIndividualMarkers();
+    }
+  };
+
+  const createHeatmap = () => {
+    if (!mapInstanceRef.current) return;
+
+    const heatmapData = filteredIssues
+      .filter(issue => issue.latitude && issue.longitude)
+      .map(issue => ({
+        location: new google.maps.LatLng(
+          parseFloat(issue.latitude!),
+          parseFloat(issue.longitude!)
+        ),
+        weight: getHeatmapWeight(issue.priority),
+      }));
+
+    if (heatmapData.length > 0) {
+      heatmapRef.current = new google.maps.visualization.HeatmapLayer({
+        data: heatmapData,
+        map: mapInstanceRef.current,
+        radius: 30,
+        opacity: 0.8,
+      });
+    }
+  };
+
+  const createIndividualMarkers = () => {
+    if (!mapInstanceRef.current) return;
+
+    filteredIssues
+      .filter(issue => issue.latitude && issue.longitude)
+      .forEach(issue => {
+        const position = {
+          lat: parseFloat(issue.latitude!),
+          lng: parseFloat(issue.longitude!),
+        };
+
+        const marker = new google.maps.Marker({
+          position,
+          map: mapInstanceRef.current!,
+          title: issue.title,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: getMarkerColor(issue.priority),
+            fillOpacity: 0.8,
+            strokeColor: "#ffffff",
+            strokeWeight: 2,
+            scale: getMarkerSize(issue.priority) / 2,
+          },
+        });
+
+        // Add click listener for marker details
+        marker.addListener("click", () => handleMarkerClick(issue.id));
+        markersRef.current.push(marker);
+      });
+  };
+
+  const getHeatmapWeight = (priority: string): number => {
+    switch (priority) {
+      case 'urgent':
+        return 4;
+      case 'high':
+        return 3;
+      case 'medium':
+        return 2;
+      case 'low':
+        return 1;
+      default:
+        return 1;
+    }
+  };
 
   const handleMarkerClick = (issueId: string) => {
     // TODO: Show issue details popup
@@ -92,21 +260,44 @@ export default function MapsIntegration() {
   };
 
   const handleZoomIn = () => {
-    // TODO: Implement zoom functionality
-    console.log('Zooming in...');
+    if (mapInstanceRef.current) {
+      const currentZoom = mapInstanceRef.current.getZoom() || 12;
+      mapInstanceRef.current.setZoom(currentZoom + 1);
+    }
   };
 
   const handleZoomOut = () => {
-    // TODO: Implement zoom functionality
-    console.log('Zooming out...');
+    if (mapInstanceRef.current) {
+      const currentZoom = mapInstanceRef.current.getZoom() || 12;
+      mapInstanceRef.current.setZoom(Math.max(currentZoom - 1, 1));
+    }
   };
 
   const handleCurrentLocation = () => {
-    if (navigator.geolocation) {
+    if (navigator.geolocation && mapInstanceRef.current) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          // TODO: Center map on user location
-          console.log('User location:', position.coords);
+          const userLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          mapInstanceRef.current!.setCenter(userLocation);
+          mapInstanceRef.current!.setZoom(15);
+
+          // Add a marker for user's current location
+          new google.maps.Marker({
+            position: userLocation,
+            map: mapInstanceRef.current!,
+            title: "Your Location",
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              fillColor: "#4285F4",
+              fillOpacity: 1,
+              strokeColor: "#ffffff",
+              strokeWeight: 3,
+              scale: 8,
+            },
+          });
         },
         (error) => {
           console.error('Error getting location:', error);
@@ -177,87 +368,25 @@ export default function MapsIntegration() {
           
           {/* Map Container */}
           <div className="h-96 bg-muted rounded-lg relative overflow-hidden" data-testid="map-container">
-            {!isMapLoaded ? (
-              <div className="absolute inset-0 flex items-center justify-center">
+            {!isMapLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center z-10">
                 <div className="text-center">
                   <i className="fas fa-spinner fa-spin text-2xl text-muted-foreground mb-2"></i>
-                  <p className="text-muted-foreground">Loading map...</p>
+                  <p className="text-muted-foreground">Loading Raipur map...</p>
                 </div>
               </div>
-            ) : (
+            )}
+            
+            {/* Google Maps Container */}
+            <div 
+              ref={mapRef}
+              className="w-full h-full rounded-lg"
+              style={{ opacity: isMapLoaded ? 1 : 0 }}
+            />
+
+            {/* Map Controls */}
+            {isMapLoaded && (
               <>
-                {/* Simulated Map Background */}
-                <div 
-                  className="absolute inset-0 bg-cover bg-center opacity-70"
-                  style={{
-                    backgroundImage: "url('https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&h=600')",
-                  }}
-                />
-                
-                {/* Map Overlay for Heatmap Mode */}
-                {viewMode === "heatmap" && (
-                  <div className="absolute inset-0">
-                    {/* Heatmap visualization would go here */}
-                    <div className="absolute top-1/4 left-1/3 w-32 h-32 bg-red-500 rounded-full opacity-30 blur-xl" />
-                    <div className="absolute top-1/2 right-1/3 w-24 h-24 bg-orange-500 rounded-full opacity-25 blur-lg" />
-                    <div className="absolute bottom-1/3 left-1/2 w-20 h-20 bg-yellow-500 rounded-full opacity-20 blur-md" />
-                  </div>
-                )}
-
-                {/* Individual Issue Markers */}
-                {viewMode === "individual" && (
-                  <div className="absolute inset-0">
-                    {filteredIssues.slice(0, 10).map((issue, index) => {
-                      // Simulate marker positions
-                      const positions = [
-                        { top: '25%', left: '30%' },
-                        { top: '40%', left: '60%' },
-                        { top: '60%', left: '20%' },
-                        { top: '30%', left: '70%' },
-                        { top: '70%', left: '50%' },
-                        { top: '20%', left: '80%' },
-                        { top: '80%', left: '25%' },
-                        { top: '45%', left: '85%' },
-                        { top: '15%', left: '40%' },
-                        { top: '75%', left: '75%' },
-                      ];
-                      const position = positions[index % positions.length];
-
-                      return (
-                        <div
-                          key={issue.id}
-                          className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer hover:scale-110 transition-transform"
-                          style={{ top: position.top, left: position.left }}
-                          onClick={() => handleMarkerClick(issue.id)}
-                          data-testid={`map-marker-${issue.id}`}
-                        >
-                          <div
-                            className="rounded-full flex items-center justify-center shadow-lg text-white font-bold text-xs"
-                            style={{
-                              backgroundColor: getMarkerColor(issue.priority),
-                              width: getMarkerSize(issue.priority),
-                              height: getMarkerSize(issue.priority),
-                            }}
-                          >
-                            {issue.priority === 'high' || issue.priority === 'urgent' ? (
-                              <i className="fas fa-exclamation"></i>
-                            ) : issue.priority === 'medium' ? (
-                              <i className="fas fa-info"></i>
-                            ) : (
-                              <i className="fas fa-check"></i>
-                            )}
-                          </div>
-                          {/* Tooltip on hover */}
-                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 hover:opacity-100 transition-opacity bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap pointer-events-none">
-                            {issue.title}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Map Controls */}
                 <div className="absolute top-4 right-4 space-y-2">
                   <Button
                     variant="secondary"
@@ -323,37 +452,37 @@ export default function MapsIntegration() {
           <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-lg font-bold text-destructive" data-testid="text-map-high-priority">
-                {cityStats?.highPriorityCount || 0}
+                {allIssues.filter(issue => issue.priority === 'high' || issue.priority === 'urgent').length}
               </div>
               <div className="text-xs text-muted-foreground">High Priority</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-bold text-accent">
-                {cityStats?.mediumPriorityCount || 0}
+                {allIssues.filter(issue => issue.priority === 'medium').length}
               </div>
               <div className="text-xs text-muted-foreground">Medium Priority</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-bold text-secondary">
-                {cityStats?.lowPriorityCount || 0}
+                {allIssues.filter(issue => issue.priority === 'low').length}
               </div>
               <div className="text-xs text-muted-foreground">Low Priority</div>
             </div>
             <div className="text-center">
               <div className="text-lg font-bold text-primary">
-                {cityStats?.resolvedComplaints || 0}
+                {allIssues.filter(issue => issue.status === 'resolved').length}
               </div>
               <div className="text-xs text-muted-foreground">Resolved</div>
             </div>
           </div>
 
           {/* Integration Notice */}
-          <div className="mt-4 p-3 bg-muted rounded-lg">
+          <div className="mt-4 p-3 bg-primary/10 rounded-lg border border-primary/20">
             <div className="flex items-center space-x-2">
-              <i className="fas fa-info-circle text-primary"></i>
-              <span className="text-sm text-muted-foreground">
-                This map will integrate with Google Maps API for real location data and interactive features.
-                Current view shows simulated data for demonstration.
+              <i className="fas fa-map-marked-alt text-primary"></i>
+              <span className="text-sm text-foreground">
+                <strong>Real-time Google Maps Integration Active:</strong> Showing live street data for Raipur, Chhattisgarh (492001).
+                Click markers to view issue details, switch to heatmap view, or use your current location.
               </span>
             </div>
           </div>
