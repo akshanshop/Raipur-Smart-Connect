@@ -129,7 +129,7 @@ export default function Home() {
                 <h3 className="text-2xl font-bold text-gradient mb-6 text-center">Quick Actions</h3>
                 <div className="space-y-4">
                   <Button 
-                    className="w-full h-16 modern-button bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-between rounded-xl text-lg font-semibold"
+                    className="w-full h-16 modern-button bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-between rounded-[2rem] text-lg font-semibold"
                     onClick={() => {
                       const element = document.querySelector('#complaint-form') as HTMLElement;
                       if (element) {
@@ -139,7 +139,7 @@ export default function Home() {
                     data-testid="button-new-complaint"
                   >
                     <span className="flex items-center">
-                      <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center mr-4">
+                      <div className="w-12 h-12 bg-white bg-opacity-20 rounded-[1.5rem] flex items-center justify-center mr-4">
                         <i className="fas fa-plus-circle text-xl"></i>
                       </div>
                       Register New Complaint
@@ -149,12 +149,12 @@ export default function Home() {
                   
                   <Button 
                     variant="secondary"
-                    className="w-full h-16 modern-button flex items-center justify-between rounded-xl text-lg font-semibold"
+                    className="w-full h-16 modern-button flex items-center justify-between rounded-[2rem] text-lg font-semibold"
                     onClick={() => window.location.href = '/complaints'}
                     data-testid="button-check-status"
                   >
                     <span className="flex items-center">
-                      <div className="w-12 h-12 bg-primary bg-opacity-20 rounded-xl flex items-center justify-center mr-4">
+                      <div className="w-12 h-12 bg-primary bg-opacity-20 rounded-[1.5rem] flex items-center justify-center mr-4">
                         <i className="fas fa-search text-xl text-primary"></i>
                       </div>
                       Check Complaint Status
@@ -163,11 +163,11 @@ export default function Home() {
                   </Button>
                   
                   <Button 
-                    className="w-full h-16 modern-button bg-gradient-to-r from-red-500 to-orange-500 text-white hover:from-red-600 hover:to-orange-600 flex items-center justify-between rounded-xl text-lg font-semibold"
+                    className="w-full h-16 modern-button bg-gradient-to-r from-red-500 to-orange-500 text-white hover:from-red-600 hover:to-orange-600 flex items-center justify-between rounded-[2rem] text-lg font-semibold"
                     data-testid="button-emergency"
                   >
                     <span className="flex items-center">
-                      <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center mr-4 pulse-glow">
+                      <div className="w-12 h-12 bg-white bg-opacity-20 rounded-[1.5rem] flex items-center justify-center mr-4 pulse-glow">
                         <i className="fas fa-exclamation-triangle text-xl"></i>
                       </div>
                       Emergency Alert
