@@ -61,11 +61,29 @@ export default function Home() {
                 <h2 className="text-5xl font-bold mb-4 text-gradient">Welcome to Raipur Smart Connect</h2>
                 <p className="text-xl opacity-95 mb-8 max-w-2xl mx-auto">Your unified platform for civic engagement and community problem-solving with AI-powered assistance</p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <button className="modern-button px-8 py-3 bg-white text-primary rounded-xl font-semibold hover:bg-opacity-90 transition-all">
+                  <button 
+                    className="modern-button px-8 py-3 bg-white text-primary rounded-xl font-semibold hover:bg-opacity-90 transition-all"
+                    onClick={() => {
+                      const chatbot = document.querySelector('.lg\\:col-span-1') as HTMLElement;
+                      if (chatbot) {
+                        window.scrollTo({ top: chatbot.offsetTop - 100, behavior: 'smooth' });
+                      }
+                    }}
+                    data-testid="button-ask-ai"
+                  >
                     <i className="fas fa-robot mr-2"></i>
                     Ask AI Assistant
                   </button>
-                  <button className="modern-button px-8 py-3 bg-transparent border-2 border-white text-white rounded-xl font-semibold hover:bg-white hover:text-primary transition-all">
+                  <button 
+                    className="modern-button px-8 py-3 bg-transparent border-2 border-white text-white rounded-xl font-semibold hover:bg-white hover:text-primary transition-all"
+                    onClick={() => {
+                      const element = document.querySelector('#complaint-form') as HTMLElement;
+                      if (element) {
+                        window.scrollTo({ top: element.offsetTop - 100, behavior: 'smooth' });
+                      }
+                    }}
+                    data-testid="button-register-complaint"
+                  >
                     <i className="fas fa-plus-circle mr-2"></i>
                     Register Complaint
                   </button>
