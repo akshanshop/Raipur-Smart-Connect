@@ -198,6 +198,9 @@ export const insertComplaintSchema = createInsertSchema(complaints).omit({
   upvotes: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  latitude: z.string().optional().transform(val => val && val !== '' ? val : undefined),
+  longitude: z.string().optional().transform(val => val && val !== '' ? val : undefined),
 });
 
 export const insertCommunityIssueSchema = createInsertSchema(communityIssues).omit({
@@ -207,6 +210,9 @@ export const insertCommunityIssueSchema = createInsertSchema(communityIssues).om
   commentsCount: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  latitude: z.string().optional().transform(val => val && val !== '' ? val : undefined),
+  longitude: z.string().optional().transform(val => val && val !== '' ? val : undefined),
 });
 
 export const insertCommentSchema = createInsertSchema(comments).omit({
