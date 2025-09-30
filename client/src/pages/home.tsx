@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/header";
@@ -8,12 +8,15 @@ import CommunityFeed from "@/components/community-feed";
 import MapsIntegration from "@/components/maps-integration";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 
 export default function Home() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
+  const [emergencyDialogOpen, setEmergencyDialogOpen] = useState(false);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -39,6 +42,40 @@ export default function Home() {
     queryKey: ["/api/stats/user"],
     retry: false,
   });
+
+  const emergencyMutation = useMutation({
+    mutationFn: async (emergencyType: string) => {
+      const emergencyData = {
+        category: emergencyType,
+        priority: "urgent",
+        title: `URGENT: ${emergencyType} Emergency`,
+        description: `Emergency ${emergencyType} situation reported. Immediate attention required.`,
+        location: "Current Location (Emergency)",
+        status: "open"
+      };
+      return await apiRequest("POST", "/api/complaints", emergencyData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/complaints"] });
+      toast({
+        title: "🚨 Emergency Reported",
+        description: "Your emergency has been reported and marked as urgent. Authorities have been notified.",
+        variant: "default",
+      });
+      setEmergencyDialogOpen(false);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to submit emergency report. Please call emergency services directly.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEmergencyReport = (type: string) => {
+    emergencyMutation.mutate(type);
+  };
 
   if (isLoading) {
     return (
@@ -182,19 +219,7 @@ export default function Home() {
                   
                   <Button 
                     className="w-full h-16 modern-button bg-gradient-to-r from-red-500 to-orange-500 text-white hover:from-red-600 hover:to-orange-600 flex items-center justify-between rounded-[2rem] text-lg font-semibold"
-                    onClick={() => {
-                      toast({
-                        title: "🚨 Emergency Alert",
-                        description: "For immediate emergencies, please call: Police (100), Ambulance (108), Fire (101). Emergency complaint form opening...",
-                        variant: "destructive",
-                      });
-                      setTimeout(() => {
-                        const element = document.querySelector('#complaint-form') as HTMLElement;
-                        if (element) {
-                          window.scrollTo({ top: element.offsetTop, behavior: 'smooth' });
-                        }
-                      }, 1500);
-                    }}
+                    onClick={() => setEmergencyDialogOpen(true)}
                     data-testid="button-emergency"
                   >
                     <span className="flex items-center">
@@ -270,6 +295,111 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Emergency Alert Dialog */}
+      <Dialog open={emergencyDialogOpen} onOpenChange={setEmergencyDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl">
+              <i className="fas fa-exclamation-triangle text-red-500"></i>
+              Emergency Alert
+            </DialogTitle>
+            <DialogDescription>
+              Select the type of emergency to report. Authorities will be notified immediately.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Emergency Contact Info */}
+            <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
+              <p className="text-sm font-semibold text-red-900 dark:text-red-100 mb-2">
+                <i className="fas fa-phone mr-2"></i>Emergency Contacts:
+              </p>
+              <div className="grid grid-cols-3 gap-2 text-xs text-red-800 dark:text-red-200">
+                <div>Police: <strong>100</strong></div>
+                <div>Ambulance: <strong>108</strong></div>
+                <div>Fire: <strong>101</strong></div>
+              </div>
+            </div>
+
+            {/* Emergency Type Buttons */}
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                variant="destructive"
+                className="h-20 flex flex-col items-center justify-center gap-2"
+                onClick={() => handleEmergencyReport("Fire Emergency")}
+                disabled={emergencyMutation.isPending}
+                data-testid="button-fire-emergency"
+              >
+                <i className="fas fa-fire text-2xl"></i>
+                <span>Fire</span>
+              </Button>
+
+              <Button
+                variant="destructive"
+                className="h-20 flex flex-col items-center justify-center gap-2"
+                onClick={() => handleEmergencyReport("Medical Emergency")}
+                disabled={emergencyMutation.isPending}
+                data-testid="button-medical-emergency"
+              >
+                <i className="fas fa-ambulance text-2xl"></i>
+                <span>Medical</span>
+              </Button>
+
+              <Button
+                variant="destructive"
+                className="h-20 flex flex-col items-center justify-center gap-2"
+                onClick={() => handleEmergencyReport("Water Emergency")}
+                disabled={emergencyMutation.isPending}
+                data-testid="button-water-emergency"
+              >
+                <i className="fas fa-tint text-2xl"></i>
+                <span>Water</span>
+              </Button>
+
+              <Button
+                variant="destructive"
+                className="h-20 flex flex-col items-center justify-center gap-2"
+                onClick={() => handleEmergencyReport("Power Emergency")}
+                disabled={emergencyMutation.isPending}
+                data-testid="button-power-emergency"
+              >
+                <i className="fas fa-bolt text-2xl"></i>
+                <span>Power</span>
+              </Button>
+
+              <Button
+                variant="destructive"
+                className="h-20 flex flex-col items-center justify-center gap-2"
+                onClick={() => handleEmergencyReport("Gas Leak")}
+                disabled={emergencyMutation.isPending}
+                data-testid="button-gas-emergency"
+              >
+                <i className="fas fa-gas-pump text-2xl"></i>
+                <span>Gas Leak</span>
+              </Button>
+
+              <Button
+                variant="destructive"
+                className="h-20 flex flex-col items-center justify-center gap-2"
+                onClick={() => handleEmergencyReport("Road Hazard")}
+                disabled={emergencyMutation.isPending}
+                data-testid="button-road-emergency"
+              >
+                <i className="fas fa-road text-2xl"></i>
+                <span>Road Hazard</span>
+              </Button>
+            </div>
+
+            {emergencyMutation.isPending && (
+              <div className="text-center text-sm text-muted-foreground">
+                <i className="fas fa-spinner fa-spin mr-2"></i>
+                Reporting emergency...
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
