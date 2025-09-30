@@ -182,6 +182,19 @@ export default function Home() {
                   
                   <Button 
                     className="w-full h-16 modern-button bg-gradient-to-r from-red-500 to-orange-500 text-white hover:from-red-600 hover:to-orange-600 flex items-center justify-between rounded-[2rem] text-lg font-semibold"
+                    onClick={() => {
+                      toast({
+                        title: "🚨 Emergency Alert",
+                        description: "For immediate emergencies, please call: Police (100), Ambulance (108), Fire (101). Emergency complaint form opening...",
+                        variant: "destructive",
+                      });
+                      setTimeout(() => {
+                        const element = document.querySelector('#complaint-form') as HTMLElement;
+                        if (element) {
+                          window.scrollTo({ top: element.offsetTop, behavior: 'smooth' });
+                        }
+                      }, 1500);
+                    }}
                     data-testid="button-emergency"
                   >
                     <span className="flex items-center">
