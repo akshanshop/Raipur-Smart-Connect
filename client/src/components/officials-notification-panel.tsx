@@ -85,7 +85,7 @@ export default function OfficialsNotificationPanel() {
         data-testid="panel-officials-notifications"
       >
         {/* Panel Header */}
-        <div className={`sticky top-0 z-10 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent backdrop-blur-md border-b border-border/50 p-6 transition-all duration-500 ${
+        <div className={`sticky top-0 z-10 from-primary/10 via-primary/5 to-transparent backdrop-blur-md border-b border-border/50 p-6 transition-all duration-500 bg-[#c0cbcd] text-[#261a0d] ${
           isOpen ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
         }`}>
           <div className="flex items-center justify-between">
