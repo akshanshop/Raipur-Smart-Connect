@@ -19,14 +19,12 @@ interface Notification {
 export default function OfficialsNotificationPanel() {
   const [isOpen, setIsOpen] = useState(false);
 
-  const { data: notifications = [] } = useQuery({
+  const { data: notifications = [], isLoading, isError } = useQuery<Notification[]>({
     queryKey: ["/api/notifications"],
     retry: false,
   });
 
-  const unreadCount = Array.isArray(notifications) 
-    ? notifications.filter((n: Notification) => !n.isRead).length 
-    : 0;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const markAsReadMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -121,7 +119,31 @@ export default function OfficialsNotificationPanel() {
           isOpen ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
         }`}>
           <div className="p-6 space-y-4">
-            {notifications.length === 0 ? (
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
+                <div className="p-6 bg-primary/10 rounded-full animate-pulse">
+                  <Bell className="h-12 w-12 text-primary animate-bounce" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-1">Loading notifications...</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Please wait while we fetch your updates
+                  </p>
+                </div>
+              </div>
+            ) : isError ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
+                <div className="p-6 bg-destructive/10 rounded-full">
+                  <i className="fas fa-exclamation-triangle text-4xl text-destructive"></i>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-1">Failed to load notifications</h3>
+                  <p className="text-sm text-muted-foreground">
+                    There was an error fetching your notifications. Please try again.
+                  </p>
+                </div>
+              </div>
+            ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
                 <div className="p-6 bg-muted/30 rounded-full">
                   <Bell className="h-12 w-12 text-muted-foreground/50" />
@@ -134,7 +156,7 @@ export default function OfficialsNotificationPanel() {
                 </div>
               </div>
             ) : (
-              (notifications as Notification[]).map((notification, index) => (
+              notifications.map((notification, index) => (
                 <div
                   key={notification.id}
                   className={`group p-5 rounded-xl border backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${
@@ -203,7 +225,7 @@ export default function OfficialsNotificationPanel() {
               variant="outline"
               className="w-full rounded-lg hover:bg-primary hover:text-primary-foreground transition-all duration-300"
               onClick={() => {
-                notifications.forEach((n: Notification) => {
+                notifications.forEach((n) => {
                   if (!n.isRead) {
                     markAsReadMutation.mutate(n.id);
                   }
