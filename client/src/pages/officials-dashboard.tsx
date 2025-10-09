@@ -186,12 +186,20 @@ export default function OfficialsDashboard() {
 
       await loader.load();
 
+      // Raipur, Chhattisgarh coordinates (21.2514, 81.6296)
       const raipurCenter = { lat: 21.2514, lng: 81.6296 };
 
       const map = new google.maps.Map(mapRef.current, {
         center: raipurCenter,
         zoom: 12,
         mapTypeId: google.maps.MapTypeId.ROADMAP,
+        styles: [
+          {
+            featureType: "poi",
+            elementType: "labels",
+            stylers: [{ visibility: "on" }],
+          },
+        ],
       });
 
       mapInstanceRef.current = map;
