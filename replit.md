@@ -1,5 +1,11 @@
 # Overview
-Raipur Smart Connect is a unified civic engagement platform for Raipur city, connecting citizens with municipal authorities. It's a full-stack web application offering civic services, an AI-powered multilingual chatbot, a smart complaint management system with GPS and photo uploads, and a community problem-solving hub. The platform aims to provide 24/7 access to municipal services, transparent complaint tracking, community engagement, and real-time city alerts.
+Raipur Smart Connect is a unified civic engagement platform for Raipur city, connecting citizens with municipal authorities. It's a full-stack web application offering civic services, an AI-powered multilingual chatbot with spam detection, a smart complaint management system with GPS and photo uploads, and a community problem-solving hub with interactive map visualization. The platform aims to provide 24/7 access to municipal services, transparent complaint tracking, community engagement, and real-time city alerts.
+
+## Recent Updates (October 2025)
+- **AI Spam Detection**: Implemented GPT-5 powered spam detection that automatically analyzes and rejects fake/spam complaints with >70% confidence, sending warning notifications to users
+- **Citizen Map Visualization**: Added interactive map to citizen dashboard showing all reported issues with OpenStreetMap integration
+- **Report Density View**: Implemented color-coded markers based on report count (yellow: <3 reports, orange: 3-7 reports, red: >7 reports) for better visualization of problem areas
+- **Three View Modes**: Citizens can now switch between Heatmap, Individual Markers, and Density (by count) views on the map
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
@@ -29,13 +35,49 @@ All complaints and community issues require mandatory GPS location data:
 - This ensures accurate issue mapping and prevents fake location submissions
 
 ## AI Integration
-OpenAI's GPT-5 model powers a multilingual chatbot in English, Hindi, and Marathi, providing contextual responses about city services. The chatbot returns structured JSON, and chat history is persisted. Additional AI features include automatic complaint summarization and priority assessment.
+OpenAI's GPT-5 model powers multiple AI features:
+
+### Multilingual Chatbot
+- Supports English, Hindi, and Marathi languages
+- Provides contextual responses about city services
+- Returns structured JSON responses
+- Persistent chat history
+
+### Spam Detection System
+- **Complaint Analysis**: Automatically analyzes all new complaints for spam, fake content, and abusive language
+- **Community Issue Analysis**: Validates community posts before publication
+- **Confidence Threshold**: Rejects submissions with >70% spam confidence
+- **Warning Notifications**: Sends alert notifications to users when spam is detected
+- **Categories**: Identifies content as legitimate, spam, fake, irrelevant, or abusive
+- **Graceful Fallback**: Allows submissions on API errors to prevent blocking legitimate reports
+- **Detailed Logging**: Tracks spam detection decisions for monitoring and improvement
+
+### Other AI Features
+- Automatic complaint summarization
+- Priority assessment
 
 ## Real-time Features
 A notification system provides updates on complaint status, community activities, and city alerts. While WebSockets are architecturally prepared, current implementation uses polling for updates. Notifications are categorized and read status is maintained.
 
 ## Officials Dashboard
 The Officials Dashboard provides municipal staff with tools to manage civic issues. It includes role-based access control, statistics overview, priority distribution, issue management (search, filter, resolve with proof, delete), and a heatmap visualization of issues. The UI/UX features modern animations, glass morphism, and interactive OpenStreetMap integration via Leaflet with dual view modes (heatmap/markers), priority-based visualization, and custom marker styling.
+
+## Citizen Dashboard
+The Citizen Dashboard now includes comprehensive map visualization features:
+
+### Map Integration (New Tab)
+- **Interactive OpenStreetMap**: View all city complaints on an interactive map
+- **Three View Modes**:
+  1. **Heatmap View**: Heat intensity based on issue priority
+  2. **Individual Markers**: Each complaint shown as a separate marker with priority-based colors (red: high, orange: medium, green: low)
+  3. **Density View (By Count)**: Groups reports by location with color-coded markers:
+     - Yellow: Less than 3 reports at location
+     - Orange: 3-7 reports at location
+     - Red: More than 7 reports at location
+- **Map Controls**: Zoom in/out, reset to default view, center on user location
+- **Filter Options**: Filter by area and priority
+- **Interactive Popups**: Click markers to view complaint details
+- **Map Statistics**: View total issues, priority breakdown, and area distribution
 
 # External Dependencies
 
