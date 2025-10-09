@@ -16,7 +16,17 @@ The server is built with Express.js and TypeScript, following a RESTful API desi
 Authentication uses independent OAuth 2.0 integration via Passport.js with Google, GitHub, Twitter, and Facebook. User sessions are managed using express-session with PostgreSQL storage (connect-pg-simple). The database supports multiple OAuth providers and tracks civic engagement metrics. Session management includes HTTP-only cookies and CSRF protection. OAuth routes are available at `/api/auth/google`, `/api/auth/github`, `/api/auth/twitter`, and `/api/auth/facebook`.
 
 ## Database Design
-Drizzle ORM with PostgreSQL (Neon's serverless offering) is used for the data layer. The schema includes tables for users, complaints, community issues, upvotes, comments, notifications, chat messages, and sessions. Key relationships exist between users and complaints, and users and upvotes. Geolocation data is supported for maps integration.
+Drizzle ORM with PostgreSQL (Neon's serverless offering) is used for the data layer. The schema includes tables for users, complaints, community issues, upvotes, comments, notifications, chat messages, and sessions. Key relationships exist between users and complaints, and users and upvotes. 
+
+### GPS Location Requirements
+All complaints and community issues require mandatory GPS location data:
+- Latitude and longitude fields are NOT NULL in the database
+- Forms automatically request device location on load
+- Submission is blocked without valid GPS coordinates
+- Validation ensures coordinates are within valid ranges (latitude: -90 to 90, longitude: -180 to 180)
+- Users see real-time GPS status indicators with captured coordinates
+- Retry functionality available if initial GPS request fails
+- This ensures accurate issue mapping and prevents fake location submissions
 
 ## AI Integration
 OpenAI's GPT-5 model powers a multilingual chatbot in English, Hindi, and Marathi, providing contextual responses about city services. The chatbot returns structured JSON, and chat history is persisted. Additional AI features include automatic complaint summarization and priority assessment.
