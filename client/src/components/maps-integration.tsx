@@ -130,15 +130,21 @@ export default function MapsIntegration() {
     return matchesPriority;
   });
 
-  const getMarkerColor = (priority: string) => {
+  const getMarkerColor = (status: string, priority: string) => {
+    // Green for resolved issues
+    if (status === 'resolved') {
+      return '#22c55e'; // green
+    }
+    
+    // Color based on priority for active issues
     switch (priority) {
       case 'urgent':
       case 'high':
-        return '#ef4444';
+        return '#ef4444'; // red (>7 reports in area)
       case 'medium':
-        return '#f97316';
+        return '#f97316'; // orange (3-7 reports in area)
       case 'low':
-        return '#22c55e';
+        return '#eab308'; // yellow (<3 reports in area)
       default:
         return '#6b7280';
     }
@@ -150,8 +156,8 @@ export default function MapsIntegration() {
     return '#ef4444'; // red (>7)
   };
 
-  const createCustomIcon = (priority: string) => {
-    const color = getMarkerColor(priority);
+  const createCustomIcon = (status: string, priority: string) => {
+    const color = getMarkerColor(status, priority);
     const size = priority === 'urgent' || priority === 'high' ? 32 : priority === 'medium' ? 24 : 20;
     
     return L.divIcon({
@@ -352,7 +358,7 @@ export default function MapsIntegration() {
                   <Marker
                     key={issue.id}
                     position={[parseFloat(issue.latitude!), parseFloat(issue.longitude!)]}
-                    icon={createCustomIcon(issue.priority)}
+                    icon={createCustomIcon(issue.status, issue.priority)}
                   >
                     <Popup>
                       <div className="p-2">
@@ -419,19 +425,23 @@ export default function MapsIntegration() {
                 </>
               ) : (
                 <>
-                  <h5 className="text-sm font-medium text-foreground mb-2">Issue Priority</h5>
+                  <h5 className="text-sm font-medium text-foreground mb-2">Issue Status</h5>
                   <div className="space-y-1">
                     <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      <span className="text-xs text-muted-foreground">Resolved</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
                       <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                      <span className="text-xs text-muted-foreground">High Priority</span>
+                      <span className="text-xs text-muted-foreground">Urgent (&gt;7 reports)</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                      <span className="text-xs text-muted-foreground">Medium Priority</span>
+                      <span className="text-xs text-muted-foreground">Medium (3-7 reports)</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                      <span className="text-xs text-muted-foreground">Low Priority</span>
+                      <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                      <span className="text-xs text-muted-foreground">Low (&lt;3 reports)</span>
                     </div>
                   </div>
                 </>
