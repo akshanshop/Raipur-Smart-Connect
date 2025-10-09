@@ -30,7 +30,6 @@ export default function ComplaintForm() {
     resolver: zodResolver(complaintFormSchema),
     defaultValues: {
       category: "",
-      priority: "medium",
       title: "",
       description: "",
       location: "",
@@ -175,59 +174,33 @@ export default function ComplaintForm() {
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-category">
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="water-supply">Water Supply</SelectItem>
-                        <SelectItem value="garbage-collection">Garbage Collection</SelectItem>
-                        <SelectItem value="road-maintenance">Road Maintenance</SelectItem>
-                        <SelectItem value="street-lighting">Street Lighting</SelectItem>
-                        <SelectItem value="drainage">Drainage</SelectItem>
-                        <SelectItem value="parks-recreation">Parks & Recreation</SelectItem>
-                        <SelectItem value="noise-pollution">Noise Pollution</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Priority</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger data-testid="select-priority">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-category">
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="water-supply">Water Supply</SelectItem>
+                      <SelectItem value="garbage-collection">Garbage Collection</SelectItem>
+                      <SelectItem value="road-maintenance">Road Maintenance</SelectItem>
+                      <SelectItem value="street-lighting">Street Lighting</SelectItem>
+                      <SelectItem value="drainage">Drainage</SelectItem>
+                      <SelectItem value="parks-recreation">Parks & Recreation</SelectItem>
+                      <SelectItem value="noise-pollution">Noise Pollution</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
