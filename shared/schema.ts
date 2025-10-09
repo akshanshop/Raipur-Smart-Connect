@@ -36,6 +36,7 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   oauthProvider: varchar("oauth_provider"), // google, github, twitter, facebook
   oauthId: varchar("oauth_id"), // provider-specific user ID
+  role: varchar("role").default("citizen").notNull(), // citizen, official
   contributionScore: integer("contribution_score").default(0),
   complaintsCount: integer("complaints_count").default(0),
   upvotesCount: integer("upvotes_count").default(0),
@@ -56,6 +57,7 @@ export const complaints = pgTable("complaints", {
   longitude: decimal("longitude", { precision: 11, scale: 8 }),
   status: varchar("status").default("open").notNull(), // open, in_progress, resolved, closed
   mediaUrls: text("media_urls").array(),
+  resolutionScreenshots: text("resolution_screenshots").array(), // screenshots submitted by officials
   upvotes: integer("upvotes").default(0),
   assignedTo: varchar("assigned_to"),
   resolvedAt: timestamp("resolved_at"),
