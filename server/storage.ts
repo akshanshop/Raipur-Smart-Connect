@@ -38,6 +38,8 @@ export interface IStorage {
   getUserComplaints(userId: string): Promise<Complaint[]>;
   getAllComplaints(): Promise<Complaint[]>;
   updateComplaintStatus(id: string, status: string): Promise<void>;
+  updateComplaint(id: string, updates: Partial<Complaint>): Promise<void>;
+  deleteComplaint(id: string): Promise<void>;
   
   // Community issue operations
   createCommunityIssue(issue: InsertCommunityIssue & { userId: string }): Promise<CommunityIssue>;
@@ -202,6 +204,22 @@ export class DatabaseStorage implements IStorage {
       .update(complaints)
       .set(updateData)
       .where(eq(complaints.id, id));
+  }
+
+  async updateComplaint(id: string, updates: Partial<Complaint>): Promise<void> {
+    await db
+      .update(complaints)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(complaints.id, id));
+  }
+
+  async deleteComplaint(id: string): Promise<void> {
+    // Delete related upvotes and comments first
+    await db.delete(upvotes).where(eq(upvotes.complaintId, id));
+    await db.delete(comments).where(eq(comments.complaintId, id));
+    
+    // Delete the complaint
+    await db.delete(complaints).where(eq(complaints.id, id));
   }
 
   // Community issue operations

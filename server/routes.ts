@@ -473,6 +473,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Officials Dashboard API endpoints
+  const isOfficial = async (req: any, res: any, next: any) => {
+    try {
+      const userId = getUserId(req);
+      const user = await storage.getUser(userId);
+      if (user?.role === 'official') {
+        return next();
+      }
+      return res.status(403).json({ message: "Access denied. Officials only." });
+    } catch (error) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+  };
+
+  // Dashboard stats
+  app.get('/api/officials/dashboard/stats', isAuthenticatedFlexible, isOfficial, async (req: any, res) => {
+    try {
+      const complaints = await storage.getAllComplaints();
+      
+      const stats = {
+        total: complaints.length,
+        solved: complaints.filter(c => c.status === 'resolved' || c.status === 'closed').length,
+        pending: complaints.filter(c => c.status === 'open').length,
+        inProgress: complaints.filter(c => c.status === 'in_progress').length,
+        byPriority: {
+          urgent: complaints.filter(c => c.priority === 'urgent').length,
+          high: complaints.filter(c => c.priority === 'high').length,
+          medium: complaints.filter(c => c.priority === 'medium').length,
+          low: complaints.filter(c => c.priority === 'low').length,
+        },
+        byCategory: complaints.reduce((acc: any, c) => {
+          acc[c.category] = (acc[c.category] || 0) + 1;
+          return acc;
+        }, {}),
+      };
+      
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      res.status(500).json({ message: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  // Heatmap data
+  app.get('/api/officials/dashboard/heatmap', isAuthenticatedFlexible, isOfficial, async (req: any, res) => {
+    try {
+      const complaints = await storage.getAllComplaints();
+      
+      const heatmapData = complaints
+        .filter(c => c.latitude && c.longitude)
+        .map(c => ({
+          id: c.id,
+          lat: parseFloat(c.latitude as string),
+          lng: parseFloat(c.longitude as string),
+          priority: c.priority,
+          status: c.status,
+          category: c.category,
+          title: c.title,
+        }));
+      
+      res.json(heatmapData);
+    } catch (error) {
+      console.error("Error fetching heatmap data:", error);
+      res.status(500).json({ message: "Failed to fetch heatmap data" });
+    }
+  });
+
+  // Get all issues for officials with enhanced data
+  app.get('/api/officials/issues', isAuthenticatedFlexible, isOfficial, async (req: any, res) => {
+    try {
+      const complaints = await storage.getAllComplaints();
+      
+      // Get user data for each complaint
+      const issuesWithUserData = await Promise.all(
+        complaints.map(async (complaint) => {
+          const user = await storage.getUser(complaint.userId);
+          const complaintComments = await storage.getComments(complaint.id, undefined);
+          
+          return {
+            ...complaint,
+            userName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Unknown',
+            userEmail: user?.email || 'N/A',
+            commentsCount: complaintComments.length,
+            upvotesCount: complaint.upvotes || 0,
+          };
+        })
+      );
+      
+      res.json(issuesWithUserData);
+    } catch (error) {
+      console.error("Error fetching issues for officials:", error);
+      res.status(500).json({ message: "Failed to fetch issues" });
+    }
+  });
+
+  // Update issue status with resolution screenshots
+  app.post('/api/officials/issues/:id/resolve', isAuthenticatedFlexible, isOfficial, upload.array('screenshots'), async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { notes } = req.body;
+      
+      // Handle uploaded resolution screenshots
+      const screenshotUrls = req.files ? req.files.map((file: any) => `/uploads/${file.filename}`) : [];
+      
+      await storage.updateComplaint(id, {
+        status: 'resolved',
+        resolvedAt: new Date(),
+        resolutionScreenshots: screenshotUrls,
+      });
+      
+      // Create notification for the user
+      const complaint = await storage.getComplaint(id);
+      if (complaint) {
+        await storage.createNotification({
+          userId: complaint.userId,
+          title: 'Issue Resolved',
+          message: `Your complaint "${complaint.title}" has been resolved. ${notes || ''}`,
+          type: 'complaint_update',
+          relatedId: id,
+        });
+      }
+      
+      res.json({ message: "Issue resolved successfully", screenshots: screenshotUrls });
+    } catch (error) {
+      console.error("Error resolving issue:", error);
+      res.status(500).json({ message: "Failed to resolve issue" });
+    }
+  });
+
+  // Delete issue
+  app.delete('/api/officials/issues/:id', isAuthenticatedFlexible, isOfficial, async (req: any, res) => {
+    try {
+      await storage.deleteComplaint(req.params.id);
+      res.json({ message: "Issue deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting issue:", error);
+      res.status(500).json({ message: "Failed to delete issue" });
+    }
+  });
+
   // Serve uploaded files
   app.use('/uploads', express.static('uploads'));
 
