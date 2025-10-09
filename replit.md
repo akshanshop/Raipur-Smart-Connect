@@ -3,6 +3,11 @@ Raipur Smart Connect is a unified civic engagement platform for Raipur city, con
 
 ## Recent Updates (October 2025)
 - **AI Spam Detection**: Implemented GPT-5 powered spam detection that automatically analyzes and rejects fake/spam complaints with >70% confidence, sending warning notifications to users
+- **Automatic Priority Assignment**: Priority is now automatically calculated based on nearby reports within ~0.5km radius:
+  - Low priority (yellow): Less than 3 reports in the area
+  - Medium priority (orange): 3-7 reports in the area
+  - Urgent priority (red): More than 7 reports in the area
+  - Resolved issues are always shown in green on maps
 - **Citizen Map Visualization**: Added interactive map to citizen dashboard showing all reported issues with OpenStreetMap integration
 - **Report Density View**: Implemented color-coded markers based on report count (yellow: <3 reports, orange: 3-7 reports, red: >7 reports) for better visualization of problem areas
 - **Three View Modes**: Citizens can now switch between Heatmap, Individual Markers, and Density (by count) views on the map
