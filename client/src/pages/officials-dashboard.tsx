@@ -1,5 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,9 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader } from "@googlemaps/js-api-loader";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import "leaflet.heat";
 
 interface DashboardStats {
   total: number;
@@ -53,6 +56,44 @@ interface HeatmapPoint {
   lng: number;
 }
 
+function MapController({ center, zoom }: { center: [number, number], zoom: number }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    map.setView(center, zoom);
+  }, [center, zoom, map]);
+  
+  return null;
+}
+
+function HeatmapLayer({ points }: { points: Array<[number, number, number]> }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (points.length === 0) return;
+    
+    // @ts-ignore - leaflet.heat types
+    const heatLayer = L.heatLayer(points, {
+      radius: 30,
+      blur: 25,
+      maxZoom: 17,
+      max: 4,
+      gradient: {
+        0.0: '#22c55e',
+        0.5: '#f97316', 
+        0.75: '#ef4444',
+        1.0: '#dc2626'
+      }
+    }).addTo(map);
+    
+    return () => {
+      map.removeLayer(heatLayer);
+    };
+  }, [points, map]);
+  
+  return null;
+}
+
 export default function OfficialsDashboard() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -60,12 +101,10 @@ export default function OfficialsDashboard() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [selectedIssue, setSelectedIssue] = useState<IssueItem | null>(null);
-  const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapViewMode, setMapViewMode] = useState<"heatmap" | "individual">("individual");
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.Marker[]>([]);
-  const heatmapRef = useRef<google.maps.visualization.HeatmapLayer | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([21.2514, 81.6296]);
+  const [mapZoom, setMapZoom] = useState(12);
+  const mapRef = useRef<L.Map | null>(null);
 
   // Fetch dashboard stats
   const { data: stats } = useQuery<DashboardStats>({
@@ -155,121 +194,6 @@ export default function OfficialsDashboard() {
     resolveIssueMutation.mutate({ id: selectedIssue.id, formData });
   };
 
-  // Map initialization
-  useEffect(() => {
-    initializeMap();
-    
-    return () => {
-      if (heatmapRef.current) {
-        heatmapRef.current.setMap(null);
-      }
-      markersRef.current.forEach(marker => marker.setMap(null));
-      markersRef.current = [];
-    };
-  }, []);
-
-  useEffect(() => {
-    if (mapInstanceRef.current && isMapLoaded) {
-      updateMapMarkers();
-    }
-  }, [heatmapData, mapViewMode, isMapLoaded]);
-
-  const initializeMap = async () => {
-    if (!mapRef.current) return;
-
-    try {
-      const loader = new Loader({
-        apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY!,
-        version: "weekly",
-        libraries: ["visualization"],
-      });
-
-      await loader.load();
-
-      // Raipur, Chhattisgarh coordinates (21.2514, 81.6296)
-      const raipurCenter = { lat: 21.2514, lng: 81.6296 };
-
-      const map = new google.maps.Map(mapRef.current, {
-        center: raipurCenter,
-        zoom: 12,
-        mapTypeId: google.maps.MapTypeId.ROADMAP,
-        styles: [
-          {
-            featureType: "poi",
-            elementType: "labels",
-            stylers: [{ visibility: "on" }],
-          },
-        ],
-      });
-
-      mapInstanceRef.current = map;
-      setIsMapLoaded(true);
-    } catch (error) {
-      console.error("Error loading Google Maps:", error);
-    }
-  };
-
-  const updateMapMarkers = () => {
-    if (!mapInstanceRef.current) return;
-
-    markersRef.current.forEach(marker => marker.setMap(null));
-    markersRef.current = [];
-
-    if (heatmapRef.current) {
-      heatmapRef.current.setMap(null);
-      heatmapRef.current = null;
-    }
-
-    if (mapViewMode === "heatmap") {
-      createHeatmap();
-    } else {
-      createIndividualMarkers();
-    }
-  };
-
-  const createHeatmap = () => {
-    if (!mapInstanceRef.current) return;
-    
-    if (!heatmapData.length) {
-      console.log("No heatmap data available");
-      return;
-    }
-
-    const heatmapPoints = heatmapData.map(point => ({
-      location: new google.maps.LatLng(point.lat, point.lng),
-      weight: getHeatmapWeight(point.priority),
-    }));
-
-    heatmapRef.current = new google.maps.visualization.HeatmapLayer({
-      data: heatmapPoints,
-      map: mapInstanceRef.current,
-      radius: 30,
-      opacity: 0.8,
-    });
-  };
-
-  const createIndividualMarkers = () => {
-    if (!mapInstanceRef.current || !heatmapData.length) return;
-
-    heatmapData.forEach(point => {
-      const marker = new google.maps.Marker({
-        position: { lat: point.lat, lng: point.lng },
-        map: mapInstanceRef.current!,
-        title: point.title,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          fillColor: getMarkerColor(point.priority),
-          fillOpacity: 0.8,
-          strokeColor: "#ffffff",
-          strokeWeight: 2,
-          scale: 8,
-        },
-      });
-
-      markersRef.current.push(marker);
-    });
-  };
-
   const getMarkerColor = (priority: string) => {
     switch (priority) {
       case 'urgent':
@@ -282,6 +206,18 @@ export default function OfficialsDashboard() {
       default:
         return '#6b7280';
     }
+  };
+
+  const createCustomIcon = (priority: string) => {
+    const color = getMarkerColor(priority);
+    const size = priority === 'urgent' || priority === 'high' ? 32 : priority === 'medium' ? 24 : 20;
+    
+    return L.divIcon({
+      className: 'custom-marker',
+      html: `<div style="background-color: ${color}; width: ${size}px; height: ${size}px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+    });
   };
 
   const getHeatmapWeight = (priority: string): number => {
@@ -298,6 +234,12 @@ export default function OfficialsDashboard() {
         return 1;
     }
   };
+
+  const heatmapPoints: Array<[number, number, number]> = heatmapData.map(point => [
+    point.lat,
+    point.lng,
+    getHeatmapWeight(point.priority)
+  ]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -682,51 +624,68 @@ export default function OfficialsDashboard() {
 
                   {/* Map Container */}
                   <div className="h-96 bg-muted rounded-lg relative overflow-hidden" data-testid="officials-map-container">
-                    {!isMapLoaded && (
-                      <div className="absolute inset-0 flex items-center justify-center z-10">
-                        <div className="text-center">
-                          <Loader2 className="h-8 w-8 animate-spin text-primary mb-2 mx-auto" />
-                          <p className="text-muted-foreground">Loading map...</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Google Maps Container */}
-                    <div 
-                      ref={mapRef}
+                    <MapContainer
+                      center={mapCenter}
+                      zoom={mapZoom}
                       className="w-full h-full rounded-lg"
-                      style={{ opacity: isMapLoaded ? 1 : 0 }}
-                    />
+                      ref={mapRef}
+                    >
+                      <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      />
+                      
+                      <MapController center={mapCenter} zoom={mapZoom} />
+                      
+                      {mapViewMode === "heatmap" ? (
+                        <HeatmapLayer points={heatmapPoints} />
+                      ) : (
+                        heatmapData.map((point) => (
+                          <Marker
+                            key={point.id}
+                            position={[point.lat, point.lng]}
+                            icon={createCustomIcon(point.priority)}
+                          >
+                            <Popup>
+                              <div className="p-2">
+                                <h3 className="font-semibold text-sm">{point.title}</h3>
+                                <p className="text-xs text-muted-foreground mt-1">{point.category}</p>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <Badge className="text-xs">{point.priority}</Badge>
+                                  <Badge className="text-xs">{point.status}</Badge>
+                                </div>
+                              </div>
+                            </Popup>
+                          </Marker>
+                        ))
+                      )}
+                    </MapContainer>
 
                     {/* Map Legend */}
-                    {isMapLoaded && (
-                      <div className="absolute bottom-4 left-4 bg-card rounded-lg p-3 shadow-md">
-                        <h5 className="text-sm font-medium text-foreground mb-2">Priority Legend</h5>
-                        <div className="space-y-1">
-                          <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                            <span className="text-xs text-muted-foreground">Urgent/High</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                            <span className="text-xs text-muted-foreground">Medium</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                            <span className="text-xs text-muted-foreground">Low</span>
-                          </div>
+                    <div className="absolute bottom-4 left-4 bg-card rounded-lg p-3 shadow-md z-[1000]">
+                      <h5 className="text-sm font-medium text-foreground mb-2">Priority Legend</h5>
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                          <span className="text-xs text-muted-foreground">Urgent/High</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                          <span className="text-xs text-muted-foreground">Medium</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                          <span className="text-xs text-muted-foreground">Low</span>
                         </div>
                       </div>
-                    )}
+                    </div>
 
                     {/* View Mode Info */}
-                    {isMapLoaded && (
-                      <div className="absolute top-4 left-4 bg-card rounded-lg p-2 shadow-md">
-                        <Badge variant="outline">
-                          {mapViewMode === "heatmap" ? "Heatmap View" : "Individual Markers"}
-                        </Badge>
-                      </div>
-                    )}
+                    <div className="absolute top-4 left-4 bg-card rounded-lg p-2 shadow-md z-[1000]">
+                      <Badge variant="outline">
+                        {mapViewMode === "heatmap" ? "Heatmap View" : "Individual Markers"}
+                      </Badge>
+                    </div>
                   </div>
 
                   {/* Map Info */}
@@ -734,7 +693,7 @@ export default function OfficialsDashboard() {
                     <div className="flex items-center space-x-2">
                       <i className="fas fa-info-circle text-primary"></i>
                       <span className="text-sm text-foreground">
-                        <strong>Real-time Google Maps Integration:</strong> Showing live data for Raipur, Chhattisgarh. 
+                        <strong>OpenStreetMap Integration:</strong> Showing live data for Raipur, Chhattisgarh. 
                         Toggle between heatmap and marker views to analyze issue distribution.
                       </span>
                     </div>

@@ -1,13 +1,27 @@
 import { useState, useEffect, useRef } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
-import { Loader } from "@googlemaps/js-api-loader";
 import type { Complaint, CommunityIssue } from "@shared/schema";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import "leaflet.heat";
 
-/// <reference types="google.maps" />
+// Fix for default marker icons in Leaflet
+import icon from "leaflet/dist/images/marker-icon.png";
+import iconShadow from "leaflet/dist/images/marker-shadow.png";
+
+let DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
 
 interface MapIssue {
   id: string;
@@ -22,15 +36,51 @@ interface MapIssue {
   type: 'complaint' | 'community_issue';
 }
 
+function MapController({ center, zoom }: { center: [number, number], zoom: number }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    map.setView(center, zoom);
+  }, [center, zoom, map]);
+  
+  return null;
+}
+
+function HeatmapLayer({ points }: { points: Array<[number, number, number]> }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (points.length === 0) return;
+    
+    // @ts-ignore - leaflet.heat types
+    const heatLayer = L.heatLayer(points, {
+      radius: 30,
+      blur: 25,
+      maxZoom: 17,
+      max: 4,
+      gradient: {
+        0.0: '#22c55e',
+        0.5: '#f97316', 
+        0.75: '#ef4444',
+        1.0: '#dc2626'
+      }
+    }).addTo(map);
+    
+    return () => {
+      map.removeLayer(heatLayer);
+    };
+  }, [points, map]);
+  
+  return null;
+}
+
 export default function MapsIntegration() {
   const [viewMode, setViewMode] = useState<"heatmap" | "individual">("individual");
   const [areaFilter, setAreaFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
-  const [isMapLoaded, setIsMapLoaded] = useState(false);
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.Marker[]>([]);
-  const heatmapRef = useRef<google.maps.visualization.HeatmapLayer | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([21.2514, 81.6296]);
+  const [mapZoom, setMapZoom] = useState(12);
+  const mapRef = useRef<L.Map | null>(null);
 
   const { data: complaints = [] } = useQuery({
     queryKey: ["/api/complaints/all"],
@@ -77,7 +127,6 @@ export default function MapsIntegration() {
 
   const filteredIssues = allIssues.filter((issue: MapIssue) => {
     const matchesPriority = priorityFilter === "all" || issue.priority === priorityFilter;
-    // Note: Area filtering would require actual geocoding or predefined areas
     return matchesPriority;
   });
 
@@ -85,158 +134,26 @@ export default function MapsIntegration() {
     switch (priority) {
       case 'urgent':
       case 'high':
-        return '#ef4444'; // red
+        return '#ef4444';
       case 'medium':
-        return '#f97316'; // orange
+        return '#f97316';
       case 'low':
-        return '#22c55e'; // green
+        return '#22c55e';
       default:
-        return '#6b7280'; // gray
+        return '#6b7280';
     }
   };
 
-  const getMarkerSize = (priority: string) => {
-    switch (priority) {
-      case 'urgent':
-      case 'high':
-        return 32;
-      case 'medium':
-        return 24;
-      case 'low':
-        return 20;
-      default:
-        return 16;
-    }
-  };
-
-  // Initialize Google Maps
-  useEffect(() => {
-    initializeMap();
+  const createCustomIcon = (priority: string) => {
+    const color = getMarkerColor(priority);
+    const size = priority === 'urgent' || priority === 'high' ? 32 : priority === 'medium' ? 24 : 20;
     
-    // Cleanup function
-    return () => {
-      if (heatmapRef.current) {
-        heatmapRef.current.setMap(null);
-      }
-      markersRef.current.forEach(marker => marker.setMap(null));
-      markersRef.current = [];
-    };
-  }, []);
-
-  // Update markers when filtered issues change or map loads
-  useEffect(() => {
-    if (mapInstanceRef.current && isMapLoaded) {
-      updateMapMarkers();
-    }
-  }, [filteredIssues, viewMode, isMapLoaded]);
-
-  const initializeMap = async () => {
-    if (!mapRef.current) return;
-
-    try {
-      const loader = new Loader({
-        apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY!,
-        version: "weekly",
-        libraries: ["visualization"],
-      });
-
-      await loader.load();
-
-      // Raipur, Chhattisgarh coordinates (21.2514, 81.6296)
-      const raipurCenter = { lat: 21.2514, lng: 81.6296 };
-
-      const map = new google.maps.Map(mapRef.current, {
-        center: raipurCenter,
-        zoom: 12,
-        mapTypeId: google.maps.MapTypeId.ROADMAP,
-        styles: [
-          {
-            featureType: "poi",
-            elementType: "labels",
-            stylers: [{ visibility: "on" }],
-          },
-        ],
-      });
-
-      mapInstanceRef.current = map;
-      setIsMapLoaded(true);
-    } catch (error) {
-      console.error("Error loading Google Maps:", error);
-    }
-  };
-
-  const updateMapMarkers = () => {
-    if (!mapInstanceRef.current) return;
-
-    // Clear existing markers
-    markersRef.current.forEach(marker => marker.setMap(null));
-    markersRef.current = [];
-
-    // Clear existing heatmap
-    if (heatmapRef.current) {
-      heatmapRef.current.setMap(null);
-      heatmapRef.current = null;
-    }
-
-    if (viewMode === "heatmap") {
-      createHeatmap();
-    } else {
-      createIndividualMarkers();
-    }
-  };
-
-  const createHeatmap = () => {
-    if (!mapInstanceRef.current) return;
-
-    const heatmapData = filteredIssues
-      .filter(issue => issue.latitude && issue.longitude)
-      .map(issue => ({
-        location: new google.maps.LatLng(
-          parseFloat(issue.latitude!),
-          parseFloat(issue.longitude!)
-        ),
-        weight: getHeatmapWeight(issue.priority),
-      }));
-
-    if (heatmapData.length > 0) {
-      heatmapRef.current = new google.maps.visualization.HeatmapLayer({
-        data: heatmapData,
-        map: mapInstanceRef.current,
-        radius: 30,
-        opacity: 0.8,
-      });
-    }
-  };
-
-  const createIndividualMarkers = () => {
-    if (!mapInstanceRef.current) return;
-
-    filteredIssues
-      .filter(issue => issue.latitude && issue.longitude)
-      .forEach(issue => {
-        const position = {
-          lat: parseFloat(issue.latitude!),
-          lng: parseFloat(issue.longitude!),
-        };
-
-        const marker = new google.maps.Marker({
-          position,
-          map: mapInstanceRef.current!,
-          title: issue.title,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            fillColor: getMarkerColor(issue.priority),
-            fillOpacity: 0.8,
-            strokeColor: "#ffffff",
-            strokeWeight: 2,
-            scale: getMarkerSize(issue.priority) / 2,
-          },
-        });
-
-        // Add click listener for marker details
-        marker.addListener("click", () => handleMarkerClick(issue.id));
-        markersRef.current.push(marker);
-      });
+    return L.divIcon({
+      className: 'custom-marker',
+      html: `<div style="background-color: ${color}; width: ${size}px; height: ${size}px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+    });
   };
 
   const getHeatmapWeight = (priority: string): number => {
@@ -254,50 +171,28 @@ export default function MapsIntegration() {
     }
   };
 
-  const handleMarkerClick = (issueId: string) => {
-    // TODO: Show issue details popup
-    console.log('Showing issue details for:', issueId);
-  };
+  const heatmapPoints: Array<[number, number, number]> = filteredIssues
+    .filter(issue => issue.latitude && issue.longitude)
+    .map(issue => [
+      parseFloat(issue.latitude!),
+      parseFloat(issue.longitude!),
+      getHeatmapWeight(issue.priority)
+    ]);
 
   const handleZoomIn = () => {
-    if (mapInstanceRef.current) {
-      const currentZoom = mapInstanceRef.current.getZoom() || 12;
-      mapInstanceRef.current.setZoom(currentZoom + 1);
-    }
+    setMapZoom(prev => Math.min(prev + 1, 18));
   };
 
   const handleZoomOut = () => {
-    if (mapInstanceRef.current) {
-      const currentZoom = mapInstanceRef.current.getZoom() || 12;
-      mapInstanceRef.current.setZoom(Math.max(currentZoom - 1, 1));
-    }
+    setMapZoom(prev => Math.max(prev - 1, 1));
   };
 
   const handleCurrentLocation = () => {
-    if (navigator.geolocation && mapInstanceRef.current) {
+    if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const userLocation = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          mapInstanceRef.current!.setCenter(userLocation);
-          mapInstanceRef.current!.setZoom(15);
-
-          // Add a marker for user's current location
-          new google.maps.Marker({
-            position: userLocation,
-            map: mapInstanceRef.current!,
-            title: "Your Location",
-            icon: {
-              path: google.maps.SymbolPath.CIRCLE,
-              fillColor: "#4285F4",
-              fillOpacity: 1,
-              strokeColor: "#ffffff",
-              strokeWeight: 3,
-              scale: 8,
-            },
-          });
+          setMapCenter([position.coords.latitude, position.coords.longitude]);
+          setMapZoom(15);
         },
         (error) => {
           console.error('Error getting location:', error);
@@ -368,84 +263,101 @@ export default function MapsIntegration() {
           
           {/* Map Container */}
           <div className="h-96 bg-muted rounded-lg relative overflow-hidden" data-testid="map-container">
-            {!isMapLoaded && (
-              <div className="absolute inset-0 flex items-center justify-center z-10">
-                <div className="text-center">
-                  <i className="fas fa-spinner fa-spin text-2xl text-muted-foreground mb-2"></i>
-                  <p className="text-muted-foreground">Loading Raipur map...</p>
-                </div>
-              </div>
-            )}
-            
-            {/* Google Maps Container */}
-            <div 
-              ref={mapRef}
+            <MapContainer
+              center={mapCenter}
+              zoom={mapZoom}
               className="w-full h-full rounded-lg"
-              style={{ opacity: isMapLoaded ? 1 : 0 }}
-            />
+              ref={mapRef}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              
+              <MapController center={mapCenter} zoom={mapZoom} />
+              
+              {viewMode === "heatmap" ? (
+                <HeatmapLayer points={heatmapPoints} />
+              ) : (
+                filteredIssues.map((issue) => (
+                  <Marker
+                    key={issue.id}
+                    position={[parseFloat(issue.latitude!), parseFloat(issue.longitude!)]}
+                    icon={createCustomIcon(issue.priority)}
+                  >
+                    <Popup>
+                      <div className="p-2">
+                        <h3 className="font-semibold text-sm">{issue.title}</h3>
+                        <p className="text-xs text-muted-foreground mt-1">{issue.location}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge className="text-xs">{issue.priority}</Badge>
+                          <Badge className="text-xs">{issue.status}</Badge>
+                        </div>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))
+              )}
+            </MapContainer>
 
             {/* Map Controls */}
-            {isMapLoaded && (
-              <>
-                <div className="absolute top-4 right-4 space-y-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleZoomIn}
-                    data-testid="button-zoom-in"
-                  >
-                    <i className="fas fa-plus"></i>
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleZoomOut}
-                    data-testid="button-zoom-out"
-                  >
-                    <i className="fas fa-minus"></i>
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleCurrentLocation}
-                    data-testid="button-current-location"
-                  >
-                    <i className="fas fa-location-arrow"></i>
-                  </Button>
-                </div>
+            <div className="absolute top-4 right-4 space-y-2 z-[1000]">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleZoomIn}
+                data-testid="button-zoom-in"
+              >
+                <i className="fas fa-plus"></i>
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleZoomOut}
+                data-testid="button-zoom-out"
+              >
+                <i className="fas fa-minus"></i>
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleCurrentLocation}
+                data-testid="button-current-location"
+              >
+                <i className="fas fa-location-arrow"></i>
+              </Button>
+            </div>
 
-                {/* Map Legend */}
-                <div className="absolute bottom-4 left-4 bg-card rounded-lg p-3 shadow-md">
-                  <h5 className="text-sm font-medium text-foreground mb-2">Issue Priority</h5>
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                      <span className="text-xs text-muted-foreground">High Priority</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                      <span className="text-xs text-muted-foreground">Medium Priority</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                      <span className="text-xs text-muted-foreground">Low Priority</span>
-                    </div>
-                  </div>
+            {/* Map Legend */}
+            <div className="absolute bottom-4 left-4 bg-card rounded-lg p-3 shadow-md z-[1000]">
+              <h5 className="text-sm font-medium text-foreground mb-2">Issue Priority</h5>
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                  <span className="text-xs text-muted-foreground">High Priority</span>
                 </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                  <span className="text-xs text-muted-foreground">Medium Priority</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <span className="text-xs text-muted-foreground">Low Priority</span>
+                </div>
+              </div>
+            </div>
 
-                {/* Current View Info */}
-                <div className="absolute top-4 left-4 bg-card rounded-lg p-2 shadow-md">
-                  <div className="flex items-center space-x-2">
-                    <Badge variant="outline">
-                      {viewMode === "heatmap" ? "Heatmap View" : "Individual Markers"}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {filteredIssues.length} issues shown
-                    </span>
-                  </div>
-                </div>
-              </>
-            )}
+            {/* Current View Info */}
+            <div className="absolute top-4 left-4 bg-card rounded-lg p-2 shadow-md z-[1000]">
+              <div className="flex items-center space-x-2">
+                <Badge variant="outline">
+                  {viewMode === "heatmap" ? "Heatmap View" : "Individual Markers"}
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  {filteredIssues.length} issues shown
+                </span>
+              </div>
+            </div>
           </div>
           
           {/* Map Statistics */}
@@ -481,7 +393,7 @@ export default function MapsIntegration() {
             <div className="flex items-center space-x-2">
               <i className="fas fa-map-marked-alt text-primary"></i>
               <span className="text-sm text-foreground">
-                <strong>Real-time Google Maps Integration Active:</strong> Showing live street data for Raipur, Chhattisgarh (492001).
+                <strong>OpenStreetMap Integration:</strong> Showing live street data for Raipur, Chhattisgarh (492001).
                 Click markers to view issue details, switch to heatmap view, or use your current location.
               </span>
             </div>
