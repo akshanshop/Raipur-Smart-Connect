@@ -146,6 +146,8 @@ async function handleOAuthUser(profile: any, provider: string, role?: string) {
         profileImageUrl: profileImageUrl || user.profileImageUrl,
         ...(role && { role }),
       });
+      // Re-fetch to get updated user
+      user = await storage.getUserByOAuth(provider, profile.id);
     } else {
       // Create new user
       await storage.upsertUser({
@@ -162,6 +164,7 @@ async function handleOAuthUser(profile: any, provider: string, role?: string) {
   } else if (role && user.role !== role) {
     // Update role if it changed
     await storage.updateUser(user.id, { role });
+    // Re-fetch to get updated user
     user = await storage.getUserByOAuth(provider, profile.id);
   }
 
