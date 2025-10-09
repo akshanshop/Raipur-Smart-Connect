@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,12 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   FileText, CheckCircle, Clock, AlertTriangle, 
-  MapPin, Trash2, Upload, Search, Filter
+  MapPin, Trash2, Upload, Search, Filter, LogOut
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Loader } from "@googlemaps/js-api-loader";
 
 interface DashboardStats {
   total: number;
@@ -53,10 +55,17 @@ interface HeatmapPoint {
 
 export default function OfficialsDashboard() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [selectedIssue, setSelectedIssue] = useState<IssueItem | null>(null);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [mapViewMode, setMapViewMode] = useState<"heatmap" | "individual">("individual");
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const markersRef = useRef<google.maps.Marker[]>([]);
+  const heatmapRef = useRef<google.maps.visualization.HeatmapLayer | null>(null);
 
   // Fetch dashboard stats
   const { data: stats } = useQuery<DashboardStats>({
@@ -146,30 +155,218 @@ export default function OfficialsDashboard() {
     resolveIssueMutation.mutate({ id: selectedIssue.id, formData });
   };
 
+  // Map initialization
+  useEffect(() => {
+    initializeMap();
+    
+    return () => {
+      if (heatmapRef.current) {
+        heatmapRef.current.setMap(null);
+      }
+      markersRef.current.forEach(marker => marker.setMap(null));
+      markersRef.current = [];
+    };
+  }, []);
+
+  useEffect(() => {
+    if (mapInstanceRef.current && isMapLoaded) {
+      updateMapMarkers();
+    }
+  }, [heatmapData, mapViewMode, isMapLoaded]);
+
+  const initializeMap = async () => {
+    if (!mapRef.current) return;
+
+    try {
+      const loader = new Loader({
+        apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY!,
+        version: "weekly",
+        libraries: ["visualization"],
+      });
+
+      await loader.load();
+
+      const raipurCenter = { lat: 21.2514, lng: 81.6296 };
+
+      const map = new google.maps.Map(mapRef.current, {
+        center: raipurCenter,
+        zoom: 12,
+        mapTypeId: google.maps.MapTypeId.ROADMAP,
+      });
+
+      mapInstanceRef.current = map;
+      setIsMapLoaded(true);
+    } catch (error) {
+      console.error("Error loading Google Maps:", error);
+    }
+  };
+
+  const updateMapMarkers = () => {
+    if (!mapInstanceRef.current) return;
+
+    markersRef.current.forEach(marker => marker.setMap(null));
+    markersRef.current = [];
+
+    if (heatmapRef.current) {
+      heatmapRef.current.setMap(null);
+      heatmapRef.current = null;
+    }
+
+    if (mapViewMode === "heatmap") {
+      createHeatmap();
+    } else {
+      createIndividualMarkers();
+    }
+  };
+
+  const createHeatmap = () => {
+    if (!mapInstanceRef.current || !heatmapData.length) return;
+
+    const heatmapPoints = heatmapData.map(point => ({
+      location: new google.maps.LatLng(point.lat, point.lng),
+      weight: getHeatmapWeight(point.priority),
+    }));
+
+    heatmapRef.current = new google.maps.visualization.HeatmapLayer({
+      data: heatmapPoints,
+      map: mapInstanceRef.current,
+      radius: 30,
+      opacity: 0.8,
+    });
+  };
+
+  const createIndividualMarkers = () => {
+    if (!mapInstanceRef.current || !heatmapData.length) return;
+
+    heatmapData.forEach(point => {
+      const marker = new google.maps.Marker({
+        position: { lat: point.lat, lng: point.lng },
+        map: mapInstanceRef.current!,
+        title: point.title,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          fillColor: getMarkerColor(point.priority),
+          fillOpacity: 0.8,
+          strokeColor: "#ffffff",
+          strokeWeight: 2,
+          scale: 8,
+        },
+      });
+
+      markersRef.current.push(marker);
+    });
+  };
+
+  const getMarkerColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent':
+      case 'high':
+        return '#ef4444';
+      case 'medium':
+        return '#f97316';
+      case 'low':
+        return '#22c55e';
+      default:
+        return '#6b7280';
+    }
+  };
+
+  const getHeatmapWeight = (priority: string): number => {
+    switch (priority) {
+      case 'urgent':
+        return 4;
+      case 'high':
+        return 3;
+      case 'medium':
+        return 2;
+      case 'low':
+        return 1;
+      default:
+        return 1;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Officials Dashboard</h1>
-            <p className="text-muted-foreground">Manage and resolve civic issues</p>
+    <div className="min-h-screen bg-background">
+      {/* Enhanced Header with Logout */}
+      <header className="sticky top-0 z-50 glass-effect border-b border-border/50 cool-shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-20">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center magnetic-button">
+                <i className="fas fa-user-shield text-white text-lg"></i>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gradient">Officials Dashboard</h1>
+                <p className="text-sm text-muted-foreground">Manage and resolve civic issues</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              {/* User Profile */}
+              <div className="flex items-center space-x-3 bg-card/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-border/30">
+                {user?.profileImageUrl ? (
+                  <img 
+                    src={user.profileImageUrl} 
+                    alt="Profile" 
+                    className="w-10 h-10 rounded-lg object-cover ring-2 ring-primary/20"
+                    data-testid="img-official-avatar"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                    <i className="fas fa-user text-primary text-lg"></i>
+                  </div>
+                )}
+                <div className="hidden sm:block">
+                  <p className="text-sm font-medium text-foreground" data-testid="text-official-name">
+                    {user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user?.email || 'Official'}
+                  </p>
+                  <Badge className="bg-primary/20 text-primary border-primary/30">Official</Badge>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.location.href = '/api/logout'}
+                  data-testid="button-official-logout"
+                  className="rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all duration-300"
+                  title="Sign out"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="ml-2 hidden sm:inline">Logout</span>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        {/* Enhanced Hero Section */}
+        <div className="relative rounded-3xl overflow-hidden hero-enhanced p-8 text-white pattern-overlay cool-shadow animate-fade-in-up">
+          <div className="relative z-10">
+            <h2 className="text-3xl font-bold mb-2 flex items-center">
+              <i className="fas fa-chart-line mr-3 animate-float"></i>
+              Dashboard Overview
+            </h2>
+            <p className="text-lg opacity-95">
+              Monitor and manage all civic issues efficiently
+            </p>
           </div>
         </div>
 
-        {/* Stats Cards */}
+        {/* Enhanced Stats Cards with Animations */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card data-testid="card-stats-total">
+          <Card data-testid="card-stats-total" className="floating-card animate-fade-in-up delay-100 hover:border-primary/50 transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Issues</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold" data-testid="text-total-issues">{stats?.total ?? 0}</div>
+              <div className="text-2xl font-bold text-gradient" data-testid="text-total-issues">{stats?.total ?? 0}</div>
             </CardContent>
           </Card>
 
-          <Card data-testid="card-stats-solved">
+          <Card data-testid="card-stats-solved" className="floating-card animate-fade-in-up delay-200 hover:border-green-500/50 transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Solved</CardTitle>
               <CheckCircle className="h-4 w-4 text-green-500" />
@@ -179,7 +376,7 @@ export default function OfficialsDashboard() {
             </CardContent>
           </Card>
 
-          <Card data-testid="card-stats-pending">
+          <Card data-testid="card-stats-pending" className="floating-card animate-fade-in-up delay-300 hover:border-yellow-500/50 transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Pending</CardTitle>
               <Clock className="h-4 w-4 text-yellow-500" />
@@ -189,7 +386,7 @@ export default function OfficialsDashboard() {
             </CardContent>
           </Card>
 
-          <Card data-testid="card-stats-urgent">
+          <Card data-testid="card-stats-urgent" className="floating-card animate-fade-in-up delay-400 hover:border-red-500/50 transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Urgent</CardTitle>
               <AlertTriangle className="h-4 w-4 text-red-500" />
@@ -227,11 +424,21 @@ export default function OfficialsDashboard() {
           </CardContent>
         </Card>
 
-        {/* Tabs for different views */}
+        {/* Enhanced Tabs for different views */}
         <Tabs defaultValue="issues" className="w-full">
-          <TabsList>
-            <TabsTrigger value="issues" data-testid="tab-issues">Issues</TabsTrigger>
-            <TabsTrigger value="heatmap" data-testid="tab-heatmap">Heatmap</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="issues" data-testid="tab-issues" className="transition-all duration-300">
+              <FileText className="h-4 w-4 mr-2" />
+              Issues List
+            </TabsTrigger>
+            <TabsTrigger value="heatmap" data-testid="tab-heatmap" className="transition-all duration-300">
+              <MapPin className="h-4 w-4 mr-2" />
+              Data View
+            </TabsTrigger>
+            <TabsTrigger value="map" data-testid="tab-map" className="transition-all duration-300">
+              <i className="fas fa-map mr-2"></i>
+              Live Map
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="issues" className="space-y-4">
@@ -379,9 +586,12 @@ export default function OfficialsDashboard() {
           </TabsContent>
 
           <TabsContent value="heatmap">
-            <Card>
+            <Card className="floating-card">
               <CardHeader>
-                <CardTitle>Issues Heatmap</CardTitle>
+                <CardTitle className="flex items-center">
+                  <MapPin className="h-5 w-5 mr-2 text-primary" />
+                  Issues Data View
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -390,7 +600,7 @@ export default function OfficialsDashboard() {
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {heatmapData.map((point) => (
-                      <Card key={point.id} data-testid={`card-heatmap-${point.id}`}>
+                      <Card key={point.id} data-testid={`card-heatmap-${point.id}`} className="floating-card hover:border-primary/50 transition-all duration-300">
                         <CardContent className="pt-6">
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
@@ -412,6 +622,110 @@ export default function OfficialsDashboard() {
                       No location data available
                     </div>
                   )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* New Map Tab */}
+          <TabsContent value="map">
+            <Card className="floating-card animate-fade-in-up">
+              <CardHeader>
+                <CardTitle className="flex items-center text-gradient">
+                  <i className="fas fa-map-marked-alt mr-2"></i>
+                  Live Issues Map
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Map Controls */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant={mapViewMode === "heatmap" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setMapViewMode("heatmap")}
+                        data-testid="button-map-heatmap-view"
+                        className="modern-button"
+                      >
+                        <i className="fas fa-fire mr-2"></i>
+                        Heatmap
+                      </Button>
+                      <Button
+                        variant={mapViewMode === "individual" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setMapViewMode("individual")}
+                        data-testid="button-map-individual-view"
+                        className="modern-button"
+                      >
+                        <i className="fas fa-map-pin mr-2"></i>
+                        Markers
+                      </Button>
+                    </div>
+                    <Badge variant="outline" className="pulse-glow">
+                      {heatmapData.length} issues on map
+                    </Badge>
+                  </div>
+
+                  {/* Map Container */}
+                  <div className="h-96 bg-muted rounded-lg relative overflow-hidden" data-testid="officials-map-container">
+                    {!isMapLoaded && (
+                      <div className="absolute inset-0 flex items-center justify-center z-10">
+                        <div className="text-center">
+                          <Loader2 className="h-8 w-8 animate-spin text-primary mb-2 mx-auto" />
+                          <p className="text-muted-foreground">Loading map...</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Google Maps Container */}
+                    <div 
+                      ref={mapRef}
+                      className="w-full h-full rounded-lg"
+                      style={{ opacity: isMapLoaded ? 1 : 0 }}
+                    />
+
+                    {/* Map Legend */}
+                    {isMapLoaded && (
+                      <div className="absolute bottom-4 left-4 bg-card rounded-lg p-3 shadow-md">
+                        <h5 className="text-sm font-medium text-foreground mb-2">Priority Legend</h5>
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                            <span className="text-xs text-muted-foreground">Urgent/High</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                            <span className="text-xs text-muted-foreground">Medium</span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                            <span className="text-xs text-muted-foreground">Low</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* View Mode Info */}
+                    {isMapLoaded && (
+                      <div className="absolute top-4 left-4 bg-card rounded-lg p-2 shadow-md">
+                        <Badge variant="outline">
+                          {mapViewMode === "heatmap" ? "Heatmap View" : "Individual Markers"}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Map Info */}
+                  <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
+                    <div className="flex items-center space-x-2">
+                      <i className="fas fa-info-circle text-primary"></i>
+                      <span className="text-sm text-foreground">
+                        <strong>Real-time Google Maps Integration:</strong> Showing live data for Raipur, Chhattisgarh. 
+                        Toggle between heatmap and marker views to analyze issue distribution.
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
