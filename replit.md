@@ -8,9 +8,12 @@ Raipur Smart Connect is a unified civic engagement platform for Raipur city, con
   - Medium priority (orange): 3-7 reports in the area
   - Urgent priority (red): More than 7 reports in the area
   - Resolved issues are always shown in green on maps
-- **Citizen Map Visualization**: Added interactive map to citizen dashboard showing all reported issues with OpenStreetMap integration
-- **Report Density View**: Implemented color-coded markers based on report count (yellow: <3 reports, orange: 3-7 reports, red: >7 reports) for better visualization of problem areas
-- **Three View Modes**: Citizens can now switch between Heatmap, Individual Markers, and Density (by count) views on the map
+- **Three View Modes for All Maps**: Both Citizen and Officials dashboards now have identical map visualization with three view modes:
+  - **Individual Markers**: Color-coded by status (green for resolved) and priority (yellow/orange/red)
+  - **Heatmap View**: Heat intensity based on issue priority
+  - **Density View (By Count)**: Grouped reports with color-coded markers (yellow: <3, orange: 3-7, red: >7)
+- **Enhanced Officials Dashboard**: Added Analytics tab with full map visualization capabilities matching citizen dashboard
+- **Dynamic Map Legends**: Context-aware legends that adapt based on selected view mode
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
@@ -65,7 +68,29 @@ OpenAI's GPT-5 model powers multiple AI features:
 A notification system provides updates on complaint status, community activities, and city alerts. While WebSockets are architecturally prepared, current implementation uses polling for updates. Notifications are categorized and read status is maintained.
 
 ## Officials Dashboard
-The Officials Dashboard provides municipal staff with tools to manage civic issues. It includes role-based access control, statistics overview, priority distribution, issue management (search, filter, resolve with proof, delete), and a heatmap visualization of issues. The UI/UX features modern animations, glass morphism, and interactive OpenStreetMap integration via Leaflet with dual view modes (heatmap/markers), priority-based visualization, and custom marker styling.
+The Officials Dashboard provides municipal staff with tools to manage civic issues:
+
+### Core Features
+- **Role-based Access Control**: Secure authentication for municipal staff
+- **Statistics Overview**: Real-time metrics on issue status and priority distribution
+- **Issue Management**: Search, filter, resolve with proof upload, and delete capabilities
+- **Modern UI/UX**: Glass morphism effects and smooth animations
+
+### Map Visualization (Analytics Tab)
+- **Interactive OpenStreetMap**: View all city complaints on an interactive map
+- **Three View Modes** (identical to Citizen Dashboard):
+  1. **Individual Markers**: Each complaint shown as a separate marker with status-based colors:
+     - Green: Resolved issues
+     - Red: Urgent priority (>7 reports in area)
+     - Orange: Medium priority (3-7 reports in area)
+     - Yellow: Low priority (<3 reports in area)
+  2. **Heatmap View**: Heat intensity visualization based on issue priority
+  3. **Density View (By Count)**: Groups reports by location with color-coded markers:
+     - Yellow: Less than 3 reports at location
+     - Orange: 3-7 reports at location
+     - Red: More than 7 reports at location
+- **Interactive Popups**: Click markers to view detailed complaint information
+- **Dynamic Legends**: Context-aware legends that change based on selected view mode
 
 ## Citizen Dashboard
 The Citizen Dashboard now includes comprehensive map visualization features:
