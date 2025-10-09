@@ -21,6 +21,7 @@ import ComplaintForm from "@/components/complaint-form";
 import CommunityFeed from "@/components/community-feed";
 import EnhancedChatbot from "@/components/enhanced-chatbot";
 import AnalyticsDashboard from "@/components/analytics-dashboard";
+import MapsIntegration from "@/components/maps-integration";
 
 interface Notification {
   id: string;
@@ -336,7 +337,7 @@ export default function Dashboard() {
             <Card className="floating-card glass-modern card-squircle-lg animate-fade-in-right delay-200">
               <CardContent className="p-6">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-6 lg:grid-cols-8 squircle-lg mb-6">
+                  <TabsList className="grid w-full grid-cols-6 lg:grid-cols-9 squircle-lg mb-6">
                     <TabsTrigger value="overview" className="squircle-md text-xs">Overview</TabsTrigger>
                     <TabsTrigger value="search" className="squircle-md text-xs">Search</TabsTrigger>
                     <TabsTrigger value="notifications" className="squircle-md text-xs">Alerts</TabsTrigger>
@@ -345,6 +346,7 @@ export default function Dashboard() {
                     <TabsTrigger value="settings" className="squircle-md text-xs">Settings</TabsTrigger>
                     <TabsTrigger value="complaint" className="squircle-md text-xs">File Issue</TabsTrigger>
                     <TabsTrigger value="community" className="squircle-md text-xs">Community</TabsTrigger>
+                    <TabsTrigger value="map" className="squircle-md text-xs">Map</TabsTrigger>
                   </TabsList>
 
                   {/* Overview Tab - Original Dashboard Content */}
@@ -564,6 +566,11 @@ export default function Dashboard() {
                   {/* Community Feed Tab */}
                   <TabsContent value="community" className="space-y-6">
                     <CommunityFeed />
+                  </TabsContent>
+
+                  {/* Map Tab */}
+                  <TabsContent value="map" className="space-y-6">
+                    <MapsIntegration />
                   </TabsContent>
                 </Tabs>
               </CardContent>

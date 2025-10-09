@@ -75,7 +75,7 @@ function HeatmapLayer({ points }: { points: Array<[number, number, number]> }) {
 }
 
 export default function MapsIntegration() {
-  const [viewMode, setViewMode] = useState<"heatmap" | "individual">("individual");
+  const [viewMode, setViewMode] = useState<"heatmap" | "individual" | "density">("individual");
   const [areaFilter, setAreaFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [mapCenter, setMapCenter] = useState<[number, number]>([21.2514, 81.6296]);
@@ -144,6 +144,12 @@ export default function MapsIntegration() {
     }
   };
 
+  const getDensityColor = (count: number) => {
+    if (count < 3) return '#eab308'; // yellow
+    if (count >= 3 && count <= 7) return '#f97316'; // orange
+    return '#ef4444'; // red (>7)
+  };
+
   const createCustomIcon = (priority: string) => {
     const color = getMarkerColor(priority);
     const size = priority === 'urgent' || priority === 'high' ? 32 : priority === 'medium' ? 24 : 20;
@@ -151,6 +157,18 @@ export default function MapsIntegration() {
     return L.divIcon({
       className: 'custom-marker',
       html: `<div style="background-color: ${color}; width: ${size}px; height: ${size}px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+    });
+  };
+
+  const createDensityIcon = (count: number) => {
+    const color = getDensityColor(count);
+    const size = Math.min(20 + (count * 3), 50); // Scale size based on count
+    
+    return L.divIcon({
+      className: 'custom-marker',
+      html: `<div style="background-color: ${color}; width: ${size}px; height: ${size}px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 12px;">${count}</div>`,
       iconSize: [size, size],
       iconAnchor: [size / 2, size / 2],
     });
@@ -178,6 +196,22 @@ export default function MapsIntegration() {
       parseFloat(issue.longitude!),
       getHeatmapWeight(issue.priority)
     ]);
+
+  // Group issues by location for density view
+  const locationGroups = filteredIssues.reduce((acc, issue) => {
+    const key = `${issue.latitude},${issue.longitude}`;
+    if (!acc[key]) {
+      acc[key] = {
+        lat: parseFloat(issue.latitude!),
+        lng: parseFloat(issue.longitude!),
+        issues: [],
+        count: 0
+      };
+    }
+    acc[key].issues.push(issue);
+    acc[key].count++;
+    return acc;
+  }, {} as Record<string, { lat: number; lng: number; issues: MapIssue[]; count: number }>);
 
   const handleZoomIn = () => {
     setMapZoom(prev => Math.min(prev + 1, 18));
@@ -220,7 +254,7 @@ export default function MapsIntegration() {
                 data-testid="button-heatmap-view"
               >
                 <i className="fas fa-fire mr-2"></i>
-                Issue Heatmap
+                Heatmap
               </Button>
               <Button
                 variant={viewMode === "individual" ? "default" : "outline"}
@@ -229,7 +263,16 @@ export default function MapsIntegration() {
                 data-testid="button-individual-view"
               >
                 <i className="fas fa-map-pin mr-2"></i>
-                Individual Issues
+                Individual
+              </Button>
+              <Button
+                variant={viewMode === "density" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("density")}
+                data-testid="button-density-view"
+              >
+                <i className="fas fa-layer-group mr-2"></i>
+                By Count
               </Button>
             </div>
             
@@ -278,6 +321,32 @@ export default function MapsIntegration() {
               
               {viewMode === "heatmap" ? (
                 <HeatmapLayer points={heatmapPoints} />
+              ) : viewMode === "density" ? (
+                Object.values(locationGroups).map((group, index) => (
+                  <Marker
+                    key={`group-${index}`}
+                    position={[group.lat, group.lng]}
+                    icon={createDensityIcon(group.count)}
+                  >
+                    <Popup>
+                      <div className="p-2">
+                        <h3 className="font-semibold text-sm">{group.count} Reports at this location</h3>
+                        <p className="text-xs text-muted-foreground mt-1">{group.issues[0].location}</p>
+                        <div className="mt-2 max-h-40 overflow-y-auto space-y-1">
+                          {group.issues.map((issue) => (
+                            <div key={issue.id} className="text-xs border-b pb-1">
+                              <p className="font-medium">{issue.title}</p>
+                              <div className="flex gap-1 mt-1">
+                                <Badge className="text-xs">{issue.priority}</Badge>
+                                <Badge className="text-xs">{issue.status}</Badge>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))
               ) : (
                 filteredIssues.map((issue) => (
                   <Marker
@@ -330,31 +399,53 @@ export default function MapsIntegration() {
 
             {/* Map Legend */}
             <div className="absolute bottom-4 left-4 bg-card rounded-lg p-3 shadow-md z-[1000]">
-              <h5 className="text-sm font-medium text-foreground mb-2">Issue Priority</h5>
-              <div className="space-y-1">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                  <span className="text-xs text-muted-foreground">High Priority</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                  <span className="text-xs text-muted-foreground">Medium Priority</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  <span className="text-xs text-muted-foreground">Low Priority</span>
-                </div>
-              </div>
+              {viewMode === "density" ? (
+                <>
+                  <h5 className="text-sm font-medium text-foreground mb-2">Report Density</h5>
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                      <span className="text-xs text-muted-foreground">&lt;3 reports</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                      <span className="text-xs text-muted-foreground">3-7 reports</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                      <span className="text-xs text-muted-foreground">&gt;7 reports</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h5 className="text-sm font-medium text-foreground mb-2">Issue Priority</h5>
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                      <span className="text-xs text-muted-foreground">High Priority</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                      <span className="text-xs text-muted-foreground">Medium Priority</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      <span className="text-xs text-muted-foreground">Low Priority</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Current View Info */}
             <div className="absolute top-4 left-4 bg-card rounded-lg p-2 shadow-md z-[1000]">
               <div className="flex items-center space-x-2">
                 <Badge variant="outline">
-                  {viewMode === "heatmap" ? "Heatmap View" : "Individual Markers"}
+                  {viewMode === "heatmap" ? "Heatmap View" : viewMode === "density" ? "Density View" : "Individual Markers"}
                 </Badge>
                 <span className="text-xs text-muted-foreground">
-                  {filteredIssues.length} issues shown
+                  {viewMode === "density" ? `${Object.keys(locationGroups).length} locations` : `${filteredIssues.length} issues`} shown
                 </span>
               </div>
             </div>

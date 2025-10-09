@@ -7,6 +7,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { setupOAuth } from "./oauthAuth";
 import { processChatMessage, generateComplaintSummary } from "./openai";
+import { detectSpam, detectCommunityIssueSpam } from "./spamDetection";
 import { insertComplaintSchema, insertCommunityIssueSchema, insertCommentSchema, insertChatMessageSchema } from "@shared/schema";
 
 const upload = multer({
@@ -132,6 +133,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
 
+      // AI Spam Detection
+      const spamAnalysis = await detectSpam(
+        title || `${complaintData.category} Issue`,
+        complaintData.description,
+        complaintData.category,
+        complaintData.location
+      );
+
+      // If spam detected with high confidence, reject and notify user
+      if (spamAnalysis.isSpam && spamAnalysis.confidence > 0.7) {
+        await storage.createNotification({
+          userId,
+          title: "⚠️ Complaint Rejected - Spam Detected",
+          message: `Your complaint was automatically rejected by our AI system. Reason: ${spamAnalysis.reason}. Category: ${spamAnalysis.category}. If you believe this is an error, please contact support.`,
+          type: "alert",
+          relatedId: null
+        });
+
+        return res.status(400).json({ 
+          message: "Complaint rejected due to spam detection",
+          reason: spamAnalysis.reason,
+          category: spamAnalysis.category
+        });
+      }
+
       const complaint = await storage.createComplaint({
         ...complaintData,
         title: title || `${complaintData.category} Issue`,
@@ -219,6 +245,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const issueData = insertCommunityIssueSchema.parse(req.body);
 
       const mediaUrls = req.files ? req.files.map((file: any) => `/uploads/${file.filename}`) : [];
+
+      // AI Spam Detection for community issues
+      const spamAnalysis = await detectCommunityIssueSpam(
+        issueData.title,
+        issueData.description,
+        issueData.category
+      );
+
+      // If spam detected with high confidence, reject and notify user
+      if (spamAnalysis.isSpam && spamAnalysis.confidence > 0.7) {
+        await storage.createNotification({
+          userId,
+          title: "⚠️ Community Post Rejected - Spam Detected",
+          message: `Your community post was automatically rejected by our AI system. Reason: ${spamAnalysis.reason}. Category: ${spamAnalysis.category}. If you believe this is an error, please contact support.`,
+          type: "alert",
+          relatedId: null
+        });
+
+        return res.status(400).json({ 
+          message: "Community post rejected due to spam detection",
+          reason: spamAnalysis.reason,
+          category: spamAnalysis.category
+        });
+      }
 
       const issue = await storage.createCommunityIssue({
         ...issueData,
