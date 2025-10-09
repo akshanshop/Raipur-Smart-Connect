@@ -220,7 +220,12 @@ export default function OfficialsDashboard() {
   };
 
   const createHeatmap = () => {
-    if (!mapInstanceRef.current || !heatmapData.length) return;
+    if (!mapInstanceRef.current) return;
+    
+    if (!heatmapData.length) {
+      console.log("No heatmap data available");
+      return;
+    }
 
     const heatmapPoints = heatmapData.map(point => ({
       location: new google.maps.LatLng(point.lat, point.lng),
