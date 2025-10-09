@@ -25,7 +25,7 @@ OpenAI's GPT-5 model powers a multilingual chatbot in English, Hindi, and Marath
 A notification system provides updates on complaint status, community activities, and city alerts. While WebSockets are architecturally prepared, current implementation uses polling for updates. Notifications are categorized and read status is maintained.
 
 ## Officials Dashboard
-The Officials Dashboard provides municipal staff with tools to manage civic issues. It includes role-based access control, statistics overview, priority distribution, issue management (search, filter, resolve with proof, delete), and a heatmap visualization of issues. The UI/UX features modern animations, glass morphism, and interactive Google Maps integration with dual view modes (heatmap/markers), priority-based visualization, and marker clustering.
+The Officials Dashboard provides municipal staff with tools to manage civic issues. It includes role-based access control, statistics overview, priority distribution, issue management (search, filter, resolve with proof, delete), and a heatmap visualization of issues. The UI/UX features modern animations, glass morphism, and interactive OpenStreetMap integration via Leaflet with dual view modes (heatmap/markers), priority-based visualization, and custom marker styling.
 
 # External Dependencies
 
@@ -45,6 +45,12 @@ The Officials Dashboard provides municipal staff with tools to manage civic issu
 - **shadcn/ui**: Component library built on Radix UI primitives.
 - **Radix UI**: Headless UI component primitives.
 - **Tailwind CSS**: Utility-first CSS framework.
+
+## Maps and Geolocation
+- **Leaflet**: Open-source JavaScript library for interactive maps.
+- **React Leaflet**: React components for Leaflet maps.
+- **OpenStreetMap**: Free, open-source map tiles for displaying Raipur city.
+- **leaflet.heat**: Heatmap plugin for Leaflet to visualize issue density.
 
 ## Development and Build Tools
 - **Vite**: Frontend build tool and development server.
