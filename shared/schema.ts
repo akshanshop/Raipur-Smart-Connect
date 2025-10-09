@@ -197,6 +197,7 @@ export const insertComplaintSchema = createInsertSchema(complaints).omit({
   id: true,
   ticketNumber: true,
   userId: true,
+  priority: true,
   upvotes: true,
   createdAt: true,
   updatedAt: true,
