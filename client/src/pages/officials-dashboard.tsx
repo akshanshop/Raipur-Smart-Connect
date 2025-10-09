@@ -102,7 +102,7 @@ export default function OfficialsDashboard() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [selectedIssue, setSelectedIssue] = useState<IssueItem | null>(null);
-  const [mapViewMode, setMapViewMode] = useState<"heatmap" | "individual">("individual");
+  const [mapViewMode, setMapViewMode] = useState<"heatmap" | "individual" | "density">("individual");
   const [mapCenter, setMapCenter] = useState<[number, number]>([21.2514, 81.6296]);
   const [mapZoom, setMapZoom] = useState(12);
   const mapRef = useRef<L.Map | null>(null);
@@ -195,27 +195,51 @@ export default function OfficialsDashboard() {
     resolveIssueMutation.mutate({ id: selectedIssue.id, formData });
   };
 
-  const getMarkerColor = (priority: string) => {
+  const getMarkerColor = (status: string, priority: string) => {
+    // Green for resolved issues
+    if (status === 'resolved') {
+      return '#22c55e'; // green
+    }
+    
+    // Color based on priority for active issues
     switch (priority) {
       case 'urgent':
       case 'high':
-        return '#ef4444';
+        return '#ef4444'; // red (>7 reports in area)
       case 'medium':
-        return '#f97316';
+        return '#f97316'; // orange (3-7 reports in area)
       case 'low':
-        return '#22c55e';
+        return '#eab308'; // yellow (<3 reports in area)
       default:
         return '#6b7280';
     }
   };
 
-  const createCustomIcon = (priority: string) => {
-    const color = getMarkerColor(priority);
+  const getDensityColor = (count: number) => {
+    if (count < 3) return '#eab308'; // yellow
+    if (count >= 3 && count <= 7) return '#f97316'; // orange
+    return '#ef4444'; // red (>7)
+  };
+
+  const createCustomIcon = (status: string, priority: string) => {
+    const color = getMarkerColor(status, priority);
     const size = priority === 'urgent' || priority === 'high' ? 32 : priority === 'medium' ? 24 : 20;
     
     return L.divIcon({
       className: 'custom-marker',
       html: `<div style="background-color: ${color}; width: ${size}px; height: ${size}px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+    });
+  };
+
+  const createDensityIcon = (count: number) => {
+    const color = getDensityColor(count);
+    const size = Math.min(20 + (count * 3), 50); // Scale size based on count
+    
+    return L.divIcon({
+      className: 'custom-marker',
+      html: `<div style="background-color: ${color}; width: ${size}px; height: ${size}px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 12px;">${count}</div>`,
       iconSize: [size, size],
       iconAnchor: [size / 2, size / 2],
     });
@@ -241,6 +265,22 @@ export default function OfficialsDashboard() {
     point.lng,
     getHeatmapWeight(point.priority)
   ]);
+
+  // Group issues by location for density view
+  const locationGroups = heatmapData.reduce((acc, point) => {
+    const key = `${point.lat},${point.lng}`;
+    if (!acc[key]) {
+      acc[key] = {
+        lat: point.lat,
+        lng: point.lng,
+        issues: [],
+        count: 0
+      };
+    }
+    acc[key].issues.push(point);
+    acc[key].count++;
+    return acc;
+  }, {} as Record<string, { lat: number; lng: number; issues: HeatmapPoint[]; count: number }>);
 
   return (
     <div className="min-h-screen bg-background">
@@ -601,6 +641,16 @@ export default function OfficialsDashboard() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <Button
+                        variant={mapViewMode === "individual" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setMapViewMode("individual")}
+                        data-testid="button-map-individual-view"
+                        className="modern-button"
+                      >
+                        <i className="fas fa-map-pin mr-2"></i>
+                        Individual
+                      </Button>
+                      <Button
                         variant={mapViewMode === "heatmap" ? "default" : "outline"}
                         size="sm"
                         onClick={() => setMapViewMode("heatmap")}
@@ -611,18 +661,18 @@ export default function OfficialsDashboard() {
                         Heatmap
                       </Button>
                       <Button
-                        variant={mapViewMode === "individual" ? "default" : "outline"}
+                        variant={mapViewMode === "density" ? "default" : "outline"}
                         size="sm"
-                        onClick={() => setMapViewMode("individual")}
-                        data-testid="button-map-individual-view"
+                        onClick={() => setMapViewMode("density")}
+                        data-testid="button-map-density-view"
                         className="modern-button"
                       >
-                        <i className="fas fa-map-pin mr-2"></i>
-                        Markers
+                        <i className="fas fa-layer-group mr-2"></i>
+                        By Count
                       </Button>
                     </div>
                     <Badge variant="outline" className="pulse-glow">
-                      {heatmapData.length} issues on map
+                      {mapViewMode === "density" ? `${Object.keys(locationGroups).length} locations` : `${heatmapData.length} issues`} on map
                     </Badge>
                   </div>
 
@@ -643,12 +693,37 @@ export default function OfficialsDashboard() {
                       
                       {mapViewMode === "heatmap" ? (
                         <HeatmapLayer points={heatmapPoints} />
+                      ) : mapViewMode === "density" ? (
+                        Object.values(locationGroups).map((group, index) => (
+                          <Marker
+                            key={`group-${index}`}
+                            position={[group.lat, group.lng]}
+                            icon={createDensityIcon(group.count)}
+                          >
+                            <Popup>
+                              <div className="p-2">
+                                <h3 className="font-semibold text-sm">{group.count} Reports at this location</h3>
+                                <div className="mt-2 max-h-40 overflow-y-auto space-y-1">
+                                  {group.issues.map((issue) => (
+                                    <div key={issue.id} className="text-xs border-b pb-1">
+                                      <p className="font-medium">{issue.title}</p>
+                                      <div className="flex gap-1 mt-1">
+                                        <Badge className="text-xs">{issue.priority}</Badge>
+                                        <Badge className="text-xs">{issue.status}</Badge>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </Popup>
+                          </Marker>
+                        ))
                       ) : (
                         heatmapData.map((point) => (
                           <Marker
                             key={point.id}
                             position={[point.lat, point.lng]}
-                            icon={createCustomIcon(point.priority)}
+                            icon={createCustomIcon(point.status, point.priority)}
                           >
                             <Popup>
                               <div className="p-2">
@@ -667,27 +742,53 @@ export default function OfficialsDashboard() {
 
                     {/* Map Legend */}
                     <div className="absolute bottom-4 left-4 bg-card rounded-lg p-3 shadow-md z-[1000]">
-                      <h5 className="text-sm font-medium text-foreground mb-2">Priority Legend</h5>
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                          <span className="text-xs text-muted-foreground">Urgent/High</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                          <span className="text-xs text-muted-foreground">Medium</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                          <span className="text-xs text-muted-foreground">Low</span>
-                        </div>
-                      </div>
+                      {mapViewMode === "density" ? (
+                        <>
+                          <h5 className="text-sm font-medium text-foreground mb-2">Report Density</h5>
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                              <span className="text-xs text-muted-foreground">&lt;3 reports</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                              <span className="text-xs text-muted-foreground">3-7 reports</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                              <span className="text-xs text-muted-foreground">&gt;7 reports</span>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <h5 className="text-sm font-medium text-foreground mb-2">Issue Status</h5>
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                              <span className="text-xs text-muted-foreground">Resolved</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                              <span className="text-xs text-muted-foreground">Urgent (&gt;7 reports)</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                              <span className="text-xs text-muted-foreground">Medium (3-7 reports)</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                              <span className="text-xs text-muted-foreground">Low (&lt;3 reports)</span>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     {/* View Mode Info */}
                     <div className="absolute top-4 left-4 bg-card rounded-lg p-2 shadow-md z-[1000]">
                       <Badge variant="outline">
-                        {mapViewMode === "heatmap" ? "Heatmap View" : "Individual Markers"}
+                        {mapViewMode === "heatmap" ? "Heatmap View" : mapViewMode === "density" ? "Density View" : "Individual Markers"}
                       </Badge>
                     </div>
                   </div>
@@ -698,7 +799,7 @@ export default function OfficialsDashboard() {
                       <i className="fas fa-info-circle text-primary"></i>
                       <span className="text-sm text-foreground">
                         <strong>OpenStreetMap Integration:</strong> Showing live data for Raipur, Chhattisgarh. 
-                        Toggle between heatmap and marker views to analyze issue distribution.
+                        Toggle between Individual markers, Heatmap, and By Count views to analyze issue distribution and density.
                       </span>
                     </div>
                   </div>
