@@ -29,6 +29,7 @@ export default function Community() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [locationStatus, setLocationStatus] = useState<'pending' | 'success' | 'error'>('pending');
   const queryClient = useQueryClient();
 
   // Redirect to home if not authenticated
@@ -135,35 +136,56 @@ export default function Community() {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Auto-request GPS location on component mount
+  useEffect(() => {
+    if (isAuthenticated) {
+      getCurrentLocation();
+    }
+  }, [isAuthenticated]);
+
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
+      setLocationStatus('pending');
       navigator.geolocation.getCurrentPosition(
         (position) => {
           form.setValue("latitude", position.coords.latitude.toString());
           form.setValue("longitude", position.coords.longitude.toString());
+          setLocationStatus('success');
           toast({
             title: "Location captured",
             description: "Your current location has been added to the issue.",
           });
         },
         (error) => {
+          setLocationStatus('error');
           toast({
-            title: "Location error",
-            description: "Could not get your current location. Please enter manually.",
+            title: "Location permission required",
+            description: "Please allow location access to post an issue. This ensures accurate issue reporting.",
             variant: "destructive",
           });
         }
       );
     } else {
+      setLocationStatus('error');
       toast({
         title: "Location not supported",
-        description: "Geolocation is not supported by this browser.",
+        description: "Geolocation is not supported by this browser. Please use a modern browser.",
         variant: "destructive",
       });
     }
   };
 
   const onSubmit = (data: CommunityIssueFormData) => {
+    // Hard block submission without valid GPS location
+    if (locationStatus !== 'success') {
+      toast({
+        title: "GPS Location Required",
+        description: "Please allow location access to post your issue. This ensures accurate issue reporting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     createIssueMutation.mutate({
       ...data,
       files: selectedFiles,
@@ -380,7 +402,7 @@ export default function Community() {
                       name="location"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Location</FormLabel>
+                          <FormLabel>Location Address</FormLabel>
                           <div className="flex space-x-2">
                             <FormControl>
                               <Input 
@@ -395,13 +417,45 @@ export default function Community() {
                               onClick={getCurrentLocation}
                               data-testid="button-get-current-location"
                             >
-                              <i className="fas fa-location-arrow"></i>
+                              <i className={`fas fa-location-arrow ${locationStatus === 'pending' ? 'fa-spin' : ''}`}></i>
                             </Button>
                           </div>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+
+                    {/* GPS Status Indicator */}
+                    <div className={`p-3 rounded-lg ${
+                      locationStatus === 'success' ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 
+                      locationStatus === 'error' ? 'bg-red-500/10 text-red-600 dark:text-red-400' : 
+                      'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
+                    }`} data-testid="issue-location-status">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <i className={`fas ${
+                            locationStatus === 'success' ? 'fa-check-circle' : 
+                            locationStatus === 'error' ? 'fa-exclamation-circle' : 
+                            'fa-spinner fa-spin'
+                          }`}></i>
+                          <span className="text-sm font-medium">
+                            {locationStatus === 'success' ? `GPS location captured: ${form.watch('latitude')?.substring(0, 8)}, ${form.watch('longitude')?.substring(0, 8)}` : 
+                             locationStatus === 'error' ? 'GPS location required - Please allow location access' : 
+                             'Requesting GPS location...'}
+                          </span>
+                        </div>
+                        {locationStatus === 'error' && (
+                          <Button 
+                            type="button" 
+                            size="sm"
+                            onClick={getCurrentLocation}
+                            data-testid="button-retry-issue-location"
+                          >
+                            Retry
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                     
                     {/* File Upload */}
                     <div>

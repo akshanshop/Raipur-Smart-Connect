@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,6 +22,7 @@ type ComplaintFormData = z.infer<typeof complaintFormSchema>;
 
 export default function ComplaintForm() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [locationStatus, setLocationStatus] = useState<'pending' | 'success' | 'error'>('pending');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -110,35 +111,54 @@ export default function ComplaintForm() {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Auto-request GPS location on component mount
+  useEffect(() => {
+    getCurrentLocation();
+  }, []);
+
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
+      setLocationStatus('pending');
       navigator.geolocation.getCurrentPosition(
         (position) => {
           form.setValue("latitude", position.coords.latitude.toString());
           form.setValue("longitude", position.coords.longitude.toString());
+          setLocationStatus('success');
           toast({
             title: "Location captured",
             description: "Your current location has been added to the complaint.",
           });
         },
         (error) => {
+          setLocationStatus('error');
           toast({
-            title: "Location error",
-            description: "Could not get your current location. Please enter manually.",
+            title: "Location permission required",
+            description: "Please allow location access to submit a complaint. This ensures accurate issue reporting.",
             variant: "destructive",
           });
         }
       );
     } else {
+      setLocationStatus('error');
       toast({
         title: "Location not supported",
-        description: "Geolocation is not supported by this browser.",
+        description: "Geolocation is not supported by this browser. Please use a modern browser.",
         variant: "destructive",
       });
     }
   };
 
   const onSubmit = (data: ComplaintFormData) => {
+    // Hard block submission without valid GPS location
+    if (locationStatus !== 'success') {
+      toast({
+        title: "GPS Location Required",
+        description: "Please allow location access to submit your complaint. This ensures accurate issue reporting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     complaintMutation.mutate({
       ...data,
       files: selectedFiles,
@@ -252,11 +272,11 @@ export default function ComplaintForm() {
               name="location"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Location</FormLabel>
+                  <FormLabel>Location Address</FormLabel>
                   <div className="flex space-x-2">
                     <FormControl>
                       <Input 
-                        placeholder="Enter address or use current location" 
+                        placeholder="Enter address or landmark" 
                         {...field} 
                         data-testid="input-location"
                       />
@@ -267,13 +287,45 @@ export default function ComplaintForm() {
                       onClick={getCurrentLocation}
                       data-testid="button-get-location"
                     >
-                      <i className="fas fa-location-arrow"></i>
+                      <i className={`fas fa-location-arrow ${locationStatus === 'pending' ? 'fa-spin' : ''}`}></i>
                     </Button>
                   </div>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            {/* GPS Status Indicator */}
+            <div className={`p-3 rounded-lg ${
+              locationStatus === 'success' ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 
+              locationStatus === 'error' ? 'bg-red-500/10 text-red-600 dark:text-red-400' : 
+              'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
+            }`} data-testid="location-status">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <i className={`fas ${
+                    locationStatus === 'success' ? 'fa-check-circle' : 
+                    locationStatus === 'error' ? 'fa-exclamation-circle' : 
+                    'fa-spinner fa-spin'
+                  }`}></i>
+                  <span className="text-sm font-medium">
+                    {locationStatus === 'success' ? `GPS location captured: ${form.watch('latitude')?.substring(0, 8)}, ${form.watch('longitude')?.substring(0, 8)}` : 
+                     locationStatus === 'error' ? 'GPS location required - Please allow location access' : 
+                     'Requesting GPS location...'}
+                  </span>
+                </div>
+                {locationStatus === 'error' && (
+                  <Button 
+                    type="button" 
+                    size="sm"
+                    onClick={getCurrentLocation}
+                    data-testid="button-retry-location"
+                  >
+                    Retry
+                  </Button>
+                )}
+              </div>
+            </div>
             
             {/* File Upload */}
             <div>

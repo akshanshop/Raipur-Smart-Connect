@@ -53,8 +53,8 @@ export const complaints = pgTable("complaints", {
   title: varchar("title").notNull(),
   description: text("description").notNull(),
   location: text("location").notNull(),
-  latitude: decimal("latitude", { precision: 10, scale: 8 }),
-  longitude: decimal("longitude", { precision: 11, scale: 8 }),
+  latitude: decimal("latitude", { precision: 10, scale: 8 }).notNull(),
+  longitude: decimal("longitude", { precision: 11, scale: 8 }).notNull(),
   status: varchar("status").default("open").notNull(), // open, in_progress, resolved, closed
   mediaUrls: text("media_urls").array(),
   resolutionScreenshots: text("resolution_screenshots").array(), // screenshots submitted by officials
@@ -73,8 +73,8 @@ export const communityIssues = pgTable("community_issues", {
   title: varchar("title").notNull(),
   description: text("description").notNull(),
   location: text("location").notNull(),
-  latitude: decimal("latitude", { precision: 10, scale: 8 }),
-  longitude: decimal("longitude", { precision: 11, scale: 8 }),
+  latitude: decimal("latitude", { precision: 10, scale: 8 }).notNull(),
+  longitude: decimal("longitude", { precision: 11, scale: 8 }).notNull(),
   status: varchar("status").default("open").notNull(),
   mediaUrls: text("media_urls").array(),
   upvotes: integer("upvotes").default(0),
@@ -201,8 +201,12 @@ export const insertComplaintSchema = createInsertSchema(complaints).omit({
   createdAt: true,
   updatedAt: true,
 }).extend({
-  latitude: z.string().optional().transform(val => val && val !== '' ? val : undefined),
-  longitude: z.string().optional().transform(val => val && val !== '' ? val : undefined),
+  latitude: z.string().min(1, "GPS location is required. Please allow location access.")
+    .refine((val) => !isNaN(parseFloat(val)) && Math.abs(parseFloat(val)) <= 90, 
+      "Invalid latitude. Must be between -90 and 90"),
+  longitude: z.string().min(1, "GPS location is required. Please allow location access.")
+    .refine((val) => !isNaN(parseFloat(val)) && Math.abs(parseFloat(val)) <= 180, 
+      "Invalid longitude. Must be between -180 and 180"),
 });
 
 export const insertCommunityIssueSchema = createInsertSchema(communityIssues).omit({
@@ -213,8 +217,12 @@ export const insertCommunityIssueSchema = createInsertSchema(communityIssues).om
   createdAt: true,
   updatedAt: true,
 }).extend({
-  latitude: z.string().optional().transform(val => val && val !== '' ? val : undefined),
-  longitude: z.string().optional().transform(val => val && val !== '' ? val : undefined),
+  latitude: z.string().min(1, "GPS location is required. Please allow location access.")
+    .refine((val) => !isNaN(parseFloat(val)) && Math.abs(parseFloat(val)) <= 90, 
+      "Invalid latitude. Must be between -90 and 90"),
+  longitude: z.string().min(1, "GPS location is required. Please allow location access.")
+    .refine((val) => !isNaN(parseFloat(val)) && Math.abs(parseFloat(val)) <= 180, 
+      "Invalid longitude. Must be between -180 and 180"),
 });
 
 export const insertCommentSchema = createInsertSchema(comments).omit({
