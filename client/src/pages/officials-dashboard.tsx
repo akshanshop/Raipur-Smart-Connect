@@ -15,25 +15,61 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
+interface DashboardStats {
+  total: number;
+  solved: number;
+  pending: number;
+  byPriority: {
+    urgent: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+}
+
+interface IssueItem {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  priority: string;
+  status: string;
+  location: string;
+  ticketNumber: string;
+  userName: string;
+  commentsCount: number;
+  upvotesCount: number;
+}
+
+interface HeatmapPoint {
+  id: string;
+  title: string;
+  category: string;
+  priority: string;
+  status: string;
+  lat: number;
+  lng: number;
+}
+
 export default function OfficialsDashboard() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
-  const [selectedIssue, setSelectedIssue] = useState<any>(null);
+  const [selectedIssue, setSelectedIssue] = useState<IssueItem | null>(null);
 
   // Fetch dashboard stats
-  const { data: stats = {} as any } = useQuery({
+  const { data: stats } = useQuery<DashboardStats>({
     queryKey: ["/api/officials/dashboard/stats"],
   });
 
   // Fetch all issues
-  const { data: issues = [] as any[], isLoading: issuesLoading } = useQuery({
+  const { data: issues = [], isLoading: issuesLoading } = useQuery<IssueItem[]>({
     queryKey: ["/api/officials/issues"],
   });
 
   // Fetch heatmap data
-  const { data: heatmapData = [] as any[] } = useQuery({
+  const { data: heatmapData = [] } = useQuery<HeatmapPoint[]>({
     queryKey: ["/api/officials/dashboard/heatmap"],
   });
 
@@ -74,7 +110,7 @@ export default function OfficialsDashboard() {
   });
 
   // Filter issues
-  const filteredIssues = (issues as any[]).filter((issue: any) => {
+  const filteredIssues = issues.filter((issue) => {
     const matchesSearch = issue.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          issue.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || issue.status === statusFilter;
@@ -129,7 +165,7 @@ export default function OfficialsDashboard() {
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold" data-testid="text-total-issues">{stats?.total || 0}</div>
+              <div className="text-2xl font-bold" data-testid="text-total-issues">{stats?.total ?? 0}</div>
             </CardContent>
           </Card>
 
@@ -139,7 +175,7 @@ export default function OfficialsDashboard() {
               <CheckCircle className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-500" data-testid="text-solved-issues">{stats?.solved || 0}</div>
+              <div className="text-2xl font-bold text-green-500" data-testid="text-solved-issues">{stats?.solved ?? 0}</div>
             </CardContent>
           </Card>
 
@@ -149,7 +185,7 @@ export default function OfficialsDashboard() {
               <Clock className="h-4 w-4 text-yellow-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-500" data-testid="text-pending-issues">{stats?.pending || 0}</div>
+              <div className="text-2xl font-bold text-yellow-500" data-testid="text-pending-issues">{stats?.pending ?? 0}</div>
             </CardContent>
           </Card>
 
@@ -159,7 +195,7 @@ export default function OfficialsDashboard() {
               <AlertTriangle className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-500" data-testid="text-urgent-issues">{stats?.byPriority?.urgent || 0}</div>
+              <div className="text-2xl font-bold text-red-500" data-testid="text-urgent-issues">{stats?.byPriority?.urgent ?? 0}</div>
             </CardContent>
           </Card>
         </div>
@@ -172,19 +208,19 @@ export default function OfficialsDashboard() {
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-red-500">{stats?.byPriority?.urgent || 0}</div>
+                <div className="text-2xl font-bold text-red-500">{stats?.byPriority?.urgent ?? 0}</div>
                 <div className="text-sm text-muted-foreground">Urgent</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-orange-500">{stats?.byPriority?.high || 0}</div>
+                <div className="text-2xl font-bold text-orange-500">{stats?.byPriority?.high ?? 0}</div>
                 <div className="text-sm text-muted-foreground">High</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-500">{stats?.byPriority?.medium || 0}</div>
+                <div className="text-2xl font-bold text-yellow-500">{stats?.byPriority?.medium ?? 0}</div>
                 <div className="text-sm text-muted-foreground">Medium</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-500">{stats?.byPriority?.low || 0}</div>
+                <div className="text-2xl font-bold text-green-500">{stats?.byPriority?.low ?? 0}</div>
                 <div className="text-sm text-muted-foreground">Low</div>
               </div>
             </div>
@@ -248,7 +284,7 @@ export default function OfficialsDashboard() {
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredIssues.map((issue: any) => (
+                {filteredIssues.map((issue) => (
                   <Card key={issue.id} data-testid={`card-issue-${issue.id}`}>
                     <CardContent className="pt-6">
                       <div className="flex items-start justify-between">
@@ -350,10 +386,10 @@ export default function OfficialsDashboard() {
               <CardContent>
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    {(heatmapData as any[]).length} issues with location data
+                    {heatmapData.length} issues with location data
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {(heatmapData as any[]).map((point: any) => (
+                    {heatmapData.map((point) => (
                       <Card key={point.id} data-testid={`card-heatmap-${point.id}`}>
                         <CardContent className="pt-6">
                           <div className="space-y-2">
@@ -371,7 +407,7 @@ export default function OfficialsDashboard() {
                       </Card>
                     ))}
                   </div>
-                  {(heatmapData as any[]).length === 0 && (
+                  {heatmapData.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
                       No location data available
                     </div>

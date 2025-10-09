@@ -12,6 +12,22 @@ import Dashboard from "@/pages/dashboard";
 import OfficialsDashboard from "@/pages/officials-dashboard";
 import NotFound from "@/pages/not-found";
 
+function ProtectedRoute({ 
+  component: Component, 
+  requireOfficial = false 
+}: { 
+  component: () => JSX.Element; 
+  requireOfficial?: boolean;
+}) {
+  const { user } = useAuth();
+  
+  if (requireOfficial && user?.role !== 'official') {
+    return <NotFound />;
+  }
+  
+  return <Component />;
+}
+
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const isOfficial = user?.role === 'official';
@@ -26,7 +42,9 @@ function Router() {
           <Route path="/complaints" component={Complaints} />
           <Route path="/community" component={Community} />
           <Route path="/dashboard" component={Dashboard} />
-          <Route path="/officials" component={OfficialsDashboard} />
+          <Route path="/officials">
+            {() => <ProtectedRoute component={OfficialsDashboard} requireOfficial={true} />}
+          </Route>
         </>
       )}
       <Route component={NotFound} />
