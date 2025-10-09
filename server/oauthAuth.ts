@@ -86,10 +86,13 @@ export async function setupOAuth(app: Express) {
     passport.use("google-oauth", new GoogleStrategy({
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "/api/auth/google/callback"
-    }, async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+      callbackURL: "/api/auth/google/callback",
+      passReqToCallback: true
+    }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
       try {
-        const user = await handleOAuthUser(profile, 'google');
+        const role = req.session?.oauthRole as string | undefined;
+        const user = await handleOAuthUser(profile, 'google', role);
+        delete req.session.oauthRole;
         return done(null, user);
       } catch (error) {
         return done(error, null);
@@ -102,10 +105,13 @@ export async function setupOAuth(app: Express) {
     passport.use("github-oauth", new GitHubStrategy({
       clientID: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      callbackURL: "/api/auth/github/callback"
-    }, async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+      callbackURL: "/api/auth/github/callback",
+      passReqToCallback: true
+    }, async (req: any, accessToken: string, refreshToken: string, profile: any, done: any) => {
       try {
-        const user = await handleOAuthUser(profile, 'github');
+        const role = req.session?.oauthRole as string | undefined;
+        const user = await handleOAuthUser(profile, 'github', role);
+        delete req.session.oauthRole;
         return done(null, user);
       } catch (error) {
         return done(error, null);
@@ -120,7 +126,7 @@ export async function setupOAuth(app: Express) {
   setupOAuthRoutes(app);
 }
 
-async function handleOAuthUser(profile: any, provider: string) {
+async function handleOAuthUser(profile: any, provider: string, role?: string) {
   const email = profile.emails?.[0]?.value || `${profile.id}@${provider}.oauth`;
   const firstName = profile.name?.givenName || profile.displayName?.split(' ')[0] || '';
   const lastName = profile.name?.familyName || profile.displayName?.split(' ').slice(1).join(' ') || '';
@@ -133,11 +139,12 @@ async function handleOAuthUser(profile: any, provider: string) {
     // Try to find user by email
     user = await storage.getUserByEmail(email);
     if (user) {
-      // Update existing user with OAuth info
+      // Update existing user with OAuth info and role if provided
       await storage.updateUser(user.id, {
         oauthProvider: provider,
         oauthId: profile.id,
         profileImageUrl: profileImageUrl || user.profileImageUrl,
+        ...(role && { role }),
       });
     } else {
       // Create new user
@@ -148,9 +155,14 @@ async function handleOAuthUser(profile: any, provider: string) {
         profileImageUrl,
         oauthProvider: provider,
         oauthId: profile.id,
+        role: role || 'citizen',
       });
       user = await storage.getUserByOAuth(provider, profile.id);
     }
+  } else if (role && user.role !== role) {
+    // Update role if it changed
+    await storage.updateUser(user.id, { role });
+    user = await storage.getUserByOAuth(provider, profile.id);
   }
 
   return user;
@@ -159,7 +171,13 @@ async function handleOAuthUser(profile: any, provider: string) {
 function setupOAuthRoutes(app: Express) {
   // Google OAuth - only setup routes if strategy is configured
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-    app.get('/api/auth/google', passport.authenticate('google-oauth', { scope: ['profile', 'email'] }));
+    app.get('/api/auth/google', (req, res, next) => {
+      const role = req.query.role as string;
+      if (role && (role === 'citizen' || role === 'official')) {
+        (req.session as any).oauthRole = role;
+      }
+      passport.authenticate('google-oauth', { scope: ['profile', 'email'] })(req, res, next);
+    });
     app.get('/api/auth/google/callback', 
       passport.authenticate('google-oauth', { failureRedirect: '/login?error=google_failed' }),
       (req, res) => res.redirect('/')
@@ -175,7 +193,13 @@ function setupOAuthRoutes(app: Express) {
 
   // GitHub OAuth - only setup routes if strategy is configured
   if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
-    app.get('/api/auth/github', passport.authenticate('github-oauth', { scope: ['user:email'] }));
+    app.get('/api/auth/github', (req, res, next) => {
+      const role = req.query.role as string;
+      if (role && (role === 'citizen' || role === 'official')) {
+        (req.session as any).oauthRole = role;
+      }
+      passport.authenticate('github-oauth', { scope: ['user:email'] })(req, res, next);
+    });
     app.get('/api/auth/github/callback', 
       passport.authenticate('github-oauth', { failureRedirect: '/login?error=github_failed' }),
       (req, res) => res.redirect('/')

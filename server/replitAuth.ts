@@ -56,6 +56,7 @@ function updateUserSession(
 
 async function upsertUser(
   claims: any,
+  role?: string,
 ) {
   await storage.upsertUser({
     id: claims["sub"],
@@ -63,6 +64,7 @@ async function upsertUser(
     firstName: claims["first_name"],
     lastName: claims["last_name"],
     profileImageUrl: claims["profile_image_url"],
+    role: role || 'citizen',
   });
 }
 
@@ -76,11 +78,16 @@ export async function setupAuth(app: Express) {
 
   const verify: VerifyFunction = async (
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
-    verified: passport.AuthenticateCallback
+    verified: passport.AuthenticateCallback,
+    req?: any
   ) => {
     const user = {};
     updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
+    const role = req?.session?.replitAuthRole as string | undefined;
+    await upsertUser(tokens.claims(), role);
+    if (req?.session?.replitAuthRole) {
+      delete req.session.replitAuthRole;
+    }
     verified(null, user);
   };
 
@@ -102,6 +109,10 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
+    const role = req.query.role as string;
+    if (role && (role === 'citizen' || role === 'official')) {
+      (req.session as any).replitAuthRole = role;
+    }
     passport.authenticate(`replitauth:${req.hostname}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
