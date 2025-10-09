@@ -23,17 +23,17 @@ export default function OfficialsDashboard() {
   const [selectedIssue, setSelectedIssue] = useState<any>(null);
 
   // Fetch dashboard stats
-  const { data: stats } = useQuery({
+  const { data: stats = {} as any } = useQuery({
     queryKey: ["/api/officials/dashboard/stats"],
   });
 
   // Fetch all issues
-  const { data: issues = [], isLoading: issuesLoading } = useQuery({
+  const { data: issues = [] as any[], isLoading: issuesLoading } = useQuery({
     queryKey: ["/api/officials/issues"],
   });
 
   // Fetch heatmap data
-  const { data: heatmapData = [] } = useQuery({
+  const { data: heatmapData = [] as any[] } = useQuery({
     queryKey: ["/api/officials/dashboard/heatmap"],
   });
 
@@ -74,7 +74,7 @@ export default function OfficialsDashboard() {
   });
 
   // Filter issues
-  const filteredIssues = issues.filter((issue: any) => {
+  const filteredIssues = (issues as any[]).filter((issue: any) => {
     const matchesSearch = issue.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          issue.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || issue.status === statusFilter;
@@ -350,10 +350,10 @@ export default function OfficialsDashboard() {
               <CardContent>
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    {heatmapData.length} issues with location data
+                    {(heatmapData as any[]).length} issues with location data
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {heatmapData.map((point: any) => (
+                    {(heatmapData as any[]).map((point: any) => (
                       <Card key={point.id} data-testid={`card-heatmap-${point.id}`}>
                         <CardContent className="pt-6">
                           <div className="space-y-2">
@@ -371,7 +371,7 @@ export default function OfficialsDashboard() {
                       </Card>
                     ))}
                   </div>
-                  {heatmapData.length === 0 && (
+                  {(heatmapData as any[]).length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
                       No location data available
                     </div>

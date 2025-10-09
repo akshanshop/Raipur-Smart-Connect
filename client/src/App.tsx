@@ -9,10 +9,12 @@ import Home from "@/pages/home";
 import Complaints from "@/pages/complaints";
 import Community from "@/pages/community";
 import Dashboard from "@/pages/dashboard";
+import OfficialsDashboard from "@/pages/officials-dashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+  const isOfficial = user?.role === 'official';
 
   return (
     <Switch>
@@ -20,10 +22,11 @@ function Router() {
         <Route path="/" component={Landing} />
       ) : (
         <>
-          <Route path="/" component={Home} />
+          <Route path="/" component={isOfficial ? OfficialsDashboard : Home} />
           <Route path="/complaints" component={Complaints} />
           <Route path="/community" component={Community} />
           <Route path="/dashboard" component={Dashboard} />
+          <Route path="/officials" component={OfficialsDashboard} />
         </>
       )}
       <Route component={NotFound} />
