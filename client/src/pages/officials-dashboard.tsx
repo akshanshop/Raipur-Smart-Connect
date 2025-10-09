@@ -16,6 +16,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import OfficialsNotificationPanel from "@/components/officials-notification-panel";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
@@ -258,6 +259,9 @@ export default function OfficialsDashboard() {
             </div>
             
             <div className="flex items-center space-x-4">
+              {/* Notifications */}
+              <OfficialsNotificationPanel />
+              
               {/* User Profile */}
               <div className="flex items-center space-x-3 bg-card/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-border/30">
                 {user?.profileImageUrl ? (
