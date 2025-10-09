@@ -161,7 +161,7 @@ export default function CitizenNotificationPanel() {
                   key={notification.id}
                   className={`group p-5 rounded-xl border backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${
                     !notification.isRead
-                      ? "bg-primary/5 border-primary/20 shadow-md"
+                      ? "bg-[#eeb92d] border-primary/20 shadow-md"
                       : "bg-card/50 border-border/50 hover:bg-card/80"
                   } ${isOpen ? `animate-fade-in-up opacity-100` : "opacity-0"}`}
                   style={{ animationDelay: `${index * 50}ms` }}
