@@ -158,9 +158,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Calculate priority based on nearby reports (within ~0.5km radius)
+      const nearbyComplaints = await storage.getNearbyComplaints(
+        parseFloat(complaintData.latitude),
+        parseFloat(complaintData.longitude),
+        0.005 // ~0.5km radius in degrees
+      );
+
+      const nearbyCount = nearbyComplaints.length;
+      let priority: string;
+      
+      if (nearbyCount < 3) {
+        priority = 'low';
+      } else if (nearbyCount >= 3 && nearbyCount <= 7) {
+        priority = 'medium';
+      } else {
+        priority = 'urgent';
+      }
+
       const complaint = await storage.createComplaint({
         ...complaintData,
         title: title || `${complaintData.category} Issue`,
+        priority,
         userId,
         mediaUrls
       });

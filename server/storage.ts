@@ -33,10 +33,11 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   
   // Complaint operations
-  createComplaint(complaint: InsertComplaint & { userId: string }): Promise<Complaint>;
+  createComplaint(complaint: InsertComplaint & { userId: string; priority?: string }): Promise<Complaint>;
   getComplaint(id: string): Promise<Complaint | undefined>;
   getUserComplaints(userId: string): Promise<Complaint[]>;
   getAllComplaints(): Promise<Complaint[]>;
+  getNearbyComplaints(latitude: number, longitude: number, radius: number): Promise<Complaint[]>;
   updateComplaintStatus(id: string, status: string): Promise<void>;
   updateComplaint(id: string, updates: Partial<Complaint>): Promise<void>;
   deleteComplaint(id: string): Promise<void>;
@@ -151,13 +152,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Complaint operations
-  async createComplaint(complaintData: InsertComplaint & { userId: string }): Promise<Complaint> {
+  async createComplaint(complaintData: InsertComplaint & { userId: string; priority?: string }): Promise<Complaint> {
     const ticketNumber = `RSC-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
     
     const [complaint] = await db
       .insert(complaints)
       .values({
         ...complaintData,
+        priority: complaintData.priority || 'low',
         ticketNumber,
       })
       .returning();
@@ -192,6 +194,20 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(complaints)
       .orderBy(desc(complaints.createdAt));
+  }
+
+  async getNearbyComplaints(latitude: number, longitude: number, radius: number): Promise<Complaint[]> {
+    const results = await db
+      .select()
+      .from(complaints)
+      .where(
+        sql`
+          ABS(CAST(${complaints.latitude} AS DECIMAL) - ${latitude}) < ${radius} AND
+          ABS(CAST(${complaints.longitude} AS DECIMAL) - ${longitude}) < ${radius} AND
+          ${complaints.status} != 'resolved'
+        `
+      );
+    return results;
   }
 
   async updateComplaintStatus(id: string, status: string): Promise<void> {
