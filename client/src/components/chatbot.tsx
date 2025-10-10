@@ -180,16 +180,33 @@ export default function Chatbot() {
       isUser: true,
     };
 
-    // Add bot response
-    const botMessage: ChatMessage = {
-      id: Date.now().toString() + '-bot',
-      message: queryData.answer,
+    // Add typing indicator
+    const typingId = 'typing-' + Date.now().toString();
+    const typingMessage: ChatMessage = {
+      id: typingId,
+      message: 'AI is searching...',
       response: '',
       createdAt: new Date().toISOString(),
       isUser: false,
     };
 
-    setMessages(prev => [...prev, userMessage, botMessage]);
+    setMessages(prev => [...prev, userMessage, typingMessage]);
+
+    // Simulate AI processing time (1.5 seconds)
+    setTimeout(() => {
+      // Replace typing indicator with actual answer
+      setMessages(prev => {
+        const filteredMessages = prev.filter(msg => msg.id !== typingId);
+        const botMessage: ChatMessage = {
+          id: Date.now().toString() + '-bot',
+          message: queryData.answer,
+          response: '',
+          createdAt: new Date().toISOString(),
+          isUser: false,
+        };
+        return [...filteredMessages, botMessage];
+      });
+    }, 1500);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -239,7 +256,14 @@ export default function Chatbot() {
                   ? 'bg-primary text-primary-foreground glow-on-hover' 
                   : 'bg-card'
               }`}>
-                <p className="text-sm">{msg.message}</p>
+                {msg.id.startsWith('typing-') ? (
+                  <p className="text-sm flex items-center gap-2">
+                    <i className="fas fa-spinner fa-spin"></i>
+                    {msg.message}
+                  </p>
+                ) : (
+                  <p className="text-sm">{msg.message}</p>
+                )}
               </div>
               {msg.isUser && (
                 <div className="bg-muted-foreground text-background squircle-full w-8 h-8 flex items-center justify-center text-sm glow-on-hover">
