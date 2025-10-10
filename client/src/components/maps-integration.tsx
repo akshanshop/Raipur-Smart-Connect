@@ -203,13 +203,17 @@ export default function MapsIntegration() {
       getHeatmapWeight(issue.priority)
     ]);
 
-  // Group issues by location for density view
+  // Group issues by location for density view (proximity-based grouping)
+  // Round coordinates to 3 decimal places (~100m precision) to group nearby issues
   const locationGroups = filteredIssues.reduce((acc, issue) => {
-    const key = `${issue.latitude},${issue.longitude}`;
+    const roundedLat = Math.round(parseFloat(issue.latitude!) * 1000) / 1000;
+    const roundedLng = Math.round(parseFloat(issue.longitude!) * 1000) / 1000;
+    const key = `${roundedLat},${roundedLng}`;
+    
     if (!acc[key]) {
       acc[key] = {
-        lat: parseFloat(issue.latitude!),
-        lng: parseFloat(issue.longitude!),
+        lat: roundedLat,
+        lng: roundedLng,
         issues: [],
         count: 0
       };

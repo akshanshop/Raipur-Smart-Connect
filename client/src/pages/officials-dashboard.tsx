@@ -266,13 +266,17 @@ export default function OfficialsDashboard() {
     getHeatmapWeight(point.priority)
   ]);
 
-  // Group issues by location for density view
+  // Group issues by location for density view (proximity-based grouping)
+  // Round coordinates to 3 decimal places (~100m precision) to group nearby issues
   const locationGroups = heatmapData.reduce((acc, point) => {
-    const key = `${point.lat},${point.lng}`;
+    const roundedLat = Math.round(point.lat * 1000) / 1000;
+    const roundedLng = Math.round(point.lng * 1000) / 1000;
+    const key = `${roundedLat},${roundedLng}`;
+    
     if (!acc[key]) {
       acc[key] = {
-        lat: point.lat,
-        lng: point.lng,
+        lat: roundedLat,
+        lng: roundedLng,
         issues: [],
         count: 0
       };
