@@ -125,15 +125,71 @@ export default function Chatbot() {
   };
 
   const handleQuickQuery = (query: string) => {
-    const quickQueries: Record<string, string> = {
-      'bus-schedule': 'What are the bus schedules for today?',
-      'tax-deadline': 'When are my tax payments due?',
-      'water-supply': 'Is there any water supply disruption in my area?',
-      'complaint-status': 'How can I check my complaint status?'
+    const quickQueries: Record<string, { question: string; answer: string }> = {
+      'bus-schedule': {
+        question: 'What are the bus schedules for today?',
+        answer: 'Bus schedules run from 6:00 AM to 10:00 PM daily. Routes 1-5 operate every 15 minutes during peak hours (7-9 AM, 5-7 PM) and every 30 minutes otherwise. Route 6-10 run every 20 minutes throughout the day. You can check real-time updates on our website or mobile app.'
+      },
+      'tax-deadline': {
+        question: 'When are my tax payments due?',
+        answer: 'Property tax payments are due quarterly: March 31, June 30, September 30, and December 31. Late payments incur a 2% penalty per month. You can pay online, at city hall, or through authorized banks. Set up auto-pay to never miss a deadline!'
+      },
+      'water-supply': {
+        question: 'Is there any water supply disruption in my area?',
+        answer: 'Water supply is currently normal in all areas. Scheduled maintenance occurs on Sundays 2-4 AM. In case of disruptions, we send SMS alerts and post updates on our website. You can also call our 24/7 helpline at 1-800-WATER for real-time information.'
+      },
+      'complaint-status': {
+        question: 'How can I check my complaint status?',
+        answer: 'Check your complaint status by: 1) Visiting the Complaints section and entering your complaint ID, 2) Using the mobile app and going to "My Complaints", or 3) Calling our helpline with your complaint number. You\'ll receive updates via email and SMS at each stage.'
+      },
+      'parking-permit': {
+        question: 'How do I apply for a parking permit?',
+        answer: 'Apply for a parking permit online through the Permits section. You\'ll need: vehicle registration, proof of residence, and driver\'s license. Processing takes 3-5 business days. Fees are $50/month for residents and $100/month for commercial. Permits are valid for 1 year.'
+      },
+      'garbage-collection': {
+        question: 'What is the garbage collection schedule?',
+        answer: 'Garbage collection schedule: General waste (Monday & Thursday), Recyclables (Tuesday), Organic waste (Wednesday & Friday). Collection time is 6-10 AM. Please place bins on curb by 6 AM. Bulk items need advance booking via our app or helpline.'
+      },
+      'birth-certificate': {
+        question: 'How do I get a birth certificate?',
+        answer: 'Birth certificates can be obtained from the Civil Registry office or online. Required documents: parents\' ID, hospital birth record, and application form. Fees: $25 for standard processing (7 days) or $50 for express (2 days). Bring originals and copies of all documents.'
+      },
+      'building-permit': {
+        question: 'What do I need for a building permit?',
+        answer: 'Building permit requirements: 1) Approved architectural plans, 2) Land ownership documents, 3) NOC from neighbors, 4) Environmental clearance (for large projects), 5) Application fee based on project size. Submit online or at the Building Department. Processing takes 2-4 weeks.'
+      },
+      'public-wifi': {
+        question: 'Where can I access free public WiFi?',
+        answer: 'Free public WiFi is available at: All public parks, City Hall, Public libraries, Bus terminals, and designated WiFi zones in commercial areas. Network name: "CityFreeWiFi". No password required. Usage limit: 2 hours per session. For unlimited access, register on our portal.'
+      },
+      'emergency-contact': {
+        question: 'What are the emergency contact numbers?',
+        answer: 'Emergency contacts: Police - 911, Fire - 911, Ambulance - 911, Non-emergency police - (555) 123-4567, Water supply issues - 1-800-WATER, Power outage - 1-800-POWER, City Helpline - 311. Save these numbers in your phone for quick access!'
+      }
     };
 
-    const queryText = quickQueries[query] || query;
-    setMessage(queryText);
+    const queryData = quickQueries[query];
+    if (!queryData) return;
+
+    // Add user message
+    const userMessage: ChatMessage = {
+      id: Date.now().toString() + '-user',
+      message: queryData.question,
+      response: '',
+      createdAt: new Date().toISOString(),
+      isUser: true,
+    };
+
+    // Add bot response
+    const botMessage: ChatMessage = {
+      id: Date.now().toString() + '-bot',
+      message: queryData.answer,
+      response: '',
+      createdAt: new Date().toISOString(),
+      isUser: false,
+    };
+
+    setMessages(prev => [...prev, userMessage, botMessage]);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -230,6 +286,54 @@ export default function Chatbot() {
               data-testid="button-quick-status"
             >
               Complaint Status
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickQuery('parking-permit')}
+              data-testid="button-quick-parking"
+            >
+              Parking Permit
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickQuery('garbage-collection')}
+              data-testid="button-quick-garbage"
+            >
+              Garbage Collection
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickQuery('birth-certificate')}
+              data-testid="button-quick-birth"
+            >
+              Birth Certificate
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickQuery('building-permit')}
+              data-testid="button-quick-building"
+            >
+              Building Permit
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickQuery('public-wifi')}
+              data-testid="button-quick-wifi"
+            >
+              Public WiFi
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleQuickQuery('emergency-contact')}
+              data-testid="button-quick-emergency"
+            >
+              Emergency Contacts
             </Button>
           </div>
         </div>
