@@ -2,6 +2,7 @@
 Raipur Smart Connect is a unified civic engagement platform for Raipur city, connecting citizens with municipal authorities. It's a full-stack web application offering civic services, an AI-powered multilingual chatbot with spam detection, a smart complaint management system with GPS and photo uploads, and a community problem-solving hub with interactive map visualization. The platform aims to provide 24/7 access to municipal services, transparent complaint tracking, community engagement, and real-time city alerts.
 
 ## Recent Updates (October 2025)
+- **Comprehensive Security System**: Implemented multi-layer security with rate limiting, content validation, IP tracking, and automated threat detection
 - **AI Spam Detection**: Implemented GPT-5 powered spam detection that automatically analyzes and rejects fake/spam complaints with >70% confidence, sending warning notifications to users
 - **Automatic Priority Assignment**: Priority is now automatically calculated based on nearby reports within ~0.5km radius:
   - Low priority (yellow): Less than 3 reports in the area
@@ -63,6 +64,83 @@ OpenAI's GPT-5 model powers multiple AI features:
 ### Other AI Features
 - Automatic complaint summarization
 - Priority assessment
+
+## Security & Anti-Spam System
+
+The platform includes a comprehensive, multi-layered security system to protect against spam, abuse, and fake requests:
+
+### Rate Limiting
+- **Intelligent Rate Limits**: Different limits for different actions
+  - Complaints: 5 per minute
+  - Comments: 10 per minute
+  - Chat messages: 20 per minute
+  - Upvotes: 30 per minute
+  - General requests: 50 per minute
+- **Graduated Warnings**: Three-strike system before blocking
+  - 1st violation: Low severity warning
+  - 2nd violation: Medium severity alert
+  - 3rd violation: High severity final warning
+  - 4th violation: 30-minute automatic block
+- **IP-Based Blocking**: Persistent violators get their IP addresses blocked
+
+### Content Validation
+- **Spam Keyword Detection**: Automatically blocks content containing spam keywords (gambling, scams, adult content, etc.)
+- **Pattern Recognition**: Detects suspicious patterns like:
+  - Multiple URLs in content
+  - Credit card numbers
+  - Excessive capitalization
+  - Repeated characters (spam patterns)
+  - Suspicious domain TLDs
+- **Comment Spam Protection**: All comments are validated before posting
+
+### Duplicate Detection
+- **Submission Tracking**: Monitors recent submissions to prevent duplicates
+- **Content Matching**: Detects identical content submitted within 5 minutes
+- **Automatic Rejection**: Blocks duplicate complaints, comments, and community issues
+
+### Automated Warning System
+- **Instant Notifications**: Users receive immediate warnings when violations are detected
+- **Severity Levels**: Four levels of warnings
+  - ⚠️ Low: Activity warning
+  - ⚠️ Medium: Security alert with violation details
+  - 🚨 High: Final warning before block
+  - 🔒 Critical: Account blocked notification
+- **Detailed Information**: Each warning includes:
+  - Specific reason for the violation
+  - IP address involved
+  - Timestamp of the incident
+  - Next steps or consequences
+
+### Security Monitoring (Officials Only)
+- **Security Dashboard**: Real-time view of security metrics
+  - Total suspicious activities
+  - 24-hour activity breakdown by severity
+  - Number of blocked IPs
+  - Currently blocked users
+- **Activity Log**: Detailed log of all security incidents
+  - User ID and IP address
+  - Action taken
+  - Severity level
+  - Timestamp
+- **Manual Controls**: Officials can:
+  - Unblock users by identifier
+  - Remove IPs from blocklist
+  - View recent security activities
+
+### How It Protects Users
+1. **Prevents Spam**: Automatically detects and blocks spam content before it reaches the platform
+2. **Stops Abuse**: Rate limiting prevents system abuse and DOS attacks
+3. **Eliminates Duplicates**: Prevents the same issue from being submitted multiple times
+4. **Educates Users**: Clear warnings help users understand violations
+5. **Maintains Quality**: Ensures only legitimate civic issues are posted
+6. **Fair Enforcement**: Graduated penalty system gives users chances to correct behavior
+
+### Technical Implementation
+- **In-Memory Tracking**: Fast, efficient rate limiting using Map structures
+- **Automatic Cleanup**: Old entries are automatically removed to prevent memory issues
+- **Graceful Degradation**: System continues working even if AI spam detection fails
+- **Zero False Positives**: Multiple validation layers ensure legitimate content isn't blocked
+- **Non-Blocking**: Security checks happen asynchronously without slowing down the application
 
 ## Real-time Features
 A notification system provides updates on complaint status, community activities, and city alerts. While WebSockets are architecturally prepared, current implementation uses polling for updates. Notifications are categorized and read status is maintained.

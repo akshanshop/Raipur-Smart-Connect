@@ -9,6 +9,15 @@ import { setupOAuth } from "./oauthAuth";
 import { processChatMessage, generateComplaintSummary } from "./openai";
 import { detectSpam, detectCommunityIssueSpam } from "./spamDetection";
 import { insertComplaintSchema, insertCommunityIssueSchema, insertCommentSchema, insertChatMessageSchema } from "@shared/schema";
+import { 
+  rateLimit, 
+  validateCommentContent, 
+  detectDuplicateSubmission,
+  getSecurityStats,
+  getRecentActivities,
+  unblockUser,
+  unblockIP
+} from "./security";
 
 const upload = multer({
   storage: multer.diskStorage({
@@ -77,7 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Chat routes
-  app.post('/api/chat', isAuthenticatedFlexible, async (req: any, res) => {
+  app.post('/api/chat', isAuthenticatedFlexible, rateLimit('chat'), async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const { message, language = 'en' } = req.body;
@@ -115,7 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Complaint routes
-  app.post('/api/complaints', isAuthenticatedFlexible, upload.array('media'), async (req: any, res) => {
+  app.post('/api/complaints', isAuthenticatedFlexible, rateLimit('complaints'), detectDuplicateSubmission('complaint'), upload.array('media'), async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const complaintData = insertComplaintSchema.parse(req.body);
@@ -258,7 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Community issue routes
-  app.post('/api/community-issues', isAuthenticatedFlexible, upload.array('media'), async (req: any, res) => {
+  app.post('/api/community-issues', isAuthenticatedFlexible, rateLimit('complaints'), detectDuplicateSubmission('issue'), upload.array('media'), async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const issueData = insertCommunityIssueSchema.parse(req.body);
@@ -313,7 +322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upvote routes
-  app.post('/api/upvote', isAuthenticatedFlexible, async (req: any, res) => {
+  app.post('/api/upvote', isAuthenticatedFlexible, rateLimit('upvotes'), async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const { complaintId, communityIssueId } = req.body;
@@ -352,7 +361,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Comment routes
-  app.post('/api/comments', isAuthenticatedFlexible, async (req: any, res) => {
+  app.post('/api/comments', isAuthenticatedFlexible, rateLimit('comments'), validateCommentContent, detectDuplicateSubmission('comment'), async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const commentData = insertCommentSchema.parse(req.body);
@@ -679,6 +688,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting issue:", error);
       res.status(500).json({ message: "Failed to delete issue" });
+    }
+  });
+
+  // Security Management Endpoints (Officials Only)
+  app.get('/api/officials/security/stats', isAuthenticatedFlexible, isOfficial, async (req: any, res) => {
+    try {
+      const stats = getSecurityStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching security stats:", error);
+      res.status(500).json({ message: "Failed to fetch security stats" });
+    }
+  });
+
+  app.get('/api/officials/security/activities', isAuthenticatedFlexible, isOfficial, async (req: any, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const activities = getRecentActivities(limit);
+      res.json(activities);
+    } catch (error) {
+      console.error("Error fetching security activities:", error);
+      res.status(500).json({ message: "Failed to fetch security activities" });
+    }
+  });
+
+  app.post('/api/officials/security/unblock-user', isAuthenticatedFlexible, isOfficial, async (req: any, res) => {
+    try {
+      const { identifier } = req.body;
+      if (!identifier) {
+        return res.status(400).json({ message: "User identifier is required" });
+      }
+      const success = await unblockUser(identifier);
+      res.json({ 
+        message: success ? "User unblocked successfully" : "User not found or not blocked",
+        success 
+      });
+    } catch (error) {
+      console.error("Error unblocking user:", error);
+      res.status(500).json({ message: "Failed to unblock user" });
+    }
+  });
+
+  app.post('/api/officials/security/unblock-ip', isAuthenticatedFlexible, isOfficial, async (req: any, res) => {
+    try {
+      const { ip } = req.body;
+      if (!ip) {
+        return res.status(400).json({ message: "IP address is required" });
+      }
+      const success = await unblockIP(ip);
+      res.json({ 
+        message: success ? "IP unblocked successfully" : "IP not found in blocklist",
+        success 
+      });
+    } catch (error) {
+      console.error("Error unblocking IP:", error);
+      res.status(500).json({ message: "Failed to unblock IP" });
     }
   });
 
