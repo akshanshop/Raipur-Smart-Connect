@@ -29,6 +29,7 @@ export default function Chatbot() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const hasLoadedHistory = useRef(false);
   const { toast } = useToast();
 
   const { data: chatHistory = [] } = useQuery<any[]>({
@@ -37,7 +38,7 @@ export default function Chatbot() {
   });
 
   useEffect(() => {
-    if (chatHistory) {
+    if (chatHistory && chatHistory.length > 0 && !hasLoadedHistory.current) {
       const formattedMessages: ChatMessage[] = [];
       chatHistory.forEach((chat: any) => {
         formattedMessages.push({
@@ -58,6 +59,7 @@ export default function Chatbot() {
         }
       });
       setMessages(formattedMessages.reverse());
+      hasLoadedHistory.current = true;
     }
   }, [chatHistory]);
 
