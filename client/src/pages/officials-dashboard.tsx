@@ -223,25 +223,46 @@ export default function OfficialsDashboard() {
 
   const createCustomIcon = (status: string, priority: string) => {
     const color = getMarkerColor(status, priority);
-    const size = priority === 'urgent' || priority === 'high' ? 32 : priority === 'medium' ? 24 : 20;
+    const size = priority === 'urgent' || priority === 'high' ? 40 : priority === 'medium' ? 32 : 28;
     
     return L.divIcon({
       className: 'custom-marker',
-      html: `<div style="background-color: ${color}; width: ${size}px; height: ${size}px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-      iconSize: [size, size],
-      iconAnchor: [size / 2, size / 2],
+      html: `
+        <svg width="${size}" height="${size * 1.4}" viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 0C7.58 0 4 3.58 4 8c0 5.25 8 16 8 16s8-10.75 8-16c0-4.42-3.58-8-8-8z" 
+                fill="${color}" 
+                stroke="white" 
+                stroke-width="2"
+                filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"/>
+          <circle cx="12" cy="8" r="3" fill="white" opacity="0.9"/>
+        </svg>
+      `,
+      iconSize: [size, size * 1.4],
+      iconAnchor: [size / 2, size * 1.4],
+      popupAnchor: [0, -size * 1.4],
     });
   };
 
   const createDensityIcon = (count: number) => {
     const color = getDensityColor(count);
-    const size = Math.min(20 + (count * 3), 50); // Scale size based on count
+    const baseSize = Math.min(30 + (count * 2), 50);
+    const fontSize = Math.min(10 + count, 16);
     
     return L.divIcon({
       className: 'custom-marker',
-      html: `<div style="background-color: ${color}; width: ${size}px; height: ${size}px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 12px;">${count}</div>`,
-      iconSize: [size, size],
-      iconAnchor: [size / 2, size / 2],
+      html: `
+        <svg width="${baseSize}" height="${baseSize * 1.4}" viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 0C7.58 0 4 3.58 4 8c0 5.25 8 16 8 16s8-10.75 8-16c0-4.42-3.58-8-8-8z" 
+                fill="${color}" 
+                stroke="white" 
+                stroke-width="2"
+                filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"/>
+          <text x="12" y="11" text-anchor="middle" fill="white" font-size="8" font-weight="bold">${count}</text>
+        </svg>
+      `,
+      iconSize: [baseSize, baseSize * 1.4],
+      iconAnchor: [baseSize / 2, baseSize * 1.4],
+      popupAnchor: [0, -baseSize * 1.4],
     });
   };
 
