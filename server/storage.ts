@@ -60,6 +60,7 @@ export interface IStorage {
   createNotification(notification: InsertNotification & { userId: string }): Promise<Notification>;
   getUserNotifications(userId: string): Promise<Notification[]>;
   markNotificationRead(id: string): Promise<void>;
+  deleteNotification(id: string): Promise<void>;
   
   // Chat operations
   saveChatMessage(message: InsertChatMessage & { userId: string, response?: string }): Promise<ChatMessage>;
@@ -419,6 +420,12 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(notifications)
       .set({ isRead: true })
+      .where(eq(notifications.id, id));
+  }
+
+  async deleteNotification(id: string): Promise<void> {
+    await db
+      .delete(notifications)
       .where(eq(notifications.id, id));
   }
 

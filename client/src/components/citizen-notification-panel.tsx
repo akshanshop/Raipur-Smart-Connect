@@ -5,7 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatDistanceToNow } from "date-fns";
-import { Bell, X } from "lucide-react";
+import { Bell, X, Trash2 } from "lucide-react";
 
 interface Notification {
   id: string;
@@ -29,6 +29,15 @@ export default function CitizenNotificationPanel() {
   const markAsReadMutation = useMutation({
     mutationFn: async (id: string) => {
       await apiRequest("PATCH", `/api/notifications/${id}/read`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+    },
+  });
+
+  const deleteNotificationMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/notifications/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
@@ -194,19 +203,31 @@ export default function CitizenNotificationPanel() {
                           {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                         </span>
 
-                        {!notification.isRead && (
+                        <div className="flex items-center gap-2">
+                          {!notification.isRead && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => markAsReadMutation.mutate(notification.id)}
+                              disabled={markAsReadMutation.isPending}
+                              className="rounded-lg hover:bg-primary/10 hover:text-primary transition-all duration-300 text-xs"
+                              data-testid={`button-mark-read-${notification.id}`}
+                            >
+                              <i className="fas fa-check mr-1"></i>
+                              Mark as read
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => markAsReadMutation.mutate(notification.id)}
-                            disabled={markAsReadMutation.isPending}
-                            className="rounded-lg hover:bg-primary/10 hover:text-primary transition-all duration-300 text-xs"
-                            data-testid={`button-mark-read-${notification.id}`}
+                            onClick={() => deleteNotificationMutation.mutate(notification.id)}
+                            disabled={deleteNotificationMutation.isPending}
+                            className="rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all duration-300 text-xs"
+                            data-testid={`button-delete-${notification.id}`}
                           >
-                            <i className="fas fa-check mr-1"></i>
-                            Mark as read
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        )}
+                        </div>
                       </div>
                     </div>
                   </div>
