@@ -16,6 +16,9 @@ import { z } from "zod";
 
 const complaintFormSchema = insertComplaintSchema.extend({
   title: z.string().min(1, "Title is required"),
+  phoneNumber: z.string()
+    .min(10, "Phone number must be at least 10 digits")
+    .regex(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/, "Please enter a valid phone number (e.g., +911234567890)"),
 });
 
 type ComplaintFormData = z.infer<typeof complaintFormSchema>;
@@ -36,6 +39,7 @@ export default function ComplaintForm() {
       latitude: "",
       longitude: "",
       status: "open",
+      phoneNumber: "",
     },
   });
 
@@ -260,6 +264,28 @@ export default function ComplaintForm() {
                       <i className={`fas fa-location-arrow ${locationStatus === 'pending' ? 'fa-spin' : ''}`}></i>
                     </Button>
                   </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Phone Number Field */}
+            <FormField
+              control={form.control}
+              name="phoneNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone Number (for SMS/WhatsApp notifications)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="+911234567890" 
+                      {...field} 
+                      data-testid="input-phone"
+                    />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    We'll send you updates about your complaint via SMS/WhatsApp
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
