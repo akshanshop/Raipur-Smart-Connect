@@ -73,9 +73,12 @@ export default function ComplaintForm() {
       return response.json();
     },
     onSuccess: () => {
+      const phoneNumber = form.watch('phoneNumber');
       toast({
         title: "Success",
-        description: "Your complaint has been registered successfully!",
+        description: phoneNumber 
+          ? "Your complaint has been registered successfully! You'll receive SMS/WhatsApp updates on your phone." 
+          : "Your complaint has been registered successfully!",
       });
       form.reset();
       setSelectedFiles([]);

@@ -128,7 +128,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/complaints', isAuthenticatedFlexible, rateLimit('complaints'), detectDuplicateSubmission('complaint'), upload.array('media'), async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const complaintData = insertComplaintSchema.parse(req.body);
+      
+      // Extract phone number from request body (not part of complaint schema)
+      const { phoneNumber, ...complaintFields } = req.body;
+      const complaintData = insertComplaintSchema.parse(complaintFields);
+
+      // Update user's phone number if provided
+      if (phoneNumber) {
+        await storage.updateUser(userId, { phoneNumber });
+      }
 
       // Handle uploaded files
       const mediaUrls = req.files ? req.files.map((file: any) => `/uploads/${file.filename}`) : [];
