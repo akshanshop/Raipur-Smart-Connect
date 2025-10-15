@@ -17,8 +17,11 @@ import { z } from "zod";
 const complaintFormSchema = insertComplaintSchema.extend({
   title: z.string().min(1, "Title is required"),
   phoneNumber: z.string()
-    .min(10, "Phone number must be at least 10 digits")
-    .regex(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/, "Please enter a valid phone number (e.g., +911234567890)"),
+    .optional()
+    .refine(
+      (val) => !val || (val.length >= 10 && /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/.test(val)),
+      "Please enter a valid phone number (e.g., +911234567890)"
+    ),
 });
 
 type ComplaintFormData = z.infer<typeof complaintFormSchema>;
@@ -278,16 +281,16 @@ export default function ComplaintForm() {
               name="phoneNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Phone Number (for SMS/WhatsApp notifications)</FormLabel>
+                  <FormLabel>Phone Number (Optional - for SMS/WhatsApp notifications)</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="+911234567890" 
+                      placeholder="+911234567890 (optional)" 
                       {...field} 
                       data-testid="input-phone"
                     />
                   </FormControl>
                   <p className="text-xs text-muted-foreground">
-                    We'll send you updates about your complaint via SMS/WhatsApp
+                    📱 Provide your number to receive real-time SMS/WhatsApp updates when your complaint is submitted, acknowledged, in-progress, or resolved
                   </p>
                   <FormMessage />
                 </FormItem>
