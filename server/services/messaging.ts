@@ -4,7 +4,18 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
 
-const client = twilio(accountSid, authToken);
+// Lazy initialization - only create client when credentials are available
+let client: ReturnType<typeof twilio> | null = null;
+
+function getTwilioClient() {
+  if (!accountSid || !authToken) {
+    return null;
+  }
+  if (!client) {
+    client = twilio(accountSid, authToken);
+  }
+  return client;
+}
 
 export type NotificationType = 
   | 'complaint_submitted' 
@@ -37,15 +48,16 @@ export async function sendSMS(
     return false;
   }
 
-  if (!accountSid || !authToken || !twilioPhoneNumber) {
-    console.error('Twilio credentials not configured');
+  const twilioClient = getTwilioClient();
+  if (!twilioClient || !twilioPhoneNumber) {
+    console.log('Twilio credentials not configured, skipping SMS notification');
     return false;
   }
 
   try {
     const message = messageTemplates[type](ticketNumber, title);
     
-    await client.messages.create({
+    await twilioClient.messages.create({
       body: message,
       from: twilioPhoneNumber,
       to: phoneNumber
@@ -70,15 +82,16 @@ export async function sendWhatsApp(
     return false;
   }
 
-  if (!accountSid || !authToken || !twilioPhoneNumber) {
-    console.error('Twilio credentials not configured');
+  const twilioClient = getTwilioClient();
+  if (!twilioClient || !twilioPhoneNumber) {
+    console.log('Twilio credentials not configured, skipping WhatsApp notification');
     return false;
   }
 
   try {
     const message = messageTemplates[type](ticketNumber, title);
     
-    await client.messages.create({
+    await twilioClient.messages.create({
       body: message,
       from: `whatsapp:${twilioPhoneNumber}`,
       to: `whatsapp:${phoneNumber}`

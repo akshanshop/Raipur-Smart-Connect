@@ -18,6 +18,7 @@ import {
   unblockUser,
   unblockIP
 } from "./security";
+import { sendSMS } from "./services/messaging";
 
 const upload = multer({
   storage: multer.diskStorage({
@@ -202,6 +203,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         relatedId: complaint.id
       });
 
+      // Send SMS notification
+      const user = await storage.getUser(userId);
+      if (user?.phoneNumber) {
+        await sendSMS(
+          user.phoneNumber,
+          'complaint_submitted',
+          complaint.ticketNumber,
+          complaint.title
+        );
+      }
+
       res.json(complaint);
     } catch (error) {
       console.error("Error creating complaint:", error);
@@ -257,6 +269,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: "status_change",
           relatedId: complaint.id
         });
+
+        // Send SMS notification based on status
+        const user = await storage.getUser(complaint.userId);
+        if (user?.phoneNumber) {
+          if (status === 'in_progress') {
+            await sendSMS(
+              user.phoneNumber,
+              'complaint_in_progress',
+              complaint.ticketNumber,
+              complaint.title
+            );
+          } else if (status === 'resolved' || status === 'closed') {
+            await sendSMS(
+              user.phoneNumber,
+              'complaint_resolved',
+              complaint.ticketNumber,
+              complaint.title
+            );
+          }
+        }
       }
 
       res.json({ message: "Status updated successfully" });
@@ -698,6 +730,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting issue:", error);
       res.status(500).json({ message: "Failed to delete issue" });
+    }
+  });
+
+  // Acknowledge/Assign complaint to official
+  app.post('/api/officials/issues/:id/acknowledge', isAuthenticatedFlexible, isOfficial, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { id } = req.params;
+      
+      await storage.updateComplaint(id, {
+        assignedTo: userId,
+      });
+      
+      const complaint = await storage.getComplaint(id);
+      if (complaint) {
+        // Create notification
+        await storage.createNotification({
+          userId: complaint.userId,
+          title: 'Complaint Acknowledged',
+          message: `Nagar Nigam officials have acknowledged your complaint "${complaint.title}"`,
+          type: 'complaint_update',
+          relatedId: id,
+        });
+
+        // Send SMS notification
+        const user = await storage.getUser(complaint.userId);
+        if (user?.phoneNumber) {
+          await sendSMS(
+            user.phoneNumber,
+            'complaint_acknowledged',
+            complaint.ticketNumber,
+            complaint.title
+          );
+        }
+      }
+      
+      res.json({ message: "Complaint acknowledged successfully" });
+    } catch (error) {
+      console.error("Error acknowledging complaint:", error);
+      res.status(500).json({ message: "Failed to acknowledge complaint" });
     }
   });
 

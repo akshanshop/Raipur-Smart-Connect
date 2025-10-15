@@ -2,6 +2,12 @@
 Raipur Smart Connect is a unified civic engagement platform for Raipur city, connecting citizens with municipal authorities. It's a full-stack web application offering civic services, an AI-powered multilingual chatbot with spam detection, a smart complaint management system with GPS and photo uploads, and a community problem-solving hub with interactive map visualization. The platform aims to provide 24/7 access to municipal services, transparent complaint tracking, community engagement, and real-time city alerts.
 
 ## Recent Updates (October 2025)
+- **SMS/WhatsApp Notifications via Twilio**: Integrated Twilio for real-time SMS and WhatsApp notifications to users for:
+  - Complaint submitted confirmation
+  - Complaint acknowledged by officials
+  - Complaint status changed to in-progress
+  - Complaint resolved notification
+  - User phone numbers stored in database for notification delivery
 - **Comprehensive Security System**: Implemented multi-layer security with rate limiting, content validation, IP tracking, and automated threat detection
 - **AI Spam Detection**: Implemented GPT-5 powered spam detection that automatically analyzes and rejects fake/spam complaints with >70% confidence, sending warning notifications to users
 - **Automatic Priority Assignment**: Priority is now automatically calculated based on nearby reports within ~0.5km radius:
@@ -200,6 +206,13 @@ The Citizen Dashboard now includes comprehensive map visualization features:
 
 ## AI Services
 - **OpenAI API**: Integrates GPT-5 for the multilingual chatbot and content generation.
+
+## Communication Services
+- **Twilio**: SMS and WhatsApp messaging service for real-time user notifications
+  - Sends complaint status updates to users
+  - Supports both SMS and WhatsApp delivery
+  - Requires TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER environment variables
+  - Graceful degradation: Application continues working normally without Twilio credentials (SMS notifications are skipped with log messages)
 
 ## UI and Styling Libraries
 - **shadcn/ui**: Component library built on Radix UI primitives.
