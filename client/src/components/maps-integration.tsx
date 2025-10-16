@@ -80,8 +80,9 @@ export default function MapsIntegration() {
   const [mapCenter, setMapCenter] = useState<[number, number]>([21.2514, 81.6296]);
   const [mapZoom, setMapZoom] = useState(12);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
-  const [distanceRadius, setDistanceRadius] = useState<string>("all");
   const mapRef = useRef<L.Map | null>(null);
+  
+  const DISTANCE_RADIUS_KM = 7;
 
   const { data: complaints = [] } = useQuery({
     queryKey: ["/api/complaints/all"],
@@ -159,16 +160,15 @@ export default function MapsIntegration() {
   const filteredIssues = allIssues.filter((issue: MapIssue) => {
     const matchesPriority = priorityFilter === "all" || issue.priority === priorityFilter;
     
-    // Filter by distance from user location
-    if (distanceRadius !== "all" && userLocation && issue.latitude && issue.longitude) {
+    // Always filter by 7km distance from user location when available
+    if (userLocation && issue.latitude && issue.longitude) {
       const distance = calculateDistance(
         userLocation[0],
         userLocation[1],
         parseFloat(issue.latitude),
         parseFloat(issue.longitude)
       );
-      const radiusKm = parseInt(distanceRadius);
-      if (distance > radiusKm) {
+      if (distance > DISTANCE_RADIUS_KM) {
         return false;
       }
     }
@@ -354,18 +354,6 @@ export default function MapsIntegration() {
             </div>
             
             <div className="flex items-center space-x-2">
-              <Select value={distanceRadius} onValueChange={setDistanceRadius}>
-                <SelectTrigger className="w-40" data-testid="select-distance-filter">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Areas</SelectItem>
-                  <SelectItem value="5">Within 5 km</SelectItem>
-                  <SelectItem value="10">Within 10 km</SelectItem>
-                  <SelectItem value="20">Within 20 km</SelectItem>
-                  <SelectItem value="50">Within 50 km</SelectItem>
-                </SelectContent>
-              </Select>
               <Select value={priorityFilter} onValueChange={setPriorityFilter}>
                 <SelectTrigger className="w-32" data-testid="select-map-priority-filter">
                   <SelectValue />
@@ -566,11 +554,9 @@ export default function MapsIntegration() {
               <span className="text-sm text-foreground">
                 <strong>OpenStreetMap Integration:</strong> 
                 {userLocation ? (
-                  distanceRadius === "all" 
-                    ? " Showing all issues in your city. Use the distance filter to see nearby issues only."
-                    : ` Showing issues within ${distanceRadius}km of your location. Change the distance filter to see more or fewer issues.`
+                  ` Showing issues within ${DISTANCE_RADIUS_KM}km of your current location. Only nearby problems are displayed for better local awareness.`
                 ) : (
-                  " Showing all issues. Allow location access to see issues near you."
+                  " Allow location access to see issues within 7km of your area."
                 )}
               </span>
             </div>
