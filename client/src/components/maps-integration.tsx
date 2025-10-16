@@ -34,6 +34,7 @@ interface MapIssue {
   category: string;
   upvotes: number | null;
   type: 'complaint' | 'community_issue';
+  userName?: string;
 }
 
 function MapController({ center, zoom }: { center: [number, number], zoom: number }) {
@@ -131,7 +132,7 @@ export default function MapsIntegration() {
 
   // Combine complaints and community issues for map display
   const allIssues: MapIssue[] = [
-    ...(complaints as Complaint[]).map((c) => ({ 
+    ...(complaints as any[]).map((c) => ({ 
       id: c.id,
       title: c.title,
       priority: c.priority,
@@ -141,9 +142,10 @@ export default function MapsIntegration() {
       longitude: c.longitude,
       category: c.category,
       upvotes: c.upvotes,
-      type: 'complaint' as const 
+      type: 'complaint' as const,
+      userName: c.userName || 'Anonymous'
     })),
-    ...(communityIssues as CommunityIssue[]).map((i) => ({ 
+    ...(communityIssues as any[]).map((i) => ({ 
       id: i.id,
       title: i.title,
       priority: i.priority,
@@ -153,7 +155,8 @@ export default function MapsIntegration() {
       longitude: i.longitude,
       category: i.category,
       upvotes: i.upvotes,
-      type: 'community_issue' as const 
+      type: 'community_issue' as const,
+      userName: i.userName || 'Anonymous'
     }))
   ].filter((issue) => issue.latitude && issue.longitude);
 
@@ -400,6 +403,10 @@ export default function MapsIntegration() {
                           {group.issues.map((issue) => (
                             <div key={issue.id} className="text-xs border-b pb-1">
                               <p className="font-medium">{issue.title}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                <i className="fas fa-user mr-1"></i>
+                                Reported by: {issue.userName || 'Anonymous'}
+                              </p>
                               <div className="flex gap-1 mt-1">
                                 <Badge className="text-xs">{issue.priority}</Badge>
                                 <Badge className="text-xs">{issue.status}</Badge>
@@ -422,6 +429,10 @@ export default function MapsIntegration() {
                       <div className="p-2">
                         <h3 className="font-semibold text-sm">{issue.title}</h3>
                         <p className="text-xs text-muted-foreground mt-1">{issue.location}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          <i className="fas fa-user mr-1"></i>
+                          Reported by: {issue.userName || 'Anonymous'}
+                        </p>
                         <div className="flex items-center gap-2 mt-2">
                           <Badge className="text-xs">{issue.priority}</Badge>
                           <Badge className="text-xs">{issue.status}</Badge>

@@ -243,7 +243,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/complaints/all', async (req, res) => {
     try {
       const complaints = await storage.getAllComplaints();
-      res.json(complaints);
+      
+      // Get user data for each complaint
+      const complaintsWithUserData = await Promise.all(
+        complaints.map(async (complaint) => {
+          const user = await storage.getUser(complaint.userId);
+          return {
+            ...complaint,
+            userName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : 'Anonymous',
+          };
+        })
+      );
+      
+      res.json(complaintsWithUserData);
     } catch (error) {
       console.error("Error fetching all complaints:", error);
       res.status(500).json({ message: "Failed to fetch complaints" });
@@ -354,7 +366,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/community-issues', async (req, res) => {
     try {
       const issues = await storage.getCommunityIssues();
-      res.json(issues);
+      
+      // Get user data for each community issue
+      const issuesWithUserData = await Promise.all(
+        issues.map(async (issue) => {
+          const user = await storage.getUser(issue.userId);
+          return {
+            ...issue,
+            userName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : 'Anonymous',
+          };
+        })
+      );
+      
+      res.json(issuesWithUserData);
     } catch (error) {
       console.error("Error fetching community issues:", error);
       res.status(500).json({ message: "Failed to fetch community issues" });
