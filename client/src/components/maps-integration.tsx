@@ -76,10 +76,11 @@ function HeatmapLayer({ points }: { points: Array<[number, number, number]> }) {
 
 export default function MapsIntegration() {
   const [viewMode, setViewMode] = useState<"heatmap" | "individual" | "density">("individual");
-  const [areaFilter, setAreaFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [mapCenter, setMapCenter] = useState<[number, number]>([21.2514, 81.6296]);
   const [mapZoom, setMapZoom] = useState(12);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [distanceRadius, setDistanceRadius] = useState<string>("all");
   const mapRef = useRef<L.Map | null>(null);
 
   const { data: complaints = [] } = useQuery({
@@ -96,6 +97,36 @@ export default function MapsIntegration() {
     queryKey: ["/api/stats/city"],
     retry: false,
   });
+
+  // Get user's location on component mount
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const location: [number, number] = [position.coords.latitude, position.coords.longitude];
+          setUserLocation(location);
+          setMapCenter(location);
+          setMapZoom(14);
+        },
+        (error) => {
+          console.error('Error getting user location:', error);
+        }
+      );
+    }
+  }, []);
+
+  // Calculate distance between two coordinates using Haversine formula
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // Distance in kilometers
+  };
 
   // Combine complaints and community issues for map display
   const allIssues: MapIssue[] = [
@@ -127,6 +158,21 @@ export default function MapsIntegration() {
 
   const filteredIssues = allIssues.filter((issue: MapIssue) => {
     const matchesPriority = priorityFilter === "all" || issue.priority === priorityFilter;
+    
+    // Filter by distance from user location
+    if (distanceRadius !== "all" && userLocation && issue.latitude && issue.longitude) {
+      const distance = calculateDistance(
+        userLocation[0],
+        userLocation[1],
+        parseFloat(issue.latitude),
+        parseFloat(issue.longitude)
+      );
+      const radiusKm = parseInt(distanceRadius);
+      if (distance > radiusKm) {
+        return false;
+      }
+    }
+    
     return matchesPriority;
   });
 
@@ -308,17 +354,16 @@ export default function MapsIntegration() {
             </div>
             
             <div className="flex items-center space-x-2">
-              <Select value={areaFilter} onValueChange={setAreaFilter}>
-                <SelectTrigger className="w-32" data-testid="select-area-filter">
+              <Select value={distanceRadius} onValueChange={setDistanceRadius}>
+                <SelectTrigger className="w-40" data-testid="select-distance-filter">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Areas</SelectItem>
-                  <SelectItem value="sector-21">Sector 21</SelectItem>
-                  <SelectItem value="sector-15">Sector 15</SelectItem>
-                  <SelectItem value="central-park">Central Park</SelectItem>
-                  <SelectItem value="civil-lines">Civil Lines</SelectItem>
-                  <SelectItem value="shankar-nagar">Shankar Nagar</SelectItem>
+                  <SelectItem value="5">Within 5 km</SelectItem>
+                  <SelectItem value="10">Within 10 km</SelectItem>
+                  <SelectItem value="20">Within 20 km</SelectItem>
+                  <SelectItem value="50">Within 50 km</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={priorityFilter} onValueChange={setPriorityFilter}>
@@ -519,8 +564,14 @@ export default function MapsIntegration() {
             <div className="flex items-center space-x-2">
               <i className="fas fa-map-marked-alt text-primary"></i>
               <span className="text-sm text-foreground">
-                <strong>OpenStreetMap Integration:</strong> Showing live street data for Raipur, Chhattisgarh (492001).
-                Click markers to view issue details, switch to heatmap view, or use your current location.
+                <strong>OpenStreetMap Integration:</strong> 
+                {userLocation ? (
+                  distanceRadius === "all" 
+                    ? " Showing all issues in your city. Use the distance filter to see nearby issues only."
+                    : ` Showing issues within ${distanceRadius}km of your location. Change the distance filter to see more or fewer issues.`
+                ) : (
+                  " Showing all issues. Allow location access to see issues near you."
+                )}
               </span>
             </div>
           </div>
