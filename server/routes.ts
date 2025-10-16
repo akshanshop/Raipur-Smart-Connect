@@ -721,6 +721,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: 'complaint_update',
           relatedId: id,
         });
+
+        // Send SMS notification to user
+        try {
+          const user = await storage.getUser(complaint.userId);
+          if (user?.phoneNumber) {
+            await sendSMS(
+              user.phoneNumber,
+              'complaint_resolved',
+              complaint.ticketNumber,
+              complaint.title
+            );
+          }
+        } catch (smsError) {
+          console.error('Failed to send SMS notification:', smsError);
+        }
       }
       
       res.json({ message: "Issue resolved successfully", screenshots: screenshotUrls });
