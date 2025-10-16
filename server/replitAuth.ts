@@ -58,14 +58,33 @@ async function upsertUser(
   claims: any,
   role?: string,
 ) {
-  await storage.upsertUser({
-    id: claims["sub"],
-    email: claims["email"],
-    firstName: claims["first_name"],
-    lastName: claims["last_name"],
-    profileImageUrl: claims["profile_image_url"],
-    role: role || 'citizen',
-  });
+  const userId = claims["sub"];
+  const email = claims["email"];
+  
+  let user = await storage.getUser(userId);
+  
+  if (!user) {
+    user = await storage.getUserByEmail(email);
+    if (user) {
+      await storage.updateUser(user.id, {
+        profileImageUrl: claims["profile_image_url"] || user.profileImageUrl,
+        firstName: claims["first_name"] || user.firstName,
+        lastName: claims["last_name"] || user.lastName,
+        ...(role && { role }),
+      });
+    } else {
+      await storage.upsertUser({
+        id: userId,
+        email,
+        firstName: claims["first_name"],
+        lastName: claims["last_name"],
+        profileImageUrl: claims["profile_image_url"],
+        role: role || 'citizen',
+      });
+    }
+  } else if (role && user.role !== role) {
+    await storage.updateUser(userId, { role });
+  }
 }
 
 export async function setupAuth(app: Express) {
