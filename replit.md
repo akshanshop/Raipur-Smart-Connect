@@ -33,7 +33,12 @@ A multi-layered security system is implemented:
 - **Security Monitoring (Officials Only)**: Provides officials with a dashboard to view real-time security metrics, activity logs, and manual controls for unblocking users or IPs.
 
 ## Real-time Features
-A notification system provides updates on complaint status, community activities, and city alerts. Notifications are categorized, and read status is maintained. Current implementation uses polling, with architecture prepared for WebSockets.
+A comprehensive notification system provides updates on complaint status, community activities, and city alerts through multiple channels:
+- **In-App Notifications**: Categorized notifications with read status tracking, using polling (architecture prepared for WebSockets).
+- **SMS Notifications**: Via Twilio for instant mobile updates.
+- **Email Notifications**: Via Gmail API for detailed, formatted updates with professional HTML templates.
+
+Users receive notifications through all available channels when they submit a complaint, when officials acknowledge it, when work begins (in progress), and when the issue is resolved.
 
 ## Complaint Management
 A comprehensive complaint system includes:
@@ -58,6 +63,7 @@ A comprehensive complaint system includes:
 
 ## Communication Services
 - **Twilio**: For real-time SMS and WhatsApp notifications (complaint status updates).
+- **Gmail API**: For sending email notifications about complaint submissions, status updates, and resolutions.
 
 ## UI and Styling Libraries
 - **shadcn/ui**: Component library built on Radix UI primitives.
