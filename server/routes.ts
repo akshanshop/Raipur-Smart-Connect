@@ -19,6 +19,7 @@ import {
   unblockIP
 } from "./security";
 import { sendSMS } from "./services/messaging";
+import { sendEmail } from "./services/email";
 
 const upload = multer({
   storage: multer.diskStorage({
@@ -211,14 +212,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         relatedId: complaint.id
       });
 
-      // Send SMS notification
+      // Send SMS and Email notifications
       const user = await storage.getUser(userId);
+      const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : undefined;
+      
       if (user?.phoneNumber) {
         await sendSMS(
           user.phoneNumber,
           'complaint_submitted',
           complaint.ticketNumber,
           complaint.title
+        );
+      }
+      
+      if (user?.email) {
+        await sendEmail(
+          user.email,
+          'complaint_submitted',
+          complaint.ticketNumber,
+          complaint.title,
+          userName
         );
       }
 
@@ -323,8 +336,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           relatedId: complaint.id
         });
 
-        // Send SMS notification based on status
+        // Send SMS and Email notifications based on status
         const user = await storage.getUser(complaint.userId);
+        const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : undefined;
+        
         if (user?.phoneNumber) {
           if (status === 'in_progress') {
             await sendSMS(
@@ -339,6 +354,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
               'complaint_resolved',
               complaint.ticketNumber,
               complaint.title
+            );
+          }
+        }
+        
+        if (user?.email) {
+          if (status === 'in_progress') {
+            await sendEmail(
+              user.email,
+              'complaint_in_progress',
+              complaint.ticketNumber,
+              complaint.title,
+              userName
+            );
+          } else if (status === 'resolved' || status === 'closed') {
+            await sendEmail(
+              user.email,
+              'complaint_resolved',
+              complaint.ticketNumber,
+              complaint.title,
+              userName
             );
           }
         }
