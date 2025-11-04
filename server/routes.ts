@@ -424,6 +424,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // New voting system routes (likes and dislikes)
+  app.post('/api/vote', isAuthenticatedFlexible, rateLimit('upvotes'), async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { voteType, complaintId, communityIssueId } = req.body;
+
+      if (!voteType || (voteType !== 'upvote' && voteType !== 'downvote')) {
+        return res.status(400).json({ message: "Invalid vote type. Must be 'upvote' or 'downvote'" });
+      }
+
+      const currentVote = await storage.getUserVote(userId, complaintId, communityIssueId);
+      
+      if (currentVote === voteType) {
+        await storage.removeVote(userId, complaintId, communityIssueId);
+        res.json({ action: 'removed', voteType: null });
+      } else {
+        await storage.addVote(userId, voteType, complaintId, communityIssueId);
+        res.json({ action: 'added', voteType });
+      }
+    } catch (error) {
+      console.error("Error handling vote:", error);
+      res.status(500).json({ message: "Failed to process vote" });
+    }
+  });
+
+  app.get('/api/vote/status', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { complaintId, communityIssueId } = req.query;
+
+      const voteType = await storage.getUserVote(
+        userId, 
+        complaintId as string, 
+        communityIssueId as string
+      );
+      
+      res.json({ voteType });
+    } catch (error) {
+      console.error("Error checking vote status:", error);
+      res.status(500).json({ message: "Failed to check vote status" });
+    }
+  });
+
   // Comment routes
   app.post('/api/comments', isAuthenticatedFlexible, rateLimit('comments'), validateCommentContent, detectDuplicateSubmission('comment'), async (req: any, res) => {
     try {

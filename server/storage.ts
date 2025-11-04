@@ -48,6 +48,9 @@ export interface IStorage {
   getCommunityIssue(id: string): Promise<CommunityIssue | undefined>;
   
   // Voting operations
+  addVote(userId: string, voteType: 'upvote' | 'downvote', complaintId?: string, communityIssueId?: string): Promise<void>;
+  removeVote(userId: string, complaintId?: string, communityIssueId?: string): Promise<void>;
+  getUserVote(userId: string, complaintId?: string, communityIssueId?: string): Promise<'upvote' | 'downvote' | null>;
   addUpvote(userId: string, complaintId?: string, communityIssueId?: string): Promise<void>;
   removeUpvote(userId: string, complaintId?: string, communityIssueId?: string): Promise<void>;
   hasUserUpvoted(userId: string, complaintId?: string, communityIssueId?: string): Promise<boolean>;
@@ -382,6 +385,124 @@ export class DatabaseStorage implements IStorage {
 
     const [upvote] = await db.select().from(upvotes).where(and(...conditions));
     return !!upvote;
+  }
+
+  async addVote(userId: string, voteType: 'upvote' | 'downvote', complaintId?: string, communityIssueId?: string): Promise<void> {
+    const existingVote = await this.getUserVote(userId, complaintId, communityIssueId);
+    
+    if (existingVote === voteType) {
+      return;
+    }
+    
+    if (existingVote) {
+      await this.removeVote(userId, complaintId, communityIssueId);
+    }
+
+    await db.insert(upvotes).values({
+      userId,
+      complaintId,
+      communityIssueId,
+      voteType,
+    });
+
+    const voteColumn = voteType === 'upvote' ? 'upvotes' : 'downvotes';
+    
+    if (complaintId) {
+      await db
+        .update(complaints)
+        .set({
+          [voteColumn]: sql`${complaints[voteColumn]} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(eq(complaints.id, complaintId));
+    }
+
+    if (communityIssueId) {
+      await db
+        .update(communityIssues)
+        .set({
+          [voteColumn]: sql`${communityIssues[voteColumn]} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(eq(communityIssues.id, communityIssueId));
+    }
+
+    if (voteType === 'upvote') {
+      await db
+        .update(users)
+        .set({
+          upvotesCount: sql`${users.upvotesCount} + 1`,
+          contributionScore: sql`${users.contributionScore} + 2`,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId));
+    }
+  }
+
+  async removeVote(userId: string, complaintId?: string, communityIssueId?: string): Promise<void> {
+    const voteType = await this.getUserVote(userId, complaintId, communityIssueId);
+    
+    if (!voteType) {
+      return;
+    }
+
+    const conditions = [eq(upvotes.userId, userId)];
+    
+    if (complaintId) {
+      conditions.push(eq(upvotes.complaintId, complaintId));
+    }
+    if (communityIssueId) {
+      conditions.push(eq(upvotes.communityIssueId, communityIssueId));
+    }
+
+    await db.delete(upvotes).where(and(...conditions));
+
+    const voteColumn = voteType === 'upvote' ? 'upvotes' : 'downvotes';
+    
+    if (complaintId) {
+      await db
+        .update(complaints)
+        .set({
+          [voteColumn]: sql`${complaints[voteColumn]} - 1`,
+          updatedAt: new Date(),
+        })
+        .where(eq(complaints.id, complaintId));
+    }
+
+    if (communityIssueId) {
+      await db
+        .update(communityIssues)
+        .set({
+          [voteColumn]: sql`${communityIssues[voteColumn]} - 1`,
+          updatedAt: new Date(),
+        })
+        .where(eq(communityIssues.id, communityIssueId));
+    }
+
+    if (voteType === 'upvote') {
+      await db
+        .update(users)
+        .set({
+          upvotesCount: sql`${users.upvotesCount} - 1`,
+          contributionScore: sql`${users.contributionScore} - 2`,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId));
+    }
+  }
+
+  async getUserVote(userId: string, complaintId?: string, communityIssueId?: string): Promise<'upvote' | 'downvote' | null> {
+    const conditions = [eq(upvotes.userId, userId)];
+    
+    if (complaintId) {
+      conditions.push(eq(upvotes.complaintId, complaintId));
+    }
+    if (communityIssueId) {
+      conditions.push(eq(upvotes.communityIssueId, communityIssueId));
+    }
+
+    const [vote] = await db.select().from(upvotes).where(and(...conditions));
+    return vote ? (vote.voteType as 'upvote' | 'downvote') : null;
   }
 
   // Comment operations
