@@ -21,8 +21,13 @@ interface Complaint {
   priority: string;
   status: string;
   location: string;
+  latitude: string;
+  longitude: string;
   mediaUrls: string[];
   upvotes: number;
+  downvotes?: number;
+  userVote?: 'upvote' | 'downvote' | null;
+  userName?: string;
   createdAt: string;
   updatedAt: string;
   resolvedAt?: string;
@@ -34,7 +39,25 @@ export default function Complaints() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
+  const [viewMode, setViewMode] = useState<'my-complaints' | 'nearby'>('my-complaints');
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.error('Error getting user location:', error);
+        }
+      );
+    }
+  }, []);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -53,6 +76,12 @@ export default function Complaints() {
 
   const { data: complaints = [], isLoading: complaintsLoading } = useQuery({
     queryKey: ["/api/complaints"],
+    retry: false,
+  });
+
+  const { data: nearbyComplaints = [], isLoading: nearbyLoading } = useQuery({
+    queryKey: ["/api/complaints/nearby", userLocation?.latitude, userLocation?.longitude],
+    enabled: !!userLocation && viewMode === 'nearby',
     retry: false,
   });
 
@@ -84,6 +113,34 @@ export default function Complaints() {
       toast({
         title: "Error",
         description: "Failed to update status. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const voteMutation = useMutation({
+    mutationFn: async ({ voteType, complaintId }: { voteType: 'upvote' | 'downvote'; complaintId: string }) => {
+      const response = await apiRequest("POST", "/api/vote", { voteType, complaintId });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/complaints/nearby"] });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error as Error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to vote. Please try again.",
         variant: "destructive",
       });
     },
@@ -128,6 +185,19 @@ export default function Complaints() {
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
+  const filteredNearbyComplaints = nearbyComplaints.filter((complaint: Complaint) => {
+    const matchesSearch = complaint.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         complaint.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || complaint.status === statusFilter;
+    const matchesPriority = priorityFilter === "all" || complaint.priority === priorityFilter;
+    
+    return matchesSearch && matchesStatus && matchesPriority;
+  });
+
+  const handleVote = (voteType: 'upvote' | 'downvote', complaintId: string) => {
+    voteMutation.mutate({ voteType, complaintId });
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -144,9 +214,31 @@ export default function Complaints() {
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-foreground mb-2">
             <i className="fas fa-file-alt text-primary mr-3"></i>
-            My Complaints
+            {viewMode === 'my-complaints' ? 'My Complaints' : 'Nearby Complaints'}
           </h1>
-          <p className="text-muted-foreground">Track and manage your civic complaints</p>
+          <p className="text-muted-foreground">
+            {viewMode === 'my-complaints' ? 'Track and manage your civic complaints' : 'View and vote on complaints within 7km'}
+          </p>
+        </div>
+
+        {/* View Mode Toggle */}
+        <div className="mb-4 flex space-x-2">
+          <Button
+            variant={viewMode === 'my-complaints' ? 'default' : 'outline'}
+            onClick={() => setViewMode('my-complaints')}
+            data-testid="button-view-my-complaints"
+          >
+            <i className="fas fa-user mr-2"></i>
+            My Complaints
+          </Button>
+          <Button
+            variant={viewMode === 'nearby' ? 'default' : 'outline'}
+            onClick={() => setViewMode('nearby')}
+            data-testid="button-view-nearby"
+          >
+            <i className="fas fa-map-marker-alt mr-2"></i>
+            Nearby Complaints (7km)
+          </Button>
         </div>
 
         {/* Filters */}
@@ -207,16 +299,17 @@ export default function Complaints() {
         </Card>
 
         {/* Complaints List */}
-        {complaintsLoading ? (
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center py-8">
-                <i className="fas fa-spinner fa-spin text-2xl text-muted-foreground mb-2"></i>
-                <p className="text-muted-foreground">Loading your complaints...</p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : filteredComplaints.length === 0 ? (
+        {viewMode === 'my-complaints' ? (
+          complaintsLoading ? (
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center py-8">
+                  <i className="fas fa-spinner fa-spin text-2xl text-muted-foreground mb-2"></i>
+                  <p className="text-muted-foreground">Loading your complaints...</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : filteredComplaints.length === 0 ? (
           <Card>
             <CardContent className="p-6">
               <div className="text-center py-8">
@@ -235,9 +328,9 @@ export default function Complaints() {
               </div>
             </CardContent>
           </Card>
-        ) : (
-          <div className="space-y-4">
-            {filteredComplaints.map((complaint: Complaint) => (
+          ) : (
+            <div className="space-y-4">
+              {filteredComplaints.map((complaint: Complaint) => (
               <Card key={complaint.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
@@ -348,12 +441,140 @@ export default function Complaints() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
+              ))}
+            </div>
+          )
+        ) : (
+          nearbyLoading ? (
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center py-8">
+                  <i className="fas fa-spinner fa-spin text-2xl text-muted-foreground mb-2"></i>
+                  <p className="text-muted-foreground">Loading nearby complaints...</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : !userLocation ? (
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center py-8">
+                  <i className="fas fa-map-marker-alt text-4xl text-muted-foreground mb-4"></i>
+                  <h3 className="text-lg font-medium text-foreground mb-2">Location access required</h3>
+                  <p className="text-muted-foreground">Please allow location access to view nearby complaints.</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : filteredNearbyComplaints.length === 0 ? (
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center py-8">
+                  <i className="fas fa-inbox text-4xl text-muted-foreground mb-4"></i>
+                  <h3 className="text-lg font-medium text-foreground mb-2">No nearby complaints found</h3>
+                  <p className="text-muted-foreground">There are no complaints within 7km of your location.</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {filteredNearbyComplaints.map((complaint: Complaint) => (
+                <Card key={complaint.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Badge className={getPriorityBadgeColor(complaint.priority)}>
+                            {complaint.priority.charAt(0).toUpperCase() + complaint.priority.slice(1)}
+                          </Badge>
+                          <Badge variant="outline">
+                            {complaint.category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </Badge>
+                          <span className="text-sm text-muted-foreground">
+                            by {complaint.userName || 'Anonymous'}
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-semibold text-foreground mb-2" data-testid={`text-nearby-complaint-title-${complaint.id}`}>
+                          {complaint.title}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                          {complaint.description}
+                        </p>
+                        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                          <span>
+                            <i className="fas fa-map-marker-alt mr-1"></i>
+                            {complaint.location}
+                          </span>
+                          <span>
+                            <i className="fas fa-clock mr-1"></i>
+                            {formatDistanceToNow(new Date(complaint.createdAt), { addSuffix: true })}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end space-y-2">
+                        <Badge className={getStatusBadgeColor(complaint.status)}>
+                          {complaint.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Media Preview */}
+                    {complaint.mediaUrls && complaint.mediaUrls.length > 0 && (
+                      <div className="flex space-x-2 mb-4">
+                        {complaint.mediaUrls.slice(0, 4).map((url, index) => (
+                          <img
+                            key={index}
+                            src={url}
+                            alt={`Complaint media ${index + 1}`}
+                            className="w-16 h-16 object-cover rounded-lg border border-border"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Voting Buttons */}
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+                      <div className="flex items-center space-x-4">
+                        <Button
+                          variant={complaint.userVote === 'upvote' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handleVote('upvote', complaint.id)}
+                          disabled={voteMutation.isPending}
+                          data-testid={`button-like-${complaint.id}`}
+                        >
+                          <i className={`fas fa-thumbs-up mr-2 ${complaint.userVote === 'upvote' ? 'text-white' : ''}`}></i>
+                          Like ({complaint.upvotes || 0})
+                        </Button>
+                        <Button
+                          variant={complaint.userVote === 'downvote' ? 'destructive' : 'outline'}
+                          size="sm"
+                          onClick={() => handleVote('downvote', complaint.id)}
+                          disabled={voteMutation.isPending}
+                          data-testid={`button-dislike-${complaint.id}`}
+                        >
+                          <i className={`fas fa-thumbs-down mr-2 ${complaint.userVote === 'downvote' ? 'text-white' : ''}`}></i>
+                          Dislike ({complaint.downvotes || 0})
+                        </Button>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {complaint.upvotes > 0 && complaint.downvotes > 0 && (
+                          <span>
+                            Net: {(complaint.upvotes - complaint.downvotes)} 
+                            {complaint.upvotes > complaint.downvotes ? ' (Major)' : complaint.upvotes < complaint.downvotes ? ' (Minor)' : ''}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )
         )}
 
         {/* Summary Stats */}
-        {filteredComplaints.length > 0 && (
+        {viewMode === 'my-complaints' && filteredComplaints.length > 0 && (
           <Card className="mt-6">
             <CardHeader>
               <CardTitle className="text-lg">Summary</CardTitle>
