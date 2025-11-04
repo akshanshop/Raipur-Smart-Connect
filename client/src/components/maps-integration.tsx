@@ -4,7 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Complaint, CommunityIssue } from "@shared/schema";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -33,6 +35,8 @@ interface MapIssue {
   longitude: string | null;
   category: string;
   upvotes: number | null;
+  downvotes?: number | null;
+  userVote?: 'upvote' | 'downvote' | null;
   type: 'complaint' | 'community_issue';
   userName?: string;
 }
@@ -82,6 +86,8 @@ export default function MapsIntegration() {
   const [mapZoom, setMapZoom] = useState(12);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const DISTANCE_RADIUS_KM = 7;
 
@@ -99,6 +105,36 @@ export default function MapsIntegration() {
     queryKey: ["/api/stats/city"],
     retry: false,
   });
+
+  const voteMutation = useMutation({
+    mutationFn: async ({ voteType, complaintId, communityIssueId }: { 
+      voteType: 'upvote' | 'downvote'; 
+      complaintId?: string;
+      communityIssueId?: string;
+    }) => {
+      const response = await apiRequest("POST", "/api/vote", { voteType, complaintId, communityIssueId });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/complaints/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/community-issues"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to vote. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleVote = (voteType: 'upvote' | 'downvote', issue: MapIssue) => {
+    if (issue.type === 'complaint') {
+      voteMutation.mutate({ voteType, complaintId: issue.id });
+    } else {
+      voteMutation.mutate({ voteType, communityIssueId: issue.id });
+    }
+  };
 
   // Get user's location on component mount
   useEffect(() => {
@@ -142,6 +178,8 @@ export default function MapsIntegration() {
       longitude: c.longitude,
       category: c.category,
       upvotes: c.upvotes,
+      downvotes: c.downvotes,
+      userVote: c.userVote,
       type: 'complaint' as const,
       userName: c.userName || 'Anonymous'
     })),
@@ -155,6 +193,8 @@ export default function MapsIntegration() {
       longitude: i.longitude,
       category: i.category,
       upvotes: i.upvotes,
+      downvotes: i.downvotes,
+      userVote: i.userVote,
       type: 'community_issue' as const,
       userName: i.userName || 'Anonymous'
     }))
@@ -399,17 +439,41 @@ export default function MapsIntegration() {
                       <div className="p-2">
                         <h3 className="font-semibold text-sm">{group.count} Reports at this location</h3>
                         <p className="text-xs text-muted-foreground mt-1">{group.issues[0].location}</p>
-                        <div className="mt-2 max-h-40 overflow-y-auto space-y-1">
+                        <div className="mt-2 max-h-40 overflow-y-auto space-y-2">
                           {group.issues.map((issue) => (
-                            <div key={issue.id} className="text-xs border-b pb-1">
+                            <div key={issue.id} className="text-xs border-b pb-2">
                               <p className="font-medium">{issue.title}</p>
                               <p className="text-xs text-muted-foreground mt-1">
                                 <i className="fas fa-user mr-1"></i>
                                 Reported by: {issue.userName || 'Anonymous'}
                               </p>
-                              <div className="flex gap-1 mt-1">
+                              <div className="flex gap-1 mt-1 mb-1">
                                 <Badge className="text-xs">{issue.priority}</Badge>
                                 <Badge className="text-xs">{issue.status}</Badge>
+                              </div>
+                              <div className="flex items-center gap-1 mt-1">
+                                <Button
+                                  variant={issue.userVote === 'upvote' ? 'default' : 'outline'}
+                                  size="sm"
+                                  onClick={() => handleVote('upvote', issue)}
+                                  disabled={voteMutation.isPending}
+                                  className="h-6 px-2 text-xs"
+                                  data-testid={`button-map-like-${issue.id}`}
+                                >
+                                  <i className={`fas fa-thumbs-up mr-1 ${issue.userVote === 'upvote' ? 'text-white' : ''}`}></i>
+                                  {issue.upvotes || 0}
+                                </Button>
+                                <Button
+                                  variant={issue.userVote === 'downvote' ? 'destructive' : 'outline'}
+                                  size="sm"
+                                  onClick={() => handleVote('downvote', issue)}
+                                  disabled={voteMutation.isPending}
+                                  className="h-6 px-2 text-xs"
+                                  data-testid={`button-map-dislike-${issue.id}`}
+                                >
+                                  <i className={`fas fa-thumbs-down mr-1 ${issue.userVote === 'downvote' ? 'text-white' : ''}`}></i>
+                                  {issue.downvotes || 0}
+                                </Button>
                               </div>
                             </div>
                           ))}
@@ -433,9 +497,33 @@ export default function MapsIntegration() {
                           <i className="fas fa-user mr-1"></i>
                           Reported by: {issue.userName || 'Anonymous'}
                         </p>
-                        <div className="flex items-center gap-2 mt-2">
+                        <div className="flex items-center gap-2 mt-2 mb-2">
                           <Badge className="text-xs">{issue.priority}</Badge>
                           <Badge className="text-xs">{issue.status}</Badge>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Button
+                            variant={issue.userVote === 'upvote' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => handleVote('upvote', issue)}
+                            disabled={voteMutation.isPending}
+                            className="h-7 px-3 text-xs"
+                            data-testid={`button-map-like-${issue.id}`}
+                          >
+                            <i className={`fas fa-thumbs-up mr-1 ${issue.userVote === 'upvote' ? 'text-white' : ''}`}></i>
+                            Like ({issue.upvotes || 0})
+                          </Button>
+                          <Button
+                            variant={issue.userVote === 'downvote' ? 'destructive' : 'outline'}
+                            size="sm"
+                            onClick={() => handleVote('downvote', issue)}
+                            disabled={voteMutation.isPending}
+                            className="h-7 px-3 text-xs"
+                            data-testid={`button-map-dislike-${issue.id}`}
+                          >
+                            <i className={`fas fa-thumbs-down mr-1 ${issue.userVote === 'downvote' ? 'text-white' : ''}`}></i>
+                            Dislike ({issue.downvotes || 0})
+                          </Button>
                         </div>
                       </div>
                     </Popup>
