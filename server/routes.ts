@@ -130,11 +130,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req);
       
-      // Extract phone number from request body (not part of complaint schema)
-      const { phoneNumber, ...complaintFields } = req.body;
+      // Extract email and phone number from request body (not part of complaint schema)
+      const { email, phoneNumber, ...complaintFields } = req.body;
       const complaintData = insertComplaintSchema.parse(complaintFields);
 
-      // Update user's phone number if provided
+      // Update user's email and phone number if provided
+      if (email) {
+        await storage.updateUser(userId, { email });
+      }
       if (phoneNumber) {
         await storage.updateUser(userId, { phoneNumber });
       }

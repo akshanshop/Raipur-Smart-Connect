@@ -16,6 +16,9 @@ import { z } from "zod";
 
 const complaintFormSchema = insertComplaintSchema.extend({
   title: z.string().min(1, "Title is required"),
+  email: z.string()
+    .min(1, "Email is required for notifications")
+    .email("Please enter a valid email address"),
   phoneNumber: z.string()
     .optional()
     .refine(
@@ -42,6 +45,7 @@ export default function ComplaintForm() {
       latitude: "",
       longitude: "",
       status: "open",
+      email: "",
       phoneNumber: "",
     },
   });
@@ -77,10 +81,15 @@ export default function ComplaintForm() {
     },
     onSuccess: () => {
       const phoneNumber = form.watch('phoneNumber');
+      const email = form.watch('email');
+      const notifications = [];
+      if (email) notifications.push("email");
+      if (phoneNumber) notifications.push("SMS/WhatsApp");
+      
       toast({
         title: "Success",
-        description: phoneNumber 
-          ? "Your complaint has been registered successfully! You'll receive SMS/WhatsApp updates on your phone." 
+        description: notifications.length > 0
+          ? `Your complaint has been registered successfully! You'll receive ${notifications.join(" and ")} notifications about your complaint status.`
           : "Your complaint has been registered successfully!",
       });
       form.reset();
@@ -270,6 +279,29 @@ export default function ComplaintForm() {
                       <i className={`fas fa-location-arrow ${locationStatus === 'pending' ? 'fa-spin' : ''}`}></i>
                     </Button>
                   </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Email Field */}
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email Address (Required for notifications) *</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="email"
+                      placeholder="your.email@gmail.com" 
+                      {...field} 
+                      data-testid="input-email"
+                    />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    📧 You'll receive email notifications when your complaint is submitted, acknowledged, in-progress, or resolved
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
