@@ -227,17 +227,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getNearbyComplaints(latitude: number, longitude: number, radius: number): Promise<Complaint[]> {
-    const results = await db
-      .select()
-      .from(complaints)
-      .where(
-        sql`
-          ABS(CAST(${complaints.latitude} AS DECIMAL) - ${latitude}) < ${radius} AND
-          ABS(CAST(${complaints.longitude} AS DECIMAL) - ${longitude}) < ${radius} AND
-          ${complaints.status} != 'resolved'
-        `
-      );
-    return results;
+    const allComplaints = await db.select().from(complaints);
+    
+    const nearbyComplaints = allComplaints.filter(complaint => {
+      const complaintLat = parseFloat(complaint.latitude as string);
+      const complaintLon = parseFloat(complaint.longitude as string);
+      
+      const R = 6371;
+      const dLat = (complaintLat - latitude) * Math.PI / 180;
+      const dLon = (complaintLon - longitude) * Math.PI / 180;
+      const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(latitude * Math.PI / 180) * Math.cos(complaintLat * Math.PI / 180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const distance = R * c;
+      
+      return distance <= radius;
+    });
+    
+    return nearbyComplaints;
   }
 
   async updateComplaintStatus(id: string, status: string): Promise<void> {

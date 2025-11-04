@@ -275,6 +275,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/complaints/nearby/:latitude/:longitude', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const latitude = parseFloat(req.params.latitude);
+      const longitude = parseFloat(req.params.longitude);
+      const radius = 7;
+
+      if (isNaN(latitude) || isNaN(longitude)) {
+        return res.status(400).json({ message: "Invalid coordinates" });
+      }
+
+      const nearbyComplaints = await storage.getNearbyComplaints(latitude, longitude, radius);
+      
+      const complaintsWithUserDataAndVotes = await Promise.all(
+        nearbyComplaints.map(async (complaint) => {
+          const user = await storage.getUser(complaint.userId);
+          const userVote = await storage.getUserVote(userId, complaint.id, undefined);
+          
+          return {
+            ...complaint,
+            userName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : 'Anonymous',
+            userVote,
+          };
+        })
+      );
+      
+      res.json(complaintsWithUserDataAndVotes);
+    } catch (error) {
+      console.error("Error fetching nearby complaints:", error);
+      res.status(500).json({ message: "Failed to fetch nearby complaints" });
+    }
+  });
+
   app.patch('/api/complaints/:id/status', isAuthenticatedFlexible, async (req, res) => {
     try {
       const { status } = req.body;
