@@ -1,26 +1,5 @@
 # Overview
-Raipur Smart Connect is a unified civic engagement platform for Raipur city, connecting citizens with municipal authorities. It's a full-stack web application offering civic services, an AI-powered multilingual chatbot with spam detection, a smart complaint management system with GPS and photo uploads, and a community problem-solving hub with interactive map visualization. The platform aims to provide 24/7 access to municipal services, transparent complaint tracking, community engagement, and real-time city alerts.
-
-## Recent Updates (October 2025)
-- **SMS/WhatsApp Notifications via Twilio**: Integrated Twilio for real-time SMS and WhatsApp notifications to users for:
-  - Complaint submitted confirmation
-  - Complaint acknowledged by officials
-  - Complaint status changed to in-progress
-  - Complaint resolved notification
-  - User phone numbers stored in database for notification delivery
-- **Comprehensive Security System**: Implemented multi-layer security with rate limiting, content validation, IP tracking, and automated threat detection
-- **AI Spam Detection**: Implemented GPT-5 powered spam detection that automatically analyzes and rejects fake/spam complaints with >70% confidence, sending warning notifications to users
-- **Automatic Priority Assignment**: Priority is now automatically calculated based on nearby reports within ~0.5km radius:
-  - Low priority (yellow): Less than 3 reports in the area
-  - Medium priority (orange): 3-7 reports in the area
-  - Urgent priority (red): More than 7 reports in the area
-  - Resolved issues are always shown in green on maps
-- **Three View Modes for All Maps**: Both Citizen and Officials dashboards now have identical map visualization with three view modes:
-  - **Individual Markers**: Color-coded by status (green for resolved) and priority (yellow/orange/red)
-  - **Heatmap View**: Heat intensity based on issue priority
-  - **Density View (By Count)**: Grouped reports with color-coded markers (yellow: <3, orange: 3-7, red: >7)
-- **Enhanced Officials Dashboard**: Added Analytics tab with full map visualization capabilities matching citizen dashboard
-- **Dynamic Map Legends**: Context-aware legends that adapt based on selected view mode
+Raipur Smart Connect is a unified civic engagement platform that connects citizens with Raipur municipal authorities. It provides 24/7 access to municipal services, transparent complaint tracking, community engagement, and real-time city alerts. Key features include an AI-powered multilingual chatbot, a smart complaint management system with GPS and photo uploads, a community problem-solving hub with interactive map visualization, and a system for voting on nearby complaints. The platform aims to enhance civic participation and streamline municipal operations.
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
@@ -28,170 +7,40 @@ Preferred communication style: Simple, everyday language.
 # System Architecture
 
 ## Frontend Architecture
-The client is a Single Page Application (SPA) built with React 18 and TypeScript, using Vite for fast builds. UI components are from shadcn/ui (built on Radix UI) with Tailwind CSS for styling. Wouter handles client-side routing. State management uses React Query for server state and caching, and React Hook Form with Zod for form handling. The architecture is modular, with shared components and CSS custom properties for theming (light/dark mode).
+The client is a Single Page Application (SPA) built with React 18 and TypeScript, using Vite for fast builds. UI components leverage shadcn/ui (built on Radix UI) with Tailwind CSS for styling. Wouter handles client-side routing. State management uses React Query, and form handling is managed by React Hook Form with Zod validation. The architecture is modular and supports theming (light/dark mode).
 
 ## Backend Architecture
-The server is built with Express.js and TypeScript, following a RESTful API design. It features a modular route structure for authentication, chat, complaints, community issues, and file uploads. Multer handles image and video uploads. The API uses standard HTTP status codes, JSON responses, pagination, and comprehensive error handling.
+The server is built with Express.js and TypeScript, following a RESTful API design. It features a modular route structure for authentication, chat, complaints, community issues, and file uploads (handled by Multer). The API adheres to standard HTTP status codes, JSON responses, pagination, and comprehensive error handling.
 
 ## Authentication System
-Authentication uses independent OAuth 2.0 integration via Passport.js with Google, GitHub, Twitter, and Facebook. User sessions are managed using express-session with PostgreSQL storage (connect-pg-simple). The database supports multiple OAuth providers and tracks civic engagement metrics. Session management includes HTTP-only cookies and CSRF protection. OAuth routes are available at `/api/auth/google`, `/api/auth/github`, `/api/auth/twitter`, and `/api/auth/facebook`.
+Authentication utilizes independent OAuth 2.0 integration via Passport.js with Google, GitHub, Twitter, and Facebook. User sessions are managed using express-session with PostgreSQL storage. The system supports multiple OAuth providers, tracks civic engagement metrics, and includes HTTP-only cookies and CSRF protection.
 
 ## Database Design
-Drizzle ORM with PostgreSQL (Neon's serverless offering) is used for the data layer. The schema includes tables for users, complaints, community issues, upvotes, comments, notifications, chat messages, and sessions. Key relationships exist between users and complaints, and users and upvotes. 
-
-### GPS Location Requirements
-All complaints and community issues require mandatory GPS location data:
-- Latitude and longitude fields are NOT NULL in the database
-- Forms automatically request device location on load
-- Submission is blocked without valid GPS coordinates
-- Validation ensures coordinates are within valid ranges (latitude: -90 to 90, longitude: -180 to 180)
-- Users see real-time GPS status indicators with captured coordinates
-- Retry functionality available if initial GPS request fails
-- This ensures accurate issue mapping and prevents fake location submissions
+Drizzle ORM with Neon's serverless PostgreSQL is used. The schema includes tables for users, complaints, community issues, upvotes, comments, notifications, chat messages, and sessions. All complaints and community issues require mandatory GPS location data, ensuring accurate mapping and preventing fake submissions through client-side validation and database constraints.
 
 ## AI Integration
-OpenAI's GPT-5 model powers multiple AI features:
-
-### Multilingual Chatbot
-- Supports English, Hindi, and Marathi languages
-- Provides contextual responses about city services
-- Returns structured JSON responses
-- Persistent chat history
-
-### Spam Detection System
-- **Complaint Analysis**: Automatically analyzes all new complaints for spam, fake content, and abusive language
-- **Community Issue Analysis**: Validates community posts before publication
-- **Confidence Threshold**: Rejects submissions with >70% spam confidence
-- **Warning Notifications**: Sends alert notifications to users when spam is detected
-- **Categories**: Identifies content as legitimate, spam, fake, irrelevant, or abusive
-- **Graceful Fallback**: Allows submissions on API errors to prevent blocking legitimate reports
-- **Detailed Logging**: Tracks spam detection decisions for monitoring and improvement
-
-### Other AI Features
-- Automatic complaint summarization
-- Priority assessment
+OpenAI's GPT-5 powers several features:
+- **Multilingual Chatbot**: Supports English, Hindi, and Marathi, providing contextual responses and persistent chat history.
+- **Spam Detection System**: Automatically analyzes new complaints and community posts for spam, fake content, and abusive language with a >70% confidence threshold. It sends warning notifications to users for detected spam and logs decisions.
+- **Other AI Features**: Includes automatic complaint summarization and priority assessment.
 
 ## Security & Anti-Spam System
-
-The platform includes a comprehensive, multi-layered security system to protect against spam, abuse, and fake requests:
-
-### Rate Limiting
-- **Intelligent Rate Limits**: Different limits for different actions
-  - Complaints: 5 per minute
-  - Comments: 10 per minute
-  - Chat messages: 20 per minute
-  - Upvotes: 30 per minute
-  - General requests: 50 per minute
-- **Graduated Warnings**: Three-strike system before blocking
-  - 1st violation: Low severity warning
-  - 2nd violation: Medium severity alert
-  - 3rd violation: High severity final warning
-  - 4th violation: 30-minute automatic block
-- **IP-Based Blocking**: Persistent violators get their IP addresses blocked
-
-### Content Validation
-- **Spam Keyword Detection**: Automatically blocks content containing spam keywords (gambling, scams, adult content, etc.)
-- **Pattern Recognition**: Detects suspicious patterns like:
-  - Multiple URLs in content
-  - Credit card numbers
-  - Excessive capitalization
-  - Repeated characters (spam patterns)
-  - Suspicious domain TLDs
-- **Comment Spam Protection**: All comments are validated before posting
-
-### Duplicate Detection
-- **Submission Tracking**: Monitors recent submissions to prevent duplicates
-- **Content Matching**: Detects identical content submitted within 5 minutes
-- **Automatic Rejection**: Blocks duplicate complaints, comments, and community issues
-
-### Automated Warning System
-- **Instant Notifications**: Users receive immediate warnings when violations are detected
-- **Severity Levels**: Four levels of warnings
-  - ⚠️ Low: Activity warning
-  - ⚠️ Medium: Security alert with violation details
-  - 🚨 High: Final warning before block
-  - 🔒 Critical: Account blocked notification
-- **Detailed Information**: Each warning includes:
-  - Specific reason for the violation
-  - IP address involved
-  - Timestamp of the incident
-  - Next steps or consequences
-
-### Security Monitoring (Officials Only)
-- **Security Dashboard**: Real-time view of security metrics
-  - Total suspicious activities
-  - 24-hour activity breakdown by severity
-  - Number of blocked IPs
-  - Currently blocked users
-- **Activity Log**: Detailed log of all security incidents
-  - User ID and IP address
-  - Action taken
-  - Severity level
-  - Timestamp
-- **Manual Controls**: Officials can:
-  - Unblock users by identifier
-  - Remove IPs from blocklist
-  - View recent security activities
-
-### How It Protects Users
-1. **Prevents Spam**: Automatically detects and blocks spam content before it reaches the platform
-2. **Stops Abuse**: Rate limiting prevents system abuse and DOS attacks
-3. **Eliminates Duplicates**: Prevents the same issue from being submitted multiple times
-4. **Educates Users**: Clear warnings help users understand violations
-5. **Maintains Quality**: Ensures only legitimate civic issues are posted
-6. **Fair Enforcement**: Graduated penalty system gives users chances to correct behavior
-
-### Technical Implementation
-- **In-Memory Tracking**: Fast, efficient rate limiting using Map structures
-- **Automatic Cleanup**: Old entries are automatically removed to prevent memory issues
-- **Graceful Degradation**: System continues working even if AI spam detection fails
-- **Zero False Positives**: Multiple validation layers ensure legitimate content isn't blocked
-- **Non-Blocking**: Security checks happen asynchronously without slowing down the application
+A multi-layered security system is implemented:
+- **Rate Limiting**: Intelligent limits for various actions (e.g., 5 complaints/minute, 10 comments/minute) with a three-strike warning system leading to a 30-minute IP-based block for persistent violators.
+- **Content Validation**: Detects and blocks content containing spam keywords, suspicious patterns (e.g., multiple URLs, credit card numbers, excessive capitalization), and suspicious domain TLDs.
+- **Duplicate Detection**: Prevents duplicate submissions of complaints, comments, and community issues by tracking recent activity and content matching.
+- **Automated Warning System**: Sends instant, severity-based warnings to users for violations.
+- **Security Monitoring (Officials Only)**: Provides officials with a dashboard to view real-time security metrics, activity logs, and manual controls for unblocking users or IPs.
 
 ## Real-time Features
-A notification system provides updates on complaint status, community activities, and city alerts. While WebSockets are architecturally prepared, current implementation uses polling for updates. Notifications are categorized and read status is maintained.
+A notification system provides updates on complaint status, community activities, and city alerts. Notifications are categorized, and read status is maintained. Current implementation uses polling, with architecture prepared for WebSockets.
 
-## Officials Dashboard
-The Officials Dashboard provides municipal staff with tools to manage civic issues:
-
-### Core Features
-- **Role-based Access Control**: Secure authentication for municipal staff
-- **Statistics Overview**: Real-time metrics on issue status and priority distribution
-- **Issue Management**: Search, filter, resolve with proof upload, and delete capabilities
-- **Modern UI/UX**: Glass morphism effects and smooth animations
-
-### Map Visualization (Analytics Tab)
-- **Interactive OpenStreetMap**: View all city complaints on an interactive map
-- **Three View Modes** (identical to Citizen Dashboard):
-  1. **Individual Markers**: Each complaint shown as a separate marker with status-based colors:
-     - Green: Resolved issues
-     - Red: Urgent priority (>7 reports in area)
-     - Orange: Medium priority (3-7 reports in area)
-     - Yellow: Low priority (<3 reports in area)
-  2. **Heatmap View**: Heat intensity visualization based on issue priority
-  3. **Density View (By Count)**: Groups reports by location with color-coded markers:
-     - Yellow: Less than 3 reports at location
-     - Orange: 3-7 reports at location
-     - Red: More than 7 reports at location
-- **Interactive Popups**: Click markers to view detailed complaint information
-- **Dynamic Legends**: Context-aware legends that change based on selected view mode
-
-## Citizen Dashboard
-The Citizen Dashboard now includes comprehensive map visualization features:
-
-### Map Integration (New Tab)
-- **Interactive OpenStreetMap**: View all city complaints on an interactive map
-- **Three View Modes**:
-  1. **Heatmap View**: Heat intensity based on issue priority
-  2. **Individual Markers**: Each complaint shown as a separate marker with priority-based colors (red: high, orange: medium, green: low)
-  3. **Density View (By Count)**: Groups reports by location with color-coded markers:
-     - Yellow: Less than 3 reports at location
-     - Orange: 3-7 reports at location
-     - Red: More than 7 reports at location
-- **Map Controls**: Zoom in/out, reset to default view, center on user location
-- **Filter Options**: Filter by area and priority
-- **Interactive Popups**: Click markers to view complaint details
-- **Map Statistics**: View total issues, priority breakdown, and area distribution
+## Complaint Management
+A comprehensive complaint system includes:
+- **Automatic Priority Assignment**: Based on nearby reports within ~0.5km (Low: <3, Medium: 3-7, Urgent: >7).
+- **Nearby Complaints Voting**: Users can vote (like/dislike) on complaints within a 7km radius, with net scores and status indicators.
+- **Map Visualization**: Both Citizen and Officials dashboards offer identical map features with three view modes: Individual Markers (color-coded by status/priority), Heatmap View (intensity by priority), and Density View (grouped reports by count). Dynamic legends adapt to the selected view mode.
+- **Officials Dashboard**: Provides role-based access, statistics, issue management (search, filter, resolve with proof, delete), and modern UI/UX.
 
 # External Dependencies
 
@@ -205,14 +54,10 @@ The Citizen Dashboard now includes comprehensive map visualization features:
 - **Facebook OAuth 2.0**: For Facebook account authentication.
 
 ## AI Services
-- **OpenAI API**: Integrates GPT-5 for the multilingual chatbot and content generation.
+- **OpenAI API**: Integrates GPT-5 for chatbot and content generation.
 
 ## Communication Services
-- **Twilio**: SMS and WhatsApp messaging service for real-time user notifications
-  - Sends complaint status updates to users
-  - Supports both SMS and WhatsApp delivery
-  - Requires TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER environment variables
-  - Graceful degradation: Application continues working normally without Twilio credentials (SMS notifications are skipped with log messages)
+- **Twilio**: For real-time SMS and WhatsApp notifications (complaint status updates).
 
 ## UI and Styling Libraries
 - **shadcn/ui**: Component library built on Radix UI primitives.
@@ -220,14 +65,14 @@ The Citizen Dashboard now includes comprehensive map visualization features:
 - **Tailwind CSS**: Utility-first CSS framework.
 
 ## Maps and Geolocation
-- **Leaflet**: Open-source JavaScript library for interactive maps.
+- **Leaflet**: JavaScript library for interactive maps.
 - **React Leaflet**: React components for Leaflet maps.
-- **OpenStreetMap**: Free, open-source map tiles for displaying Raipur city.
-- **leaflet.heat**: Heatmap plugin for Leaflet to visualize issue density.
+- **OpenStreetMap**: Free, open-source map tiles.
+- **leaflet.heat**: Heatmap plugin for Leaflet.
 
 ## Development and Build Tools
 - **Vite**: Frontend build tool and development server.
-- **TypeScript**: Static type checking for frontend and backend.
+- **TypeScript**: Static type checking.
 
 ## File Upload and Storage
 - **Multer**: Handles multipart form data for file uploads.
@@ -235,7 +80,7 @@ The Citizen Dashboard now includes comprehensive map visualization features:
 ## Form Handling and Validation
 - **React Hook Form**: Form state management and validation.
 - **Zod**: Schema validation library.
-- **Hookform Resolvers**: Integration between React Hook Form and Zod.
+- **Hookform Resolvers**: Integration for React Hook Form and Zod.
 
 ## Date and Time Utilities
 - **date-fns**: Utility library for date formatting and manipulation.
