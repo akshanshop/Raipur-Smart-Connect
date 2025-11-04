@@ -74,12 +74,12 @@ export default function Complaints() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: complaints = [], isLoading: complaintsLoading } = useQuery({
+  const { data: complaints = [], isLoading: complaintsLoading } = useQuery<Complaint[]>({
     queryKey: ["/api/complaints"],
     retry: false,
   });
 
-  const { data: nearbyComplaints = [], isLoading: nearbyLoading } = useQuery({
+  const { data: nearbyComplaints = [], isLoading: nearbyLoading } = useQuery<Complaint[]>({
     queryKey: ["/api/complaints/nearby", userLocation?.latitude, userLocation?.longitude],
     enabled: !!userLocation && viewMode === 'nearby',
     retry: false,
@@ -558,10 +558,10 @@ export default function Complaints() {
                         </Button>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {complaint.upvotes > 0 && complaint.downvotes > 0 && (
+                        {(complaint.upvotes > 0 || (complaint.downvotes || 0) > 0) && (
                           <span>
-                            Net: {(complaint.upvotes - complaint.downvotes)} 
-                            {complaint.upvotes > complaint.downvotes ? ' (Major)' : complaint.upvotes < complaint.downvotes ? ' (Minor)' : ''}
+                            Net: {(complaint.upvotes - (complaint.downvotes || 0))} 
+                            {complaint.upvotes > (complaint.downvotes || 0) ? ' (Major)' : complaint.upvotes < (complaint.downvotes || 0) ? ' (Minor)' : ''}
                           </span>
                         )}
                       </div>
