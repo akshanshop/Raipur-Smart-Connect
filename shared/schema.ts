@@ -60,6 +60,7 @@ export const complaints = pgTable("complaints", {
   mediaUrls: text("media_urls").array(),
   resolutionScreenshots: text("resolution_screenshots").array(), // screenshots submitted by officials
   upvotes: integer("upvotes").default(0),
+  downvotes: integer("downvotes").default(0),
   assignedTo: varchar("assigned_to"),
   resolvedAt: timestamp("resolved_at"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -79,6 +80,7 @@ export const communityIssues = pgTable("community_issues", {
   status: varchar("status").default("open").notNull(),
   mediaUrls: text("media_urls").array(),
   upvotes: integer("upvotes").default(0),
+  downvotes: integer("downvotes").default(0),
   commentsCount: integer("comments_count").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -89,6 +91,7 @@ export const upvotes = pgTable("upvotes", {
   userId: varchar("user_id").references(() => users.id).notNull(),
   complaintId: varchar("complaint_id").references(() => complaints.id),
   communityIssueId: varchar("community_issue_id").references(() => communityIssues.id),
+  voteType: varchar("vote_type").notNull().default("upvote"), // upvote or downvote
   createdAt: timestamp("created_at").defaultNow(),
 });
 
