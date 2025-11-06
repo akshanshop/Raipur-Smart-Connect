@@ -365,24 +365,27 @@ export default function MapsIntegration() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0">
               <Button
                 variant={viewMode === "heatmap" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setViewMode("heatmap")}
                 data-testid="button-heatmap-view"
+                className="flex-shrink-0"
               >
-                <i className="fas fa-fire mr-2"></i>
-                Heatmap
+                <i className="fas fa-fire mr-1 sm:mr-2"></i>
+                <span className="hidden sm:inline">Heatmap</span>
+                <span className="sm:hidden">Heat</span>
               </Button>
               <Button
                 variant={viewMode === "individual" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setViewMode("individual")}
                 data-testid="button-individual-view"
+                className="flex-shrink-0"
               >
-                <i className="fas fa-map-pin mr-2"></i>
+                <i className="fas fa-map-pin mr-1 sm:mr-2"></i>
                 Individual
               </Button>
               <Button
@@ -390,15 +393,17 @@ export default function MapsIntegration() {
                 size="sm"
                 onClick={() => setViewMode("density")}
                 data-testid="button-density-view"
+                className="flex-shrink-0"
               >
-                <i className="fas fa-layer-group mr-2"></i>
-                By Count
+                <i className="fas fa-layer-group mr-1 sm:mr-2"></i>
+                <span className="hidden sm:inline">By Count</span>
+                <span className="sm:hidden">Count</span>
               </Button>
             </div>
             
             <div className="flex items-center space-x-2">
               <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                <SelectTrigger className="w-32" data-testid="select-map-priority-filter">
+                <SelectTrigger className="w-full sm:w-32" data-testid="select-map-priority-filter">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

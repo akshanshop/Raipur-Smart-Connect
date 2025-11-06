@@ -403,11 +403,11 @@ export default function ComplaintForm() {
               )}
             </div>
             
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row gap-3 sm:space-x-3 sm:gap-0">
               <Button 
                 type="submit" 
                 disabled={complaintMutation.isPending}
-                className="modern-button btn-squircle-lg h-12 px-6"
+                className="modern-button btn-squircle-lg h-14 sm:h-12 px-6 flex-1 text-base font-semibold"
                 data-testid="button-submit-complaint"
               >
                 {complaintMutation.isPending ? (
@@ -425,9 +425,8 @@ export default function ComplaintForm() {
               <Button 
                 type="button" 
                 variant="outline"
-                className="modern-button btn-squircle-lg h-12 px-6"
+                className="modern-button btn-squircle-lg h-14 sm:h-12 px-6 flex-1 text-base font-semibold"
                 onClick={() => {
-                  // TODO: Implement save as draft functionality
                   toast({
                     title: "Draft saved",
                     description: "Your complaint has been saved as a draft.",
