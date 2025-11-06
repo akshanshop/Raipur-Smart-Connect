@@ -215,23 +215,24 @@ export default function Complaints() {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            <i className="fas fa-file-alt text-primary mr-3"></i>
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2">
+            <i className="fas fa-file-alt text-primary mr-2 sm:mr-3"></i>
             {viewMode === 'my-complaints' ? 'My Complaints' : 'Nearby Complaints'}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-xs sm:text-sm md:text-base text-muted-foreground">
             {viewMode === 'my-complaints' ? 'Track and manage your civic complaints' : 'View and vote on complaints within 7km'}
           </p>
         </div>
 
         {/* View Mode Toggle */}
-        <div className="mb-4 flex space-x-2">
+        <div className="mb-4 flex flex-col sm:flex-row gap-2 sm:space-x-2">
           <Button
             variant={viewMode === 'my-complaints' ? 'default' : 'outline'}
             onClick={() => setViewMode('my-complaints')}
             data-testid="button-view-my-complaints"
+            className="w-full sm:w-auto min-h-[44px] text-sm sm:text-base"
           >
             <i className="fas fa-user mr-2"></i>
             My Complaints
@@ -240,6 +241,7 @@ export default function Complaints() {
             variant={viewMode === 'nearby' ? 'default' : 'outline'}
             onClick={() => setViewMode('nearby')}
             data-testid="button-view-nearby"
+            className="w-full sm:w-auto min-h-[44px] text-sm sm:text-base"
           >
             <i className="fas fa-map-marker-alt mr-2"></i>
             Nearby Complaints (7km)
@@ -247,22 +249,23 @@ export default function Complaints() {
         </div>
 
         {/* Filters */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="mb-4 sm:mb-6">
+          <CardContent className="p-3 sm:p-4 md:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Search</label>
+                <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5 sm:mb-2">Search</label>
                 <Input
                   placeholder="Search by title, ticket number..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   data-testid="input-search-complaints"
+                  className="min-h-[44px] text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Status</label>
+                <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5 sm:mb-2">Status</label>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger data-testid="select-status-filter">
+                  <SelectTrigger data-testid="select-status-filter" className="min-h-[44px] text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -275,9 +278,9 @@ export default function Complaints() {
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Priority</label>
+                <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5 sm:mb-2">Priority</label>
                 <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                  <SelectTrigger data-testid="select-priority-filter">
+                  <SelectTrigger data-testid="select-priority-filter" className="min-h-[44px] text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -292,7 +295,7 @@ export default function Complaints() {
               <div className="flex items-end">
                 <Button 
                   onClick={() => window.location.href = '/'}
-                  className="w-full"
+                  className="w-full min-h-[44px] text-sm sm:text-base"
                   data-testid="button-new-complaint"
                 >
                   <i className="fas fa-plus mr-2"></i>

@@ -13,6 +13,19 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 
+interface CityStats {
+  totalComplaints: number;
+  resolvedComplaints: number;
+  averageResponseTime?: string;
+}
+
+interface UserStats {
+  activeComplaints: number;
+  resolvedComplaints: number;
+  contributionScore: number;
+  upvotesGiven: number;
+}
+
 export default function Home() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
@@ -38,12 +51,12 @@ export default function Home() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: cityStats } = useQuery({
+  const { data: cityStats } = useQuery<CityStats>({
     queryKey: ["/api/stats/city"],
     retry: false,
   });
 
-  const { data: userStats } = useQuery({
+  const { data: userStats } = useQuery<UserStats>({
     queryKey: ["/api/stats/user"],
     retry: false,
   });
@@ -96,15 +109,15 @@ export default function Home() {
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Hero Section */}
-        <section className="mb-12">
-          <div className="relative rounded-3xl overflow-hidden p-12 text-white pattern-overlay cool-shadow bg-[#eebd2b]">
+        <section className="mb-6 sm:mb-8 md:mb-12">
+          <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden p-6 sm:p-8 md:p-12 text-white pattern-overlay cool-shadow bg-[#eebd2b]">
             <div className="relative z-10">
-              <div className="text-center mb-8">
-                <h2 className="text-5xl font-bold mb-4 text-gradient">Welcome to Raipur Smart Connect</h2>
-                <p className="text-xl opacity-95 mb-8 max-w-2xl mx-auto">Your unified platform for civic engagement and community problem-solving with AI-powered assistance</p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="text-center mb-6 sm:mb-8">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 text-gradient">Welcome to Raipur Smart Connect</h2>
+                <p className="text-sm sm:text-base md:text-lg lg:text-xl opacity-95 mb-6 sm:mb-8 max-w-2xl mx-auto px-2">Your unified platform for civic engagement and community problem-solving with AI-powered assistance</p>
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                   <button 
-                    className="modern-button px-8 py-3 bg-white text-primary rounded-xl font-semibold hover:bg-opacity-90 transition-all"
+                    className="modern-button px-6 sm:px-8 py-3 sm:py-3.5 bg-white text-primary rounded-xl font-semibold hover:bg-opacity-90 transition-all text-sm sm:text-base min-h-[44px]"
                     onClick={() => {
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                       setTimeout(() => {
@@ -120,7 +133,7 @@ export default function Home() {
                     Ask AI Assistant
                   </button>
                   <button 
-                    className="modern-button px-8 py-3 bg-transparent border-2 border-white text-white rounded-xl font-semibold hover:bg-white hover:text-primary transition-all"
+                    className="modern-button px-6 sm:px-8 py-3 sm:py-3.5 bg-transparent border-2 border-white text-white rounded-xl font-semibold hover:bg-white hover:text-primary transition-all text-sm sm:text-base min-h-[44px]"
                     onClick={() => {
                       const element = document.querySelector('#complaint-form') as HTMLElement;
                       if (element) {
@@ -136,40 +149,40 @@ export default function Home() {
               </div>
               
               {/* Quick Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div className="glass-effect rounded-2xl p-6 text-center floating-card">
-                  <div className="text-4xl font-bold mb-2" data-testid="text-active-issues">
-                    {cityStats?.totalComplaints - cityStats?.resolvedComplaints || 0}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+                <div className="glass-effect rounded-2xl p-3 sm:p-4 md:p-6 text-center floating-card">
+                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2" data-testid="text-active-issues">
+                    {((cityStats?.totalComplaints || 0) - (cityStats?.resolvedComplaints || 0)) || 0}
                   </div>
-                  <div className="text-sm opacity-90">Active Issues</div>
-                  <div className="w-full h-1 bg-white bg-opacity-30 rounded mt-3">
+                  <div className="text-xs sm:text-sm opacity-90">Active Issues</div>
+                  <div className="w-full h-1 bg-white bg-opacity-30 rounded mt-2 sm:mt-3">
                     <div className="h-full bg-white rounded w-3/4"></div>
                   </div>
                 </div>
-                <div className="glass-effect rounded-2xl p-6 text-center floating-card">
-                  <div className="text-4xl font-bold mb-2 text-green-300" data-testid="text-resolved-issues">
+                <div className="glass-effect rounded-2xl p-3 sm:p-4 md:p-6 text-center floating-card">
+                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2 text-green-300" data-testid="text-resolved-issues">
                     {cityStats?.resolvedComplaints || 0}
                   </div>
-                  <div className="text-sm opacity-90">Resolved</div>
-                  <div className="w-full h-1 bg-white bg-opacity-30 rounded mt-3">
+                  <div className="text-xs sm:text-sm opacity-90">Resolved</div>
+                  <div className="w-full h-1 bg-white bg-opacity-30 rounded mt-2 sm:mt-3">
                     <div className="h-full bg-green-300 rounded w-4/5"></div>
                   </div>
                 </div>
-                <div className="glass-effect rounded-2xl p-6 text-center floating-card pulse-glow">
-                  <div className="text-4xl font-bold mb-2 text-yellow-300" data-testid="text-community-score">
+                <div className="glass-effect rounded-2xl p-3 sm:p-4 md:p-6 text-center floating-card pulse-glow">
+                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2 text-yellow-300" data-testid="text-community-score">
                     {userStats?.contributionScore || 0}
                   </div>
-                  <div className="text-sm opacity-90">Community Score</div>
-                  <div className="w-full h-1 bg-white bg-opacity-30 rounded mt-3">
+                  <div className="text-xs sm:text-sm opacity-90">Community Score</div>
+                  <div className="w-full h-1 bg-white bg-opacity-30 rounded mt-2 sm:mt-3">
                     <div className="h-full bg-yellow-300 rounded w-2/3"></div>
                   </div>
                 </div>
-                <div className="glass-effect rounded-2xl p-6 text-center floating-card">
-                  <div className="text-4xl font-bold mb-2 text-blue-300" data-testid="text-response-time">
+                <div className="glass-effect rounded-2xl p-3 sm:p-4 md:p-6 text-center floating-card">
+                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2 text-blue-300" data-testid="text-response-time">
                     {cityStats?.averageResponseTime || "N/A"}
                   </div>
-                  <div className="text-sm opacity-90">Avg Response</div>
-                  <div className="w-full h-1 bg-white bg-opacity-30 rounded mt-3">
+                  <div className="text-xs sm:text-sm opacity-90">Avg Response</div>
+                  <div className="w-full h-1 bg-white bg-opacity-30 rounded mt-2 sm:mt-3">
                     <div className="h-full bg-blue-300 rounded w-full"></div>
                   </div>
                 </div>
@@ -178,21 +191,21 @@ export default function Home() {
           </div>
         </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           
           {/* Left Column: Chatbot & Quick Actions */}
-          <div className="lg:col-span-1 space-y-8">
+          <div className="lg:col-span-1 space-y-4 sm:space-y-6 lg:space-y-8">
             <div className="floating-card">
               <Chatbot />
             </div>
             
             {/* Quick Actions */}
             <Card className="floating-card neon-border">
-              <CardContent className="p-8">
-                <h3 className="text-2xl font-bold text-gradient mb-6 text-center">Quick Actions</h3>
-                <div className="space-y-4">
+              <CardContent className="p-4 sm:p-6 md:p-8">
+                <h3 className="text-xl sm:text-2xl font-bold text-gradient mb-4 sm:mb-6 text-center">Quick Actions</h3>
+                <div className="space-y-3 sm:space-y-4">
                   <Button 
-                    className="w-full h-16 modern-button bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-between rounded-[2rem] text-lg font-semibold"
+                    className="w-full min-h-[56px] sm:h-16 modern-button bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-between rounded-[2rem] text-sm sm:text-base lg:text-lg font-semibold px-3 sm:px-4"
                     onClick={() => {
                       const element = document.querySelector('#complaint-form') as HTMLElement;
                       if (element) {
@@ -202,41 +215,41 @@ export default function Home() {
                     data-testid="button-new-complaint"
                   >
                     <span className="flex items-center">
-                      <div className="w-12 h-12 bg-white bg-opacity-20 rounded-[1.5rem] flex items-center justify-center mr-4">
-                        <i className="fas fa-plus-circle text-xl"></i>
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white bg-opacity-20 rounded-[1.5rem] flex items-center justify-center mr-2 sm:mr-4">
+                        <i className="fas fa-plus-circle text-base sm:text-xl"></i>
                       </div>
-                      Register New Complaint
+                      <span className="text-left">Register New Complaint</span>
                     </span>
-                    <i className="fas fa-arrow-right text-xl"></i>
+                    <i className="fas fa-arrow-right text-base sm:text-xl ml-2"></i>
                   </Button>
                   
                   <Button 
                     variant="secondary"
-                    className="w-full h-16 modern-button flex items-center justify-between rounded-[2rem] text-lg font-semibold"
+                    className="w-full min-h-[56px] sm:h-16 modern-button flex items-center justify-between rounded-[2rem] text-sm sm:text-base lg:text-lg font-semibold px-3 sm:px-4"
                     onClick={() => window.location.href = '/complaints'}
                     data-testid="button-check-status"
                   >
                     <span className="flex items-center">
-                      <div className="w-12 h-12 bg-primary bg-opacity-20 rounded-[1.5rem] flex items-center justify-center mr-4">
-                        <i className="fas fa-search text-xl text-primary"></i>
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary bg-opacity-20 rounded-[1.5rem] flex items-center justify-center mr-2 sm:mr-4">
+                        <i className="fas fa-search text-base sm:text-xl text-primary"></i>
                       </div>
-                      Check Complaint Status
+                      <span className="text-left">Check Complaint Status</span>
                     </span>
-                    <i className="fas fa-arrow-right text-xl"></i>
+                    <i className="fas fa-arrow-right text-base sm:text-xl ml-2"></i>
                   </Button>
                   
                   <Button 
-                    className="w-full h-16 modern-button bg-gradient-to-r from-red-500 to-orange-500 text-white hover:from-red-600 hover:to-orange-600 flex items-center justify-between rounded-[2rem] text-lg font-semibold"
+                    className="w-full min-h-[56px] sm:h-16 modern-button bg-gradient-to-r from-red-500 to-orange-500 text-white hover:from-red-600 hover:to-orange-600 flex items-center justify-between rounded-[2rem] text-sm sm:text-base lg:text-lg font-semibold px-3 sm:px-4"
                     onClick={() => setEmergencyDialogOpen(true)}
                     data-testid="button-emergency"
                   >
                     <span className="flex items-center">
-                      <div className="w-12 h-12 bg-white bg-opacity-20 rounded-[1.5rem] flex items-center justify-center mr-4 pulse-glow">
-                        <i className="fas fa-exclamation-triangle text-xl"></i>
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white bg-opacity-20 rounded-[1.5rem] flex items-center justify-center mr-2 sm:mr-4 pulse-glow">
+                        <i className="fas fa-exclamation-triangle text-base sm:text-xl"></i>
                       </div>
-                      Emergency Alert
+                      <span className="text-left">Emergency Alert</span>
                     </span>
-                    <i className="fas fa-arrow-right text-xl"></i>
+                    <i className="fas fa-arrow-right text-base sm:text-xl ml-2"></i>
                   </Button>
                 </div>
               </CardContent>

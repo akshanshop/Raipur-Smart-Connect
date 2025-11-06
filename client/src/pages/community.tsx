@@ -19,6 +19,14 @@ import { apiRequest } from "@/lib/queryClient";
 import { insertCommunityIssueSchema } from "@shared/schema";
 import { z } from "zod";
 
+interface CityStats {
+  totalComplaints: number;
+  resolvedComplaints: number;
+  highPriorityCount?: number;
+  mediumPriorityCount?: number;
+  lowPriorityCount?: number;
+}
+
 const communityIssueFormSchema = insertCommunityIssueSchema.extend({
   title: z.string().min(1, "Title is required"),
 });
@@ -52,7 +60,7 @@ export default function Community() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  const { data: cityStats } = useQuery({
+  const { data: cityStats } = useQuery<CityStats>({
     queryKey: ["/api/stats/city"],
     retry: false,
   });
@@ -209,59 +217,59 @@ export default function Community() {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            <i className="fas fa-users text-primary mr-3"></i>
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2">
+            <i className="fas fa-users text-primary mr-2 sm:mr-3"></i>
             Community Collaboration
           </h1>
-          <p className="text-muted-foreground">Work together to solve city-wide problems</p>
+          <p className="text-xs sm:text-sm md:text-base text-muted-foreground">Work together to solve city-wide problems</p>
         </div>
 
         {/* Community Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-destructive">
+            <CardContent className="p-3 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-destructive">
                 {cityStats?.highPriorityCount || 0}
               </div>
-              <div className="text-sm text-muted-foreground">High Priority Issues</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">High Priority Issues</div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-accent">
+            <CardContent className="p-3 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-accent">
                 {cityStats?.mediumPriorityCount || 0}
               </div>
-              <div className="text-sm text-muted-foreground">Medium Priority Issues</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Medium Priority Issues</div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-secondary">
+            <CardContent className="p-3 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-secondary">
                 {cityStats?.lowPriorityCount || 0}
               </div>
-              <div className="text-sm text-muted-foreground">Low Priority Issues</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Low Priority Issues</div>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-primary">
+            <CardContent className="p-3 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-primary">
                 {cityStats?.resolvedComplaints || 0}
               </div>
-              <div className="text-sm text-muted-foreground">Issues Resolved</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Issues Resolved</div>
             </CardContent>
           </Card>
         </div>
 
-        <Tabs defaultValue="browse" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="browse" data-testid="tab-browse-issues">
-              <i className="fas fa-list mr-2"></i>
+        <Tabs defaultValue="browse" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-2 h-auto">
+            <TabsTrigger value="browse" data-testid="tab-browse-issues" className="min-h-[44px] text-sm sm:text-base py-2 sm:py-2.5">
+              <i className="fas fa-list mr-1.5 sm:mr-2"></i>
               Browse Issues
             </TabsTrigger>
-            <TabsTrigger value="post" data-testid="tab-post-issue">
-              <i className="fas fa-plus mr-2"></i>
+            <TabsTrigger value="post" data-testid="tab-post-issue" className="min-h-[44px] text-sm sm:text-base py-2 sm:py-2.5">
+              <i className="fas fa-plus mr-1.5 sm:mr-2"></i>
               Post New Issue
             </TabsTrigger>
           </TabsList>

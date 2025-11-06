@@ -10,38 +10,39 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 glass-effect border-b border-border/50 cool-shadow rounded-b-squircle-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
-          <div className="flex items-center space-x-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+        <div className="flex justify-between items-center h-16 sm:h-20">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <div className="flex-shrink-0">
-              <h1 className="text-2xl font-bold text-gradient">
+              <h1 className="text-base sm:text-xl md:text-2xl font-bold text-gradient">
                 <div className="flex items-center">
-                  <div className="w-12 h-12 bg-primary rounded-squircle-sm flex items-center justify-center mr-3 magnetic-button">
-                    <i className="fas fa-city text-white text-lg"></i>
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary rounded-squircle-sm flex items-center justify-center mr-2 sm:mr-3 magnetic-button">
+                    <i className="fas fa-city text-white text-sm sm:text-base md:text-lg"></i>
                   </div>
-                  Raipur Smart Connect
+                  <span className="hidden sm:inline">Raipur Smart Connect</span>
+                  <span className="sm:hidden">RSC</span>
                 </div>
               </h1>
             </div>
             <nav className="hidden md:flex">
-              <div className="flex items-center space-x-4 bg-card/30 backdrop-blur-sm rounded-squircle-lg px-6 py-3 border border-border/30">
+              <div className="flex items-center space-x-3 lg:space-x-4 bg-card/30 backdrop-blur-sm rounded-squircle-lg px-4 lg:px-6 py-2.5 lg:py-3 border border-border/30">
                 <a 
                   href="/" 
-                  className="text-foreground hover:text-primary font-medium transition-colors"
+                  className="text-sm lg:text-base text-foreground hover:text-primary font-medium transition-colors"
                   data-testid="link-dashboard"
                 >
                   Dashboard
                 </a>
                 <a 
                   href="/complaints" 
-                  className="text-foreground hover:text-primary font-medium transition-colors"
+                  className="text-sm lg:text-base text-foreground hover:text-primary font-medium transition-colors"
                   data-testid="link-complaints"
                 >
                   Complaints
                 </a>
                 <a 
                   href="/community" 
-                  className="text-foreground hover:text-primary font-medium transition-colors"
+                  className="text-sm lg:text-base text-foreground hover:text-primary font-medium transition-colors"
                   data-testid="link-community"
                 >
                   Community
@@ -51,7 +52,7 @@ export default function Header() {
 
             {/* Mobile menu button */}
             <button
-              className="md:hidden p-2 rounded-squircle-xs text-foreground hover:text-primary transition-colors"
+              className="md:hidden p-2.5 rounded-squircle-xs text-foreground hover:text-primary transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               data-testid="button-mobile-menu"
             >
@@ -59,10 +60,10 @@ export default function Header() {
             </button>
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-4">
             {/* Language Selector */}
             <select 
-              className="bg-input border border-border rounded-squircle-xs px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring glow-on-hover transition-all duration-300"
+              className="bg-input border border-border rounded-squircle-xs px-2 sm:px-3 md:px-4 py-2.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-ring glow-on-hover transition-all duration-300 min-h-[44px]"
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
               data-testid="select-language"
@@ -76,20 +77,20 @@ export default function Header() {
             <CitizenNotificationPanel />
             
             {/* User Profile */}
-            <div className="flex items-center space-x-3 bg-card/30 backdrop-blur-sm rounded-squircle-lg px-4 py-2 border border-border/30">
+            <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-3 bg-card/30 backdrop-blur-sm rounded-squircle-lg px-2 sm:px-3 md:px-4 py-2 sm:py-2 border border-border/30 min-h-[44px]">
               {user?.profileImageUrl ? (
                 <img 
                   src={user.profileImageUrl} 
                   alt="User Profile" 
-                  className="w-10 h-10 rounded-squircle-xs object-cover ring-2 ring-primary/20"
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-squircle-xs object-cover ring-2 ring-primary/20"
                   data-testid="img-user-avatar"
                 />
               ) : (
-                <div className="w-10 h-10 rounded-squircle-xs bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                  <i className="fas fa-user text-primary text-lg"></i>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-squircle-xs bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                  <i className="fas fa-user text-primary text-sm sm:text-base md:text-lg"></i>
                 </div>
               )}
-              <span className="text-sm font-medium hidden sm:inline text-foreground" data-testid="text-user-name">
+              <span className="text-xs sm:text-sm font-medium hidden md:inline text-foreground max-w-[100px] lg:max-w-[150px] truncate" data-testid="text-user-name">
                 {user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user?.email || 'User'}
               </span>
               <Button
@@ -97,10 +98,10 @@ export default function Header() {
                 size="sm"
                 onClick={() => window.location.href = '/api/logout'}
                 data-testid="button-logout"
-                className="rounded-squircle-xs hover:bg-destructive/10 hover:text-destructive transition-all duration-300 px-3 py-2"
+                className="rounded-squircle-xs hover:bg-destructive/10 hover:text-destructive transition-all duration-300 px-2 sm:px-3 py-2.5 sm:py-2 text-xs sm:text-sm min-h-[44px]"
                 title="Sign out of your account"
               >
-                <i className="fas fa-sign-out-alt mr-2"></i>
+                <i className="fas fa-sign-out-alt sm:mr-2"></i>
                 <span className="hidden sm:inline">Logout</span>
               </Button>
             </div>
@@ -111,10 +112,10 @@ export default function Header() {
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-border/50 bg-background/95 backdrop-blur-sm">
             <div className="px-4 py-6 space-y-4">
-              <div className="bg-card/30 backdrop-blur-sm rounded-squircle-lg p-4 border border-border/30 space-y-3">
+              <div className="bg-card/30 backdrop-blur-sm rounded-squircle-lg p-4 border border-border/30 space-y-2">
                 <a 
                   href="/" 
-                  className="block text-foreground hover:text-primary font-medium transition-colors py-2"
+                  className="block text-foreground hover:text-primary font-medium transition-colors py-3 min-h-[44px] flex items-center"
                   data-testid="mobile-link-dashboard"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -123,7 +124,7 @@ export default function Header() {
                 </a>
                 <a 
                   href="/complaints" 
-                  className="block text-foreground hover:text-primary font-medium transition-colors py-2"
+                  className="block text-foreground hover:text-primary font-medium transition-colors py-3 min-h-[44px] flex items-center"
                   data-testid="mobile-link-complaints"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -132,7 +133,7 @@ export default function Header() {
                 </a>
                 <a 
                   href="/community" 
-                  className="block text-foreground hover:text-primary font-medium transition-colors py-2"
+                  className="block text-foreground hover:text-primary font-medium transition-colors py-3 min-h-[44px] flex items-center"
                   data-testid="mobile-link-community"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -145,7 +146,7 @@ export default function Header() {
               <div className="pt-4 border-t border-border/50">
                 <Button
                   onClick={() => window.location.href = '/api/logout'}
-                  className="w-full bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all duration-300 rounded-squircle-md"
+                  className="w-full bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all duration-300 rounded-squircle-md min-h-[44px]"
                   data-testid="mobile-button-logout"
                 >
                   <i className="fas fa-sign-out-alt mr-3"></i>
