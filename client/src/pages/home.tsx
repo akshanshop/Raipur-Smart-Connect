@@ -110,14 +110,14 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Hero Section */}
         <section className="mb-6 sm:mb-8 md:mb-12">
-          <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden p-6 sm:p-8 md:p-12 text-white pattern-overlay cool-shadow bg-[#eebd2b]">
+          <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden p-8 sm:p-8 md:p-12 text-white pattern-overlay cool-shadow bg-[#eebd2b]">
             <div className="relative z-10">
-              <div className="text-center mb-6 sm:mb-8">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 text-gradient">Welcome to Raipur Smart Connect</h2>
-                <p className="text-sm sm:text-base md:text-lg lg:text-xl opacity-95 mb-6 sm:mb-8 max-w-2xl mx-auto px-2">Your unified platform for civic engagement and community problem-solving with AI-powered assistance</p>
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+              <div className="text-center mb-8 sm:mb-8">
+                <h2 className="text-3xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-4 text-gradient leading-tight">Welcome to Raipur Smart Connect</h2>
+                <p className="text-base sm:text-base md:text-lg lg:text-xl opacity-95 mb-8 sm:mb-8 max-w-2xl mx-auto px-0 leading-relaxed">Your unified platform for civic engagement and community problem-solving with AI-powered assistance</p>
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-4 justify-center px-4 sm:px-0">
                   <button 
-                    className="modern-button px-6 sm:px-8 py-3 sm:py-3.5 bg-white text-primary rounded-xl font-semibold hover:bg-opacity-90 transition-all text-sm sm:text-base min-h-[44px]"
+                    className="modern-button px-8 sm:px-8 py-4 sm:py-3.5 bg-white text-primary rounded-xl font-semibold hover:bg-opacity-90 transition-all text-base sm:text-base min-h-[56px] sm:min-h-[44px] w-full sm:w-auto"
                     onClick={() => {
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                       setTimeout(() => {
@@ -133,7 +133,7 @@ export default function Home() {
                     Ask AI Assistant
                   </button>
                   <button 
-                    className="modern-button px-6 sm:px-8 py-3 sm:py-3.5 bg-transparent border-2 border-white text-white rounded-xl font-semibold hover:bg-white hover:text-primary transition-all text-sm sm:text-base min-h-[44px]"
+                    className="modern-button px-8 sm:px-8 py-4 sm:py-3.5 bg-transparent border-2 border-white text-white rounded-xl font-semibold hover:bg-white hover:text-primary transition-all text-base sm:text-base min-h-[56px] sm:min-h-[44px] w-full sm:w-auto"
                     onClick={() => {
                       const element = document.querySelector('#complaint-form') as HTMLElement;
                       if (element) {
@@ -149,40 +149,40 @@ export default function Home() {
               </div>
               
               {/* Quick Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-                <div className="glass-effect rounded-2xl p-3 sm:p-4 md:p-6 text-center floating-card">
-                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2" data-testid="text-active-issues">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-4 md:gap-6">
+                <div className="glass-effect rounded-2xl p-4 sm:p-4 md:p-6 text-center floating-card">
+                  <div className="text-3xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-2" data-testid="text-active-issues">
                     {((cityStats?.totalComplaints || 0) - (cityStats?.resolvedComplaints || 0)) || 0}
                   </div>
-                  <div className="text-xs sm:text-sm opacity-90">Active Issues</div>
-                  <div className="w-full h-1 bg-white bg-opacity-30 rounded mt-2 sm:mt-3">
+                  <div className="text-sm sm:text-sm font-medium opacity-90 leading-tight">Active<br className="md:hidden"/>Citizens</div>
+                  <div className="w-full h-1 bg-white bg-opacity-30 rounded mt-3 sm:mt-3">
                     <div className="h-full bg-white rounded w-3/4"></div>
                   </div>
                 </div>
-                <div className="glass-effect rounded-2xl p-3 sm:p-4 md:p-6 text-center floating-card">
-                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2 text-green-300" data-testid="text-resolved-issues">
+                <div className="glass-effect rounded-2xl p-4 sm:p-4 md:p-6 text-center floating-card">
+                  <div className="text-3xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-2 text-green-300" data-testid="text-resolved-issues">
                     {cityStats?.resolvedComplaints || 0}
                   </div>
-                  <div className="text-xs sm:text-sm opacity-90">Resolved</div>
-                  <div className="w-full h-1 bg-white bg-opacity-30 rounded mt-2 sm:mt-3">
+                  <div className="text-sm sm:text-sm font-medium opacity-90 leading-tight">Issues<br className="md:hidden"/>Resolved</div>
+                  <div className="w-full h-1 bg-white bg-opacity-30 rounded mt-3 sm:mt-3">
                     <div className="h-full bg-green-300 rounded w-4/5"></div>
                   </div>
                 </div>
-                <div className="glass-effect rounded-2xl p-3 sm:p-4 md:p-6 text-center floating-card pulse-glow">
-                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2 text-yellow-300" data-testid="text-community-score">
+                <div className="glass-effect rounded-2xl p-4 sm:p-4 md:p-6 text-center floating-card pulse-glow">
+                  <div className="text-3xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-2 text-yellow-300" data-testid="text-community-score">
                     {userStats?.contributionScore || 0}
                   </div>
-                  <div className="text-xs sm:text-sm opacity-90">Community Score</div>
-                  <div className="w-full h-1 bg-white bg-opacity-30 rounded mt-2 sm:mt-3">
+                  <div className="text-sm sm:text-sm font-medium opacity-90 leading-tight">Avg<br className="md:hidden"/>Response</div>
+                  <div className="w-full h-1 bg-white bg-opacity-30 rounded mt-3 sm:mt-3">
                     <div className="h-full bg-yellow-300 rounded w-2/3"></div>
                   </div>
                 </div>
-                <div className="glass-effect rounded-2xl p-3 sm:p-4 md:p-6 text-center floating-card">
-                  <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2 text-blue-300" data-testid="text-response-time">
+                <div className="glass-effect rounded-2xl p-4 sm:p-4 md:p-6 text-center floating-card">
+                  <div className="text-3xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-2 text-blue-300" data-testid="text-response-time">
                     {cityStats?.averageResponseTime || "N/A"}
                   </div>
-                  <div className="text-xs sm:text-sm opacity-90">Avg Response</div>
-                  <div className="w-full h-1 bg-white bg-opacity-30 rounded mt-2 sm:mt-3">
+                  <div className="text-sm sm:text-sm font-medium opacity-90 leading-tight">Satisfaction<br className="md:hidden"/>Rate</div>
+                  <div className="w-full h-1 bg-white bg-opacity-30 rounded mt-3 sm:mt-3">
                     <div className="h-full bg-blue-300 rounded w-full"></div>
                   </div>
                 </div>
