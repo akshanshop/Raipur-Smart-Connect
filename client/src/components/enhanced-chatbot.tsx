@@ -95,14 +95,14 @@ export default function EnhancedChatbot() {
   });
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
   };
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && chatHistory.length > 0) {
       scrollToBottom();
     }
-  }, [isOpen, chatHistory]);
+  }, [chatHistory]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
