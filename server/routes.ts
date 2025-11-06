@@ -65,6 +65,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup OAuth authentication (Google/GitHub)
   await setupOAuth(app);
 
+  // Logout route - redirect to OAuth logout
+  app.get('/api/logout', (req, res) => {
+    res.redirect('/api/auth/oauth/logout');
+  });
+
   // Auth routes - works with OAuth authentication
   app.get('/api/auth/user', isAuthenticatedFlexible, async (req: any, res) => {
     try {
