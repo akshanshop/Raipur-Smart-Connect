@@ -66,7 +66,7 @@ export default function Landing() {
                 whileTap={{ scale: 0.95 }}
               >
                 <Button 
-                  onClick={() => window.location.href = '/api/login'}
+                  onClick={() => window.scrollTo({ top: document.querySelector('#login-section')?.getBoundingClientRect().top! + window.scrollY - 100, behavior: 'smooth' })}
                   className="modern-button magnetic-button ripple bg-white text-primary hover:bg-gray-100 px-6 py-2 btn-squircle"
                   data-testid="button-login"
                 >
@@ -145,7 +145,7 @@ export default function Landing() {
               <motion.div className="flex flex-col sm:flex-row gap-6 justify-center">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button 
-                    onClick={() => window.location.href = '/api/login'}
+                    onClick={() => window.scrollTo({ top: document.querySelector('#login-section')?.getBoundingClientRect().top! + window.scrollY - 100, behavior: 'smooth' })}
                     size="lg"
                     className="modern-button magnetic-button ripple glow-on-hover bg-white text-primary hover:bg-gray-100 px-12 py-6 text-xl font-semibold btn-squircle-lg"
                     data-testid="button-get-started"
@@ -176,6 +176,7 @@ export default function Landing() {
 
               {/* Login options - Two Sections */}
               <motion.div 
+                id="login-section"
                 className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl"
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
@@ -227,22 +228,6 @@ export default function Landing() {
                         GitHub
                       </Button>
                     </motion.div>
-                    <motion.div 
-                      whileHover={{ scale: 1.1, y: -2 }} 
-                      whileTap={{ scale: 0.95 }}
-                      className="group"
-                    >
-                      <Button 
-                        onClick={() => window.location.href = '/api/login?role=citizen'}
-                        variant="outline"
-                        size="sm"
-                        className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
-                        data-testid="button-login-citizen-replit"
-                      >
-                        <i className="fas fa-laptop-code mr-2"></i>
-                        Replit
-                      </Button>
-                    </motion.div>
                   </div>
                 </motion.div>
 
@@ -290,22 +275,6 @@ export default function Landing() {
                       >
                         <i className="fab fa-github mr-2"></i>
                         GitHub
-                      </Button>
-                    </motion.div>
-                    <motion.div 
-                      whileHover={{ scale: 1.1, y: -2 }} 
-                      whileTap={{ scale: 0.95 }}
-                      className="group"
-                    >
-                      <Button 
-                        onClick={() => window.location.href = '/api/login?role=official'}
-                        variant="outline"
-                        size="sm"
-                        className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
-                        data-testid="button-login-official-replit"
-                      >
-                        <i className="fas fa-laptop-code mr-2"></i>
-                        Replit
                       </Button>
                     </motion.div>
                   </div>
