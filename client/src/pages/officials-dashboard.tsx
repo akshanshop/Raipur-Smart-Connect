@@ -316,37 +316,37 @@ export default function OfficialsDashboard() {
     <div className="min-h-screen bg-background">
       {/* Enhanced Header with Logout */}
       <header className="sticky top-0 z-50 glass-effect border-b border-border/50 cool-shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center magnetic-button">
-                <i className="fas fa-user-shield text-white text-lg"></i>
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16 sm:h-20">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary rounded-lg flex items-center justify-center magnetic-button flex-shrink-0">
+                <i className="fas fa-user-shield text-white text-base sm:text-lg"></i>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gradient">Officials Dashboard</h1>
-                <p className="text-sm text-muted-foreground">Manage and resolve civic issues</p>
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-2xl font-bold text-gradient truncate">Officials Dashboard</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Manage and resolve civic issues</p>
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-1 sm:space-x-4">
               {/* Notifications */}
               <OfficialsNotificationPanel />
               
               {/* User Profile */}
-              <div className="flex items-center space-x-3 bg-card/30 backdrop-blur-sm rounded-lg px-4 py-2 border border-border/30">
+              <div className="flex items-center space-x-2 sm:space-x-3 bg-card/30 backdrop-blur-sm rounded-lg px-2 sm:px-4 py-1.5 sm:py-2 border border-border/30">
                 {user?.profileImageUrl ? (
                   <img 
                     src={user.profileImageUrl} 
                     alt="Profile" 
-                    className="w-10 h-10 rounded-lg object-cover ring-2 ring-primary/20"
+                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-cover ring-2 ring-primary/20 flex-shrink-0"
                     data-testid="img-official-avatar"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                    <i className="fas fa-user text-primary text-lg"></i>
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center flex-shrink-0">
+                    <i className="fas fa-user text-primary text-sm sm:text-lg"></i>
                   </div>
                 )}
-                <div className="hidden sm:block">
+                <div className="hidden md:block">
                   <p className="text-sm font-medium text-foreground" data-testid="text-official-name">
                     {user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user?.email || 'Official'}
                   </p>
@@ -357,11 +357,11 @@ export default function OfficialsDashboard() {
                   size="sm"
                   onClick={() => window.location.href = '/api/logout'}
                   data-testid="button-official-logout"
-                  className="rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all duration-300"
+                  className="rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all duration-300 p-1.5 sm:p-2"
                   title="Sign out"
                 >
-                  <LogOut className="h-4 w-4" />
-                  <span className="ml-2 hidden sm:inline">Logout</span>
+                  <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="ml-2 hidden lg:inline">Logout</span>
                 </Button>
               </div>
             </div>
@@ -473,8 +473,8 @@ export default function OfficialsDashboard() {
           <TabsContent value="issues" className="space-y-4">
             {/* Filters */}
             <Card>
-              <CardContent className="pt-6">
-                <div className="flex flex-col md:flex-row gap-4">
+              <CardContent className="pt-4 sm:pt-6">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                   <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -485,30 +485,32 @@ export default function OfficialsDashboard() {
                       data-testid="input-search-issues"
                     />
                   </div>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[180px]" data-testid="select-status-filter">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="open">Open</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="resolved">Resolved</SelectItem>
-                      <SelectItem value="closed">Closed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                    <SelectTrigger className="w-[180px]" data-testid="select-priority-filter">
-                      <SelectValue placeholder="Filter by priority" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Priorities</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="low">Low</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2 sm:gap-4">
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-full sm:w-[180px]" data-testid="select-status-filter">
+                        <SelectValue placeholder="Filter by status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="open">Open</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="resolved">Resolved</SelectItem>
+                        <SelectItem value="closed">Closed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                      <SelectTrigger className="w-full sm:w-[180px]" data-testid="select-priority-filter">
+                        <SelectValue placeholder="Filter by priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Priorities</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -522,31 +524,33 @@ export default function OfficialsDashboard() {
               <div className="space-y-4">
                 {filteredIssues.map((issue) => (
                   <Card key={issue.id} data-testid={`card-issue-${issue.id}`}>
-                    <CardContent className="pt-6">
-                      <div className="flex items-start justify-between">
+                    <CardContent className="pt-4 sm:pt-6">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-0">
                         <div className="flex-1 space-y-2">
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-lg font-semibold" data-testid={`text-issue-title-${issue.id}`}>{issue.title}</h3>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-base sm:text-lg font-semibold" data-testid={`text-issue-title-${issue.id}`}>{issue.title}</h3>
                             <Badge className={getPriorityColor(issue.priority)}>{issue.priority}</Badge>
                             <Badge className={getStatusColor(issue.status)}>{issue.status}</Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground">{issue.description}</p>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <p className="text-sm text-muted-foreground line-clamp-2 sm:line-clamp-none">{issue.description}</p>
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
-                              <MapPin className="h-4 w-4" />
-                              <span>{issue.location}</span>
+                              <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                              <span className="truncate">{issue.location}</span>
                             </div>
-                            <span>•</span>
-                            <span>Ticket: {issue.ticketNumber}</span>
-                            <span>•</span>
-                            <span>By: {issue.userName}</span>
-                            <span>•</span>
-                            <span>{issue.commentsCount} comments</span>
-                            <span>•</span>
-                            <span>{issue.upvotesCount} upvotes</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span className="truncate">Ticket: {issue.ticketNumber}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span className="truncate">By: {issue.userName}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <div className="flex items-center gap-3">
+                              <span>{issue.commentsCount} comments</span>
+                              <span>•</span>
+                              <span>{issue.upvotesCount} upvotes</span>
+                            </div>
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 justify-end sm:justify-start">
                           <Dialog>
                             <DialogTrigger asChild>
                               <Button
@@ -554,9 +558,11 @@ export default function OfficialsDashboard() {
                                 variant="outline"
                                 onClick={() => setSelectedIssue(issue)}
                                 data-testid={`button-resolve-${issue.id}`}
+                                className="flex-1 sm:flex-none"
                               >
                                 <CheckCircle className="h-4 w-4 mr-1" />
-                                Resolve
+                                <span className="hidden sm:inline">Resolve</span>
+                                <span className="sm:hidden">Resolve</span>
                               </Button>
                             </DialogTrigger>
                             <DialogContent>
