@@ -62,8 +62,8 @@ A comprehensive complaint system includes:
 - **OpenAI API**: Integrates GPT-5 for chatbot and content generation.
 
 ## Communication Services
-- **Twilio**: For real-time SMS and WhatsApp notifications (complaint status updates).
-- **Gmail API**: For sending email notifications about complaint submissions, status updates, and resolutions.
+- **Twilio**: For real-time SMS and WhatsApp notifications (complaint status updates). Requires environment variables: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`.
+- **Gmail (Nodemailer)**: For sending email notifications about complaint submissions, status updates, and resolutions. Uses standard SMTP with Gmail app passwords for maximum portability. Requires environment variables: `GMAIL_USER` (your Gmail address), `GMAIL_APP_PASSWORD` (app-specific password from Google).
 
 ## UI and Styling Libraries
 - **shadcn/ui**: Component library built on Radix UI primitives.

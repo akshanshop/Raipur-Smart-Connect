@@ -1,53 +1,25 @@
-import { google } from 'googleapis';
+import nodemailer from 'nodemailer';
 
-let connectionSettings: any;
+const gmailUser = process.env.GMAIL_USER;
+const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
 
-async function getAccessToken() {
-  if (connectionSettings && connectionSettings.settings.expires_at && new Date(connectionSettings.settings.expires_at).getTime() > Date.now()) {
-    const accessToken = connectionSettings.settings?.access_token || connectionSettings.settings?.oauth?.credentials?.access_token;
-    if (accessToken) {
-      return accessToken;
-    }
+// Lazy initialization - only create transporter when credentials are available
+let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
+
+function getEmailTransporter() {
+  if (!gmailUser || !gmailAppPassword) {
+    return null;
   }
-  
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME
-  const xReplitToken = process.env.REPL_IDENTITY 
-    ? 'repl ' + process.env.REPL_IDENTITY 
-    : process.env.WEB_REPL_RENEWAL 
-    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
-    : null;
-
-  if (!xReplitToken) {
-    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
-  }
-
-  connectionSettings = await fetch(
-    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=google-mail',
-    {
-      headers: {
-        'Accept': 'application/json',
-        'X_REPLIT_TOKEN': xReplitToken
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: gmailUser,
+        pass: gmailAppPassword
       }
-    }
-  ).then(res => res.json()).then(data => data.items?.[0]);
-
-  const accessToken = connectionSettings?.settings?.access_token || connectionSettings.settings?.oauth?.credentials?.access_token;
-
-  if (!connectionSettings || !accessToken) {
-    throw new Error('Gmail not connected');
+    });
   }
-  return accessToken;
-}
-
-async function getUncachableGmailClient() {
-  const accessToken = await getAccessToken();
-
-  const oauth2Client = new google.auth.OAuth2();
-  oauth2Client.setCredentials({
-    access_token: accessToken
-  });
-
-  return google.gmail({ version: 'v1', auth: oauth2Client });
+  return transporter;
 }
 
 export type NotificationType = 
@@ -244,30 +216,20 @@ export async function sendEmail(
     return false;
   }
 
+  const emailTransporter = getEmailTransporter();
+  if (!emailTransporter) {
+    console.log('Gmail credentials not configured, skipping email notification');
+    return false;
+  }
+
   try {
-    const gmail = await getUncachableGmailClient();
     const template = emailTemplates[type](ticketNumber, title, userName);
     
-    const rawMessage = [
-      'Content-Type: text/html; charset=utf-8',
-      'MIME-Version: 1.0',
-      `To: ${recipientEmail}`,
-      `Subject: ${template.subject}`,
-      '',
-      template.html
-    ].join('\n');
-
-    const encodedMessage = Buffer.from(rawMessage)
-      .toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-
-    await gmail.users.messages.send({
-      userId: 'me',
-      requestBody: {
-        raw: encodedMessage
-      }
+    await emailTransporter.sendMail({
+      from: `"Nagar Nigam Complaint System" <${gmailUser}>`,
+      to: recipientEmail,
+      subject: template.subject,
+      html: template.html
     });
 
     console.log(`Email sent successfully to ${recipientEmail} for ${type}`);
