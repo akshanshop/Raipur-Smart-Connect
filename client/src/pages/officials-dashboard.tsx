@@ -317,23 +317,23 @@ export default function OfficialsDashboard() {
       {/* Enhanced Header with Logout */}
       <header className="sticky top-0 z-50 glass-effect border-b border-border/50 cool-shadow">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16 sm:h-20">
-            <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="flex flex-wrap md:flex-nowrap justify-between items-center gap-2 py-2 sm:py-0 min-h-[64px] sm:h-20">
+            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary rounded-lg flex items-center justify-center magnetic-button flex-shrink-0">
                 <i className="fas fa-user-shield text-white text-base sm:text-lg"></i>
               </div>
-              <div className="min-w-0">
-                <h1 className="text-lg sm:text-2xl font-bold text-gradient truncate">Officials Dashboard</h1>
+              <div className="min-w-0 max-w-[150px] sm:max-w-none">
+                <h1 className="text-base sm:text-2xl font-bold text-gradient truncate">Officials Dashboard</h1>
                 <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Manage and resolve civic issues</p>
               </div>
             </div>
             
-            <div className="flex items-center space-x-1 sm:space-x-4">
+            <div className="flex items-center gap-1 sm:gap-4 flex-shrink-0">
               {/* Notifications */}
               <OfficialsNotificationPanel />
               
               {/* User Profile */}
-              <div className="flex items-center space-x-2 sm:space-x-3 bg-card/30 backdrop-blur-sm rounded-lg px-2 sm:px-4 py-1.5 sm:py-2 border border-border/30">
+              <div className="flex items-center gap-1 sm:gap-3 bg-card/30 backdrop-blur-sm rounded-lg px-2 sm:px-4 py-1.5 sm:py-2 border border-border/30">
                 {user?.profileImageUrl ? (
                   <img 
                     src={user.profileImageUrl} 
@@ -346,8 +346,8 @@ export default function OfficialsDashboard() {
                     <i className="fas fa-user text-primary text-sm sm:text-lg"></i>
                   </div>
                 )}
-                <div className="hidden md:block">
-                  <p className="text-sm font-medium text-foreground" data-testid="text-official-name">
+                <div className="hidden md:block min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate" data-testid="text-official-name">
                     {user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user?.email || 'Official'}
                   </p>
                   <Badge className="bg-primary/20 text-primary border-primary/30">Official</Badge>
@@ -357,7 +357,7 @@ export default function OfficialsDashboard() {
                   size="sm"
                   onClick={() => window.location.href = '/api/logout'}
                   data-testid="button-official-logout"
-                  className="rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all duration-300 p-1.5 sm:p-2"
+                  className="rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all duration-300 p-1.5 sm:p-2 flex-shrink-0"
                   title="Sign out"
                 >
                   <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
