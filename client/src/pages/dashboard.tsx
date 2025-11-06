@@ -342,16 +342,16 @@ export default function Dashboard() {
             <Card className="floating-card glass-modern card-squircle-lg animate-fade-in-right delay-200">
               <CardContent className="p-6">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-6 lg:grid-cols-9 squircle-lg mb-6">
-                    <TabsTrigger value="overview" className="squircle-md text-xs">Overview</TabsTrigger>
-                    <TabsTrigger value="search" className="squircle-md text-xs">Search</TabsTrigger>
-                    <TabsTrigger value="notifications" className="squircle-md text-xs">Alerts</TabsTrigger>
-                    <TabsTrigger value="analytics" className="squircle-md text-xs">Analytics</TabsTrigger>
-                    <TabsTrigger value="social" className="squircle-md text-xs">Social</TabsTrigger>
-                    <TabsTrigger value="settings" className="squircle-md text-xs">Settings</TabsTrigger>
-                    <TabsTrigger value="complaint" className="squircle-md text-xs">File Issue</TabsTrigger>
-                    <TabsTrigger value="community" className="squircle-md text-xs">Community</TabsTrigger>
-                    <TabsTrigger value="map" className="squircle-md text-xs">Map</TabsTrigger>
+                  <TabsList className="flex flex-wrap gap-1 w-full squircle-lg mb-6 h-auto p-2">
+                    <TabsTrigger value="overview" className="squircle-md text-xs flex-1 min-w-[80px]">Overview</TabsTrigger>
+                    <TabsTrigger value="search" className="squircle-md text-xs flex-1 min-w-[80px]">Search</TabsTrigger>
+                    <TabsTrigger value="notifications" className="squircle-md text-xs flex-1 min-w-[80px]">Alerts</TabsTrigger>
+                    <TabsTrigger value="analytics" className="squircle-md text-xs flex-1 min-w-[80px]">Analytics</TabsTrigger>
+                    <TabsTrigger value="social" className="squircle-md text-xs flex-1 min-w-[80px]">Social</TabsTrigger>
+                    <TabsTrigger value="settings" className="squircle-md text-xs flex-1 min-w-[80px]">Settings</TabsTrigger>
+                    <TabsTrigger value="complaint" className="squircle-md text-xs flex-1 min-w-[80px]">File Issue</TabsTrigger>
+                    <TabsTrigger value="community" className="squircle-md text-xs flex-1 min-w-[80px]">Community</TabsTrigger>
+                    <TabsTrigger value="map" className="squircle-md text-xs flex-1 min-w-[80px]">Map</TabsTrigger>
                   </TabsList>
 
                   {/* Overview Tab - Original Dashboard Content */}
