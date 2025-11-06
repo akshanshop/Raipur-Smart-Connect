@@ -4,7 +4,6 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import path from "path";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
 import { setupOAuth } from "./oauthAuth";
 import { processChatMessage, generateComplaintSummary } from "./openai";
 import { detectSpam, detectCommunityIssueSpam } from "./spamDetection";
@@ -44,14 +43,9 @@ const upload = multer({
   }
 });
 
-// Combined authentication middleware - supports both Replit Auth and OAuth
+// OAuth authentication middleware
 const isAuthenticatedFlexible = async (req: any, res: any, next: any) => {
-  // Check if user is authenticated via Replit Auth (has claims)
-  if (req.user?.claims?.sub) {
-    return next();
-  }
-  
-  // Check if user is authenticated via OAuth (only if Passport is available)
+  // Check if user is authenticated via OAuth
   if (typeof req.isAuthenticated === 'function' && req.isAuthenticated() && req.user?.id) {
     return next();
   }
@@ -59,23 +53,19 @@ const isAuthenticatedFlexible = async (req: any, res: any, next: any) => {
   return res.status(401).json({ message: "Unauthorized" });
 };
 
-// Helper to get user ID from either auth system
+// Helper to get user ID from OAuth
 const getUserId = (req: any): string => {
-  if (req.user?.claims?.sub) {
-    return req.user.claims.sub; // Replit Auth
-  }
   if (req.user?.id) {
-    return req.user.id; // OAuth
+    return req.user.id;
   }
   throw new Error("No authenticated user found");
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup both auth systems
-  await setupAuth(app);      // Replit Auth
-  await setupOAuth(app);     // OAuth (Google/GitHub)
+  // Setup OAuth authentication (Google/GitHub)
+  await setupOAuth(app);
 
-  // Auth routes - works with both authentication systems
+  // Auth routes - works with OAuth authentication
   app.get('/api/auth/user', isAuthenticatedFlexible, async (req: any, res) => {
     try {
       const userId = getUserId(req);
