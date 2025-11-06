@@ -47,6 +47,11 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const [searchFilters, setSearchFilters] = useState<any>(null);
 
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Redirect to home if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {

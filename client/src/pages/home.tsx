@@ -18,6 +18,11 @@ export default function Home() {
   const { isAuthenticated, isLoading } = useAuth();
   const [emergencyDialogOpen, setEmergencyDialogOpen] = useState(false);
 
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Redirect to home if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -101,10 +106,13 @@ export default function Home() {
                   <button 
                     className="modern-button px-8 py-3 bg-white text-primary rounded-xl font-semibold hover:bg-opacity-90 transition-all"
                     onClick={() => {
-                      const chatbot = document.querySelector('.lg\\:col-span-1') as HTMLElement;
-                      if (chatbot) {
-                        window.scrollTo({ top: chatbot.offsetTop - 100, behavior: 'smooth' });
-                      }
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      setTimeout(() => {
+                        const chatbot = document.querySelector('.lg\\:col-span-1') as HTMLElement;
+                        if (chatbot) {
+                          window.scrollTo({ top: chatbot.offsetTop - 100, behavior: 'smooth' });
+                        }
+                      }, 100);
                     }}
                     data-testid="button-ask-ai"
                   >

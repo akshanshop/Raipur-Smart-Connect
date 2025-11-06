@@ -107,6 +107,11 @@ export default function OfficialsDashboard() {
   const [mapZoom, setMapZoom] = useState(12);
   const mapRef = useRef<L.Map | null>(null);
 
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Fetch dashboard stats
   const { data: stats } = useQuery<DashboardStats>({
     queryKey: ["/api/officials/dashboard/stats"],

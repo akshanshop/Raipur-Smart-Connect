@@ -32,6 +32,11 @@ export default function Community() {
   const [locationStatus, setLocationStatus] = useState<'pending' | 'success' | 'error'>('pending');
   const queryClient = useQueryClient();
 
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Redirect to home if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
