@@ -1,25 +1,11 @@
-import nodemailer from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 
-const gmailUser = process.env.GMAIL_USER;
-const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
+const sendgridApiKey = process.env.SENDGRID_API_KEY;
+const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@nagarnigam.com';
 
-// Lazy initialization - only create transporter when credentials are available
-let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
-
-function getEmailTransporter() {
-  if (!gmailUser || !gmailAppPassword) {
-    return null;
-  }
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: gmailUser,
-        pass: gmailAppPassword
-      }
-    });
-  }
-  return transporter;
+// Initialize SendGrid if API key is available
+if (sendgridApiKey) {
+  sgMail.setApiKey(sendgridApiKey);
 }
 
 export type NotificationType = 
@@ -216,26 +202,27 @@ export async function sendEmail(
     return false;
   }
 
-  const emailTransporter = getEmailTransporter();
-  if (!emailTransporter) {
-    console.log('Gmail credentials not configured, skipping email notification');
+  if (!sendgridApiKey) {
+    console.log('SendGrid API key not configured, skipping email notification');
     return false;
   }
 
   try {
     const template = emailTemplates[type](ticketNumber, title, userName);
     
-    await emailTransporter.sendMail({
-      from: `"Nagar Nigam Complaint System" <${gmailUser}>`,
+    const msg = {
       to: recipientEmail,
+      from: fromEmail,
       subject: template.subject,
-      html: template.html
-    });
+      html: template.html,
+    };
+
+    await sgMail.send(msg);
 
     console.log(`Email sent successfully to ${recipientEmail} for ${type}`);
     return true;
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error('Error sending email with SendGrid:', error);
     return false;
   }
 }
