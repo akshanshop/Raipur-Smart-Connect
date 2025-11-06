@@ -4,6 +4,18 @@ Raipur Smart Connect is a unified civic engagement platform that connects citize
 # User Preferences
 Preferred communication style: Simple, everyday language.
 
+# Recent Updates
+
+## Mobile Responsive Optimizations (November 6, 2025)
+All layouts have been optimized for mobile view while keeping desktop view completely unchanged:
+- **Homepage Hero Section**: Buttons stack vertically on mobile, text sizing adjusted for better readability
+- **Stats Cards**: Optimized spacing and layout for small screens
+- **Complaint Form**: Submit and Save as Draft buttons stack properly on mobile
+- **Maps Integration**: Controls use column-first layout with wrapped button groups
+- **Officials Dashboard**: Header handles overflow with flex-wrap, issue cards optimized with truncated text and stacked metadata
+- **Filter Section**: Search bar and filter dropdowns stack vertically on mobile
+- All changes use Tailwind responsive breakpoints (sm:, md:, lg:) to target only mobile devices
+
 # System Architecture
 
 ## Frontend Architecture
