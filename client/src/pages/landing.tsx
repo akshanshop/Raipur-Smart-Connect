@@ -875,7 +875,7 @@ export default function Landing() {
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
               <Button 
-                onClick={() => window.location.href = '/api/login'}
+                onClick={() => window.scrollTo({ top: document.querySelector('#login-section')?.getBoundingClientRect().top! + window.scrollY - 100, behavior: 'smooth' })}
                 size="lg"
                 className="modern-button px-12 py-6 text-xl font-semibold card-squircle-lg"
                 data-testid="button-join-now"
@@ -932,7 +932,7 @@ export default function Landing() {
                 <li><a href="#features" className="hover:text-primary transition-colors">Features</a></li>
                 <li><a href="#how-it-works" className="hover:text-primary transition-colors">How It Works</a></li>
                 <li><a href="#pricing" className="hover:text-primary transition-colors">Pricing</a></li>
-                <li><a href="/api/login" className="hover:text-primary transition-colors">Login</a></li>
+                <li><a href="#login-section" className="hover:text-primary transition-colors">Login</a></li>
                 <li><a href="#" className="hover:text-primary transition-colors">Mobile App</a></li>
               </ul>
             </div>
