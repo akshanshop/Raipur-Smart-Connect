@@ -1,7 +1,7 @@
 import sgMail from '@sendgrid/mail';
 
 const sendgridApiKey = process.env.SENDGRID_API_KEY;
-const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@nagarnigam.com';
+const fromEmail = process.env.SENDGRID_FROM_EMAIL;
 
 // Initialize SendGrid if API key is available
 if (sendgridApiKey) {
@@ -204,6 +204,11 @@ export async function sendEmail(
 
   if (!sendgridApiKey) {
     console.log('SendGrid API key not configured, skipping email notification');
+    return false;
+  }
+
+  if (!fromEmail) {
+    console.error('SENDGRID_FROM_EMAIL environment variable is required. Please set it to a verified sender email address from your SendGrid account.');
     return false;
   }
 

@@ -36,7 +36,7 @@ A multi-layered security system is implemented:
 A comprehensive notification system provides updates on complaint status, community activities, and city alerts through multiple channels:
 - **In-App Notifications**: Categorized notifications with read status tracking, using polling (architecture prepared for WebSockets).
 - **SMS Notifications**: Via Twilio for instant mobile updates.
-- **Email Notifications**: Via Gmail API for detailed, formatted updates with professional HTML templates.
+- **Email Notifications**: Via SendGrid API for reliable, detailed email delivery with professional HTML templates.
 
 Users receive notifications through all available channels when they submit a complaint, when officials acknowledge it, when work begins (in progress), and when the issue is resolved.
 
@@ -63,7 +63,7 @@ A comprehensive complaint system includes:
 
 ## Communication Services
 - **Twilio**: For real-time SMS and WhatsApp notifications (complaint status updates). Requires environment variables: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER`.
-- **Gmail (Nodemailer)**: For sending email notifications about complaint submissions, status updates, and resolutions. Uses standard SMTP with Gmail app passwords for maximum portability. Requires environment variables: `GMAIL_USER` (your Gmail address), `GMAIL_APP_PASSWORD` (app-specific password from Google).
+- **SendGrid**: For sending email notifications about complaint submissions, status updates, and resolutions. Uses SendGrid's reliable API for email delivery, which works perfectly on Render and other cloud platforms. Requires environment variables: `SENDGRID_API_KEY` (SendGrid API key with Mail Send permissions), `SENDGRID_FROM_EMAIL` (verified sender email address from SendGrid account - must be verified in SendGrid settings).
 
 ## UI and Styling Libraries
 - **shadcn/ui**: Component library built on Radix UI primitives.
