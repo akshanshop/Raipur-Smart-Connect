@@ -149,7 +149,7 @@ export default function Home() {
               </div>
               
               {/* Quick Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-4 md:gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-4 md:gap-6">
                 <div className="glass-effect rounded-2xl p-4 sm:p-4 md:p-6 text-center floating-card">
                   <div className="text-3xl sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-2" data-testid="text-active-issues">
                     {((cityStats?.totalComplaints || 0) - (cityStats?.resolvedComplaints || 0)) || 0}

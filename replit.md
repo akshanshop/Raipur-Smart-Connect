@@ -9,10 +9,13 @@ Preferred communication style: Simple, everyday language.
 ## Mobile Responsive Optimizations (November 6, 2025)
 All layouts have been optimized for mobile view while keeping desktop view completely unchanged:
 - **Homepage Hero Section**: Buttons stack vertically on mobile, text sizing adjusted for better readability
-- **Stats Cards**: Optimized spacing and layout for small screens
+- **Stats Cards**: Display one card per row on mobile (changed from 2x2 grid to single column)
 - **Complaint Form**: Submit and Save as Draft buttons stack properly on mobile
 - **Maps Integration**: Controls use column-first layout with wrapped button groups
-- **Officials Dashboard**: Header handles overflow with flex-wrap, issue cards optimized with truncated text and stacked metadata
+- **Officials Dashboard**: 
+  - Header handles overflow with flex-wrap for narrow screens
+  - Issue cards optimized with truncated text and stacked metadata
+  - Map view buttons (Individual/Heatmap/By Count) stack vertically on mobile
 - **Filter Section**: Search bar and filter dropdowns stack vertically on mobile
 - All changes use Tailwind responsive breakpoints (sm:, md:, lg:) to target only mobile devices
 

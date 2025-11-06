@@ -674,14 +674,14 @@ export default function OfficialsDashboard() {
               <CardContent>
                 <div className="space-y-4">
                   {/* Map Controls */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2">
                       <Button
                         variant={mapViewMode === "individual" ? "default" : "outline"}
                         size="sm"
                         onClick={() => setMapViewMode("individual")}
                         data-testid="button-map-individual-view"
-                        className="modern-button"
+                        className="modern-button w-full sm:w-auto"
                       >
                         <i className="fas fa-map-pin mr-2"></i>
                         Individual
@@ -691,7 +691,7 @@ export default function OfficialsDashboard() {
                         size="sm"
                         onClick={() => setMapViewMode("heatmap")}
                         data-testid="button-map-heatmap-view"
-                        className="modern-button"
+                        className="modern-button w-full sm:w-auto"
                       >
                         <i className="fas fa-fire mr-2"></i>
                         Heatmap
@@ -701,13 +701,13 @@ export default function OfficialsDashboard() {
                         size="sm"
                         onClick={() => setMapViewMode("density")}
                         data-testid="button-map-density-view"
-                        className="modern-button"
+                        className="modern-button w-full sm:w-auto"
                       >
                         <i className="fas fa-layer-group mr-2"></i>
                         By Count
                       </Button>
                     </div>
-                    <Badge variant="outline" className="pulse-glow">
+                    <Badge variant="outline" className="pulse-glow self-start md:self-auto">
                       {mapViewMode === "density" ? `${Object.keys(locationGroups).length} locations` : `${heatmapData.length} issues`} on map
                     </Badge>
                   </div>
