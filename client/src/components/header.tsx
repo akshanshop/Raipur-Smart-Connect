@@ -23,42 +23,30 @@ export default function Header() {
                 </div>
               </h1>
             </div>
-            <nav className="hidden md:flex space-x-6">
-              <a 
-                href="/" 
-                className="text-foreground hover:text-primary font-medium transition-colors"
-                data-testid="link-dashboard"
-              >
-                Dashboard
-              </a>
-              <a 
-                href="#chatbot" 
-                className="text-foreground hover:text-primary font-medium transition-colors"
-                data-testid="link-chatbot"
-              >
-                Ask AI
-              </a>
-              <a 
-                href="/complaints" 
-                className="text-foreground hover:text-primary font-medium transition-colors"
-                data-testid="link-complaints"
-              >
-                Complaints
-              </a>
-              <a 
-                href="/community" 
-                className="text-foreground hover:text-primary font-medium transition-colors"
-                data-testid="link-community"
-              >
-                Community
-              </a>
-              <a 
-                href="#maps" 
-                className="text-foreground hover:text-primary font-medium transition-colors"
-                data-testid="link-maps"
-              >
-                Maps
-              </a>
+            <nav className="hidden md:flex">
+              <div className="flex items-center space-x-4 bg-card/30 backdrop-blur-sm rounded-squircle-lg px-6 py-3 border border-border/30">
+                <a 
+                  href="/" 
+                  className="text-foreground hover:text-primary font-medium transition-colors"
+                  data-testid="link-dashboard"
+                >
+                  Dashboard
+                </a>
+                <a 
+                  href="/complaints" 
+                  className="text-foreground hover:text-primary font-medium transition-colors"
+                  data-testid="link-complaints"
+                >
+                  Complaints
+                </a>
+                <a 
+                  href="/community" 
+                  className="text-foreground hover:text-primary font-medium transition-colors"
+                  data-testid="link-community"
+                >
+                  Community
+                </a>
+              </div>
             </nav>
 
             {/* Mobile menu button */}
@@ -123,51 +111,35 @@ export default function Header() {
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-border/50 bg-background/95 backdrop-blur-sm">
             <div className="px-4 py-6 space-y-4">
-              <a 
-                href="/" 
-                className="block text-foreground hover:text-primary font-medium transition-colors py-2"
-                data-testid="mobile-link-dashboard"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <i className="fas fa-tachometer-alt mr-3"></i>
-                Dashboard
-              </a>
-              <a 
-                href="#chatbot" 
-                className="block text-foreground hover:text-primary font-medium transition-colors py-2"
-                data-testid="mobile-link-chatbot"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <i className="fas fa-robot mr-3"></i>
-                Ask AI
-              </a>
-              <a 
-                href="/complaints" 
-                className="block text-foreground hover:text-primary font-medium transition-colors py-2"
-                data-testid="mobile-link-complaints"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <i className="fas fa-file-alt mr-3"></i>
-                Complaints
-              </a>
-              <a 
-                href="/community" 
-                className="block text-foreground hover:text-primary font-medium transition-colors py-2"
-                data-testid="mobile-link-community"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <i className="fas fa-users mr-3"></i>
-                Community
-              </a>
-              <a 
-                href="#maps" 
-                className="block text-foreground hover:text-primary font-medium transition-colors py-2"
-                data-testid="mobile-link-maps"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <i className="fas fa-map mr-3"></i>
-                Maps
-              </a>
+              <div className="bg-card/30 backdrop-blur-sm rounded-squircle-lg p-4 border border-border/30 space-y-3">
+                <a 
+                  href="/" 
+                  className="block text-foreground hover:text-primary font-medium transition-colors py-2"
+                  data-testid="mobile-link-dashboard"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <i className="fas fa-tachometer-alt mr-3"></i>
+                  Dashboard
+                </a>
+                <a 
+                  href="/complaints" 
+                  className="block text-foreground hover:text-primary font-medium transition-colors py-2"
+                  data-testid="mobile-link-complaints"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <i className="fas fa-file-alt mr-3"></i>
+                  Complaints
+                </a>
+                <a 
+                  href="/community" 
+                  className="block text-foreground hover:text-primary font-medium transition-colors py-2"
+                  data-testid="mobile-link-community"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <i className="fas fa-users mr-3"></i>
+                  Community
+                </a>
+              </div>
               
               {/* Mobile Logout Button */}
               <div className="pt-4 border-t border-border/50">
