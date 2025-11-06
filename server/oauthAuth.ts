@@ -23,6 +23,12 @@ import { Strategy as GitHubStrategy } from "passport-github2";
  * - SESSION_SECRET: A secure random string for session encryption
  * - DATABASE_URL: PostgreSQL connection string for session storage
  * 
+ * OFFICIALS WHITELIST (Restrict officials dashboard access):
+ * - ALLOWED_OFFICIAL_EMAILS: Comma-separated list of Gmail addresses allowed as officials
+ *   Example: "admin@gmail.com,manager@gmail.com"
+ * - ALLOWED_OFFICIAL_GITHUB_USERNAMES: Comma-separated list of GitHub usernames allowed as officials
+ *   Example: "johndoe,janedoe"
+ * 
  * OAuth Callback URLs to configure in your provider settings:
  * - Google: https://your-domain.repl.co/api/auth/google/callback
  * - GitHub: https://your-domain.repl.co/api/auth/github/callback
@@ -33,6 +39,18 @@ import { Strategy as GitHubStrategy } from "passport-github2";
  * 3. Add the callback URLs above to your OAuth app configurations
  * 4. Set the environment variables in Replit's Secrets tab
  */
+
+// Helper function to check if a user should be granted official role
+function isAuthorizedOfficial(email: string, username: string, provider: string): boolean {
+  if (provider === 'google') {
+    const allowedEmails = process.env.ALLOWED_OFFICIAL_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || [];
+    return allowedEmails.includes(email.toLowerCase());
+  } else if (provider === 'github') {
+    const allowedUsernames = process.env.ALLOWED_OFFICIAL_GITHUB_USERNAMES?.split(',').map(u => u.trim().toLowerCase()) || [];
+    return allowedUsernames.includes(username.toLowerCase());
+  }
+  return false;
+}
 
 export function getOAuthSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
@@ -128,9 +146,13 @@ export async function setupOAuth(app: Express) {
 
 async function handleOAuthUser(profile: any, provider: string, role?: string) {
   const email = profile.emails?.[0]?.value || `${profile.id}@${provider}.oauth`;
+  const username = profile.username || profile.displayName || '';
   const firstName = profile.name?.givenName || profile.displayName?.split(' ')[0] || '';
   const lastName = profile.name?.familyName || profile.displayName?.split(' ').slice(1).join(' ') || '';
   const profileImageUrl = profile.photos?.[0]?.value || '';
+
+  // Determine role based on whitelist - this OVERRIDES any role parameter
+  const assignedRole = isAuthorizedOfficial(email, username, provider) ? 'official' : 'citizen';
 
   // Try to find existing user by OAuth provider and ID
   let user = await storage.getUserByOAuth(provider, profile.id);
@@ -139,17 +161,17 @@ async function handleOAuthUser(profile: any, provider: string, role?: string) {
     // Try to find user by email
     user = await storage.getUserByEmail(email);
     if (user) {
-      // Update existing user with OAuth info and role if provided
+      // Update existing user with OAuth info and assigned role
       await storage.updateUser(user.id, {
         oauthProvider: provider,
         oauthId: profile.id,
         profileImageUrl: profileImageUrl || user.profileImageUrl,
-        ...(role && { role }),
+        role: assignedRole,
       });
       // Re-fetch to get updated user
       user = await storage.getUserByOAuth(provider, profile.id);
     } else {
-      // Create new user
+      // Create new user with assigned role
       await storage.upsertUser({
         email,
         firstName,
@@ -157,13 +179,13 @@ async function handleOAuthUser(profile: any, provider: string, role?: string) {
         profileImageUrl,
         oauthProvider: provider,
         oauthId: profile.id,
-        role: role || 'citizen',
+        role: assignedRole,
       });
       user = await storage.getUserByOAuth(provider, profile.id);
     }
-  } else if (role && user.role !== role) {
-    // Update role if it changed
-    await storage.updateUser(user.id, { role });
+  } else if (user.role !== assignedRole) {
+    // Always update role based on current whitelist status
+    await storage.updateUser(user.id, { role: assignedRole });
     // Re-fetch to get updated user
     user = await storage.getUserByOAuth(provider, profile.id);
   }
