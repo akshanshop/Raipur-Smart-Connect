@@ -174,62 +174,112 @@ export default function Landing() {
                 </motion.div>
               </motion.div>
 
-              {/* Login Section */}
+              {/* Login options - Two Sections */}
               <motion.div 
                 id="login-section"
-                className="w-full max-w-md mx-auto"
+                className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl"
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 1.2, duration: 0.8 }}
               >
+                {/* Citizens Login Section */}
                 <motion.div 
-                  className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 glass-modern border-2 border-blue-400/30"
+                  className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 glass-modern border-2 border-blue-400/30"
                   whileHover={{ scale: 1.02, borderColor: "rgba(96, 165, 250, 0.5)" }}
                   transition={{ duration: 0.3 }}
                 >
                   <div className="flex items-center justify-center mb-4">
                     <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mr-3">
-                      <i className="fas fa-sign-in-alt text-2xl text-blue-300"></i>
+                      <i className="fas fa-users text-2xl text-blue-300"></i>
                     </div>
-                    <h3 className="text-2xl font-bold text-white">Sign In</h3>
+                    <h3 className="text-xl font-bold text-white">Citizens Login</h3>
                   </div>
-                  <p className="text-white/70 text-sm mb-6 text-center">
-                    Connect with your account to get started
-                  </p>
-                  <div className="flex flex-col gap-3">
+                  <p className="text-white/70 text-sm mb-4 text-center">Report issues and track civic matters</p>
+                  <div className="flex flex-wrap justify-center gap-3">
                     <motion.div 
-                      whileHover={{ scale: 1.05, y: -2 }} 
+                      whileHover={{ scale: 1.1, y: -2 }} 
                       whileTap={{ scale: 0.95 }}
                       className="group"
                     >
                       <Button 
-                        onClick={() => window.location.href = '/api/auth/google'}
+                        onClick={() => window.location.href = '/api/auth/google?role=citizen'}
                         variant="outline"
-                        className="w-full bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary py-3 btn-squircle transition-all duration-300 group-hover:shadow-lg"
-                        data-testid="button-login-google"
+                        size="sm"
+                        className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
+                        data-testid="button-login-citizen-google"
                       >
-                        <i className="fab fa-google mr-3 text-lg"></i>
-                        Sign in with Google
+                        <i className="fab fa-google mr-2"></i>
+                        Google
                       </Button>
                     </motion.div>
                     <motion.div 
-                      whileHover={{ scale: 1.05, y: -2 }} 
+                      whileHover={{ scale: 1.1, y: -2 }} 
                       whileTap={{ scale: 0.95 }}
                       className="group"
                     >
                       <Button 
-                        onClick={() => window.location.href = '/api/auth/github'}
+                        onClick={() => window.location.href = '/api/auth/github?role=citizen'}
                         variant="outline"
-                        className="w-full bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary py-3 btn-squircle transition-all duration-300 group-hover:shadow-lg"
-                        data-testid="button-login-github"
+                        size="sm"
+                        className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
+                        data-testid="button-login-citizen-github"
                       >
-                        <i className="fab fa-github mr-3 text-lg"></i>
-                        Sign in with GitHub
+                        <i className="fab fa-github mr-2"></i>
+                        GitHub
                       </Button>
                     </motion.div>
                   </div>
-                  <p className="text-white/60 text-xs mt-6 text-center">
-                    Access is automatically granted based on your account permissions
+                </motion.div>
+
+                {/* Officials Login Section */}
+                <motion.div 
+                  className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 glass-modern border-2 border-green-400/30"
+                  whileHover={{ scale: 1.02, borderColor: "rgba(74, 222, 128, 0.5)" }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="flex items-center justify-center mb-4">
+                    <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mr-3">
+                      <i className="fas fa-shield-alt text-2xl text-green-300"></i>
+                    </div>
+                    <h3 className="text-xl font-bold text-white">Officials Login</h3>
+                  </div>
+                  <p className="text-white/70 text-sm mb-4 text-center">Manage and resolve citizen issues</p>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    <motion.div 
+                      whileHover={{ scale: 1.1, y: -2 }} 
+                      whileTap={{ scale: 0.95 }}
+                      className="group"
+                    >
+                      <Button 
+                        onClick={() => window.location.href = '/api/auth/google?role=official'}
+                        variant="outline"
+                        size="sm"
+                        className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
+                        data-testid="button-login-official-google"
+                      >
+                        <i className="fab fa-google mr-2"></i>
+                        Google
+                      </Button>
+                    </motion.div>
+                    <motion.div 
+                      whileHover={{ scale: 1.1, y: -2 }} 
+                      whileTap={{ scale: 0.95 }}
+                      className="group"
+                    >
+                      <Button 
+                        onClick={() => window.location.href = '/api/auth/github?role=official'}
+                        variant="outline"
+                        size="sm"
+                        className="bg-white/20 border-white/30 text-white hover:bg-white hover:text-primary px-4 py-2 btn-squircle transition-all duration-300 group-hover:shadow-lg"
+                        data-testid="button-login-official-github"
+                      >
+                        <i className="fab fa-github mr-2"></i>
+                        GitHub
+                      </Button>
+                    </motion.div>
+                  </div>
+                  <p className="text-white/60 text-xs mt-4 text-center italic">
+                    ⚠️ Restricted to authorized accounts only
                   </p>
                 </motion.div>
               </motion.div>
