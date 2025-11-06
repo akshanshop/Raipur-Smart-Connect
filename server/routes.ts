@@ -131,16 +131,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = getUserId(req);
       
       // Extract email and phone number from request body (not part of complaint schema)
+      // These will be used for notifications but won't update the user's profile
       const { email, phoneNumber, ...complaintFields } = req.body;
       const complaintData = insertComplaintSchema.parse(complaintFields);
-
-      // Update user's email and phone number if provided
-      if (email) {
-        await storage.updateUser(userId, { email });
-      }
-      if (phoneNumber) {
-        await storage.updateUser(userId, { phoneNumber });
-      }
 
       // Handle uploaded files
       const mediaUrls = req.files ? req.files.map((file: any) => `/uploads/${file.filename}`) : [];
@@ -215,22 +208,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         relatedId: complaint.id
       });
 
-      // Send SMS and Email notifications
+      // Send SMS and Email notifications to the numbers provided in the form
       const user = await storage.getUser(userId);
       const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : undefined;
       
-      if (user?.phoneNumber) {
+      // Send SMS to the phone number entered in the form (if provided)
+      if (phoneNumber) {
         await sendSMS(
-          user.phoneNumber,
+          phoneNumber,
           'complaint_submitted',
           complaint.ticketNumber,
           complaint.title
         );
       }
       
-      if (user?.email) {
+      // Send Email to the email address entered in the form (if provided)
+      if (email) {
         await sendEmail(
-          user.email,
+          email,
           'complaint_submitted',
           complaint.ticketNumber,
           complaint.title,
