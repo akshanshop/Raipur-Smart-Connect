@@ -15,7 +15,7 @@ import {
   ClipboardList, Clock, CheckCircle2, AlertTriangle, 
   MapPin, Plus, Filter, Search, Calendar,
   TrendingUp, Target, Zap, BarChart3, Play, 
-  FileText, User, Building2, LogOut, Bell, MoreVertical, X
+  FileText, User, Building2, LogOut, Bell, MoreVertical, X, AlertCircle
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -62,6 +62,29 @@ interface Community {
   category: string;
 }
 
+interface Issue {
+  id: string;
+  ticketNumber: string;
+  userId: string;
+  category: string;
+  priority: string;
+  title: string;
+  description: string;
+  location: string;
+  latitude: string;
+  longitude: string;
+  status: string;
+  mediaUrls: string[] | null;
+  resolutionScreenshots: string[] | null;
+  upvotes: number;
+  downvotes: number;
+  assignedTo: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  userName?: string;
+}
+
 const jobFormSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
@@ -88,6 +111,7 @@ type CompleteJobData = z.infer<typeof completeJobSchema>;
 export default function OfficialsDashboard() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const [mainTab, setMainTab] = useState("jobs");
   const [activeTab, setActiveTab] = useState("assigned");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -96,6 +120,11 @@ export default function OfficialsDashboard() {
   const [assignedFilter, setAssignedFilter] = useState("all");
   const [selectedJob, setSelectedJob] = useState<OfficialJob | null>(null);
   const [completingJob, setCompletingJob] = useState<OfficialJob | null>(null);
+  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
+  const [issueSearchQuery, setIssueSearchQuery] = useState("");
+  const [issueStatusFilter, setIssueStatusFilter] = useState("all");
+  const [issuePriorityFilter, setIssuePriorityFilter] = useState("all");
+  const [issueCategoryFilter, setIssueCategoryFilter] = useState("all");
 
   // Scroll to top on mount
   useEffect(() => {
@@ -121,6 +150,11 @@ export default function OfficialsDashboard() {
   // Fetch communities
   const { data: communities = [] } = useQuery<Community[]>({
     queryKey: ["/api/communities"],
+  });
+
+  // Fetch all issues for officials
+  const { data: allIssues = [], isLoading: issuesLoading } = useQuery<Issue[]>({
+    queryKey: ["/api/officials/issues"],
   });
 
   // Create job form
@@ -331,6 +365,27 @@ export default function OfficialsDashboard() {
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
+  // Filter issues
+  const filteredIssues = allIssues.filter((issue) => {
+    const matchesSearch = issue.title.toLowerCase().includes(issueSearchQuery.toLowerCase()) ||
+                         issue.description.toLowerCase().includes(issueSearchQuery.toLowerCase()) ||
+                         issue.ticketNumber.toLowerCase().includes(issueSearchQuery.toLowerCase());
+    const matchesStatus = issueStatusFilter === "all" || issue.status === issueStatusFilter;
+    const matchesPriority = issuePriorityFilter === "all" || issue.priority === issuePriorityFilter;
+    const matchesCategory = issueCategoryFilter === "all" || issue.category === issueCategoryFilter;
+    return matchesSearch && matchesStatus && matchesPriority && matchesCategory;
+  }).sort((a, b) => {
+    // Sort by priority first
+    const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
+    const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 4;
+    const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 4;
+    
+    if (aPriority !== bPriority) return aPriority - bPriority;
+    
+    // Then by created date (newest first)
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "urgent": return "bg-red-500 hover:bg-red-600";
@@ -374,6 +429,95 @@ export default function OfficialsDashboard() {
       return `Overdue by ${formatDistance(deadlineDate, new Date())}`;
     }
     return `${formatDistance(new Date(), deadlineDate)} left`;
+  };
+
+  const renderIssueCard = (issue: Issue) => {
+    return (
+      <Card 
+        key={issue.id} 
+        className="hover:shadow-lg transition-all duration-200 border-l-4"
+        style={{ borderLeftColor: `var(--${issue.priority})` }}
+        data-testid={`card-issue-${issue.id}`}
+      >
+        <CardHeader>
+          <div className="flex justify-between items-start gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="outline" className="font-mono text-xs" data-testid={`badge-ticket-${issue.id}`}>
+                  {issue.ticketNumber}
+                </Badge>
+              </div>
+              <CardTitle className="text-lg truncate" data-testid={`text-issue-title-${issue.id}`}>
+                {issue.title}
+              </CardTitle>
+              <CardDescription className="line-clamp-2 mt-1" data-testid={`text-issue-description-${issue.id}`}>
+                {issue.description}
+              </CardDescription>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSelectedIssue(issue)}
+              data-testid={`button-view-issue-${issue.id}`}
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="flex flex-wrap gap-2 mt-3">
+            <Badge className={getPriorityColor(issue.priority)} data-testid={`badge-issue-priority-${issue.id}`}>
+              {issue.priority.toUpperCase()}
+            </Badge>
+            <Badge className={getStatusColor(issue.status)} data-testid={`badge-issue-status-${issue.id}`}>
+              {issue.status.replace("_", " ").toUpperCase()}
+            </Badge>
+            <Badge variant="outline" data-testid={`badge-issue-category-${issue.id}`}>
+              {issue.category}
+            </Badge>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-3">
+          <div className="flex items-center text-sm text-muted-foreground" data-testid={`text-issue-location-${issue.id}`}>
+            <MapPin className="h-4 w-4 mr-2" />
+            {issue.location}
+          </div>
+
+          {issue.userName && (
+            <div className="flex items-center text-sm text-muted-foreground" data-testid={`text-issue-reporter-${issue.id}`}>
+              <User className="h-4 w-4 mr-2" />
+              Reported by: {issue.userName}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div data-testid={`text-issue-upvotes-${issue.id}`}>
+              <div className="text-muted-foreground">Upvotes</div>
+              <div className="font-semibold">{issue.upvotes}</div>
+            </div>
+            <div data-testid={`text-issue-created-${issue.id}`}>
+              <div className="text-muted-foreground">Created</div>
+              <div className="font-semibold">{formatDistance(new Date(issue.createdAt), new Date(), { addSuffix: true })}</div>
+            </div>
+          </div>
+
+          {issue.latitude && issue.longitude && (
+            <div className="text-xs text-muted-foreground" data-testid={`text-issue-coordinates-${issue.id}`}>
+              Coordinates: {issue.latitude}, {issue.longitude}
+            </div>
+          )}
+
+          {issue.mediaUrls && issue.mediaUrls.length > 0 && (
+            <div className="flex gap-2 pt-2">
+              <Badge variant="secondary" data-testid={`badge-issue-media-${issue.id}`}>
+                <FileText className="h-3 w-3 mr-1" />
+                {issue.mediaUrls.length} {issue.mediaUrls.length === 1 ? 'attachment' : 'attachments'}
+              </Badge>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
   };
 
   const renderJobCard = (job: OfficialJob, showActions: boolean = true) => {
@@ -564,10 +708,10 @@ export default function OfficialsDashboard() {
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold" data-testid="text-dashboard-title">
-                  Job Management
+                  Officials Dashboard
                 </h1>
                 <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
-                  Track and manage official jobs
+                  Manage jobs and track issues
                 </p>
               </div>
             </div>
@@ -610,8 +754,23 @@ export default function OfficialsDashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {/* Stats Section */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+        {/* Main Dashboard Tabs */}
+        <Tabs value={mainTab} onValueChange={setMainTab} className="w-full">
+          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8" data-testid="tabs-main">
+            <TabsTrigger value="jobs" data-testid="tab-job-management">
+              <ClipboardList className="h-4 w-4 mr-2" />
+              Job Management
+            </TabsTrigger>
+            <TabsTrigger value="issues" data-testid="tab-issues-management">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Issues Management
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Job Management Section */}
+          <TabsContent value="jobs" className="space-y-8">
+            {/* Stats Section */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <Card data-testid="card-stat-total">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
@@ -1166,6 +1325,197 @@ export default function OfficialsDashboard() {
             </Card>
           </TabsContent>
         </Tabs>
+      </TabsContent>
+
+      {/* Issues Management Section */}
+      <TabsContent value="issues" className="space-y-8">
+        {/* Issues Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card data-testid="card-issue-stat-total">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <AlertCircle className="h-4 w-4" />
+                <span className="text-sm">Total Issues</span>
+              </div>
+              <div className="text-2xl font-bold" data-testid="text-total-issues">{allIssues.length}</div>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-issue-stat-open">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <Clock className="h-4 w-4" />
+                <span className="text-sm">Open</span>
+              </div>
+              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400" data-testid="text-open-issues">
+                {allIssues.filter(i => i.status === "open").length}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-issue-stat-progress">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <Play className="h-4 w-4" />
+                <span className="text-sm">In Progress</span>
+              </div>
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400" data-testid="text-inprogress-issues">
+                {allIssues.filter(i => i.status === "in_progress").length}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-issue-stat-resolved">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <CheckCircle2 className="h-4 w-4" />
+                <span className="text-sm">Resolved</span>
+              </div>
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400" data-testid="text-resolved-issues">
+                {allIssues.filter(i => i.status === "resolved" || i.status === "closed").length}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Filters and Search */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filter Issues
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Search</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search issues..."
+                    value={issueSearchQuery}
+                    onChange={(e) => setIssueSearchQuery(e.target.value)}
+                    className="pl-10"
+                    data-testid="input-issue-search"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Status</label>
+                <Select value={issueStatusFilter} onValueChange={setIssueStatusFilter}>
+                  <SelectTrigger data-testid="select-issue-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="resolved">Resolved</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Priority</label>
+                <Select value={issuePriorityFilter} onValueChange={setIssuePriorityFilter}>
+                  <SelectTrigger data-testid="select-issue-priority">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Priorities</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Category</label>
+                <Select value={issueCategoryFilter} onValueChange={setIssueCategoryFilter}>
+                  <SelectTrigger data-testid="select-issue-category">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="infrastructure">Infrastructure</SelectItem>
+                    <SelectItem value="sanitation">Sanitation</SelectItem>
+                    <SelectItem value="safety">Safety</SelectItem>
+                    <SelectItem value="environment">Environment</SelectItem>
+                    <SelectItem value="utilities">Utilities</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium invisible">Reset</label>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setIssueSearchQuery("");
+                    setIssueStatusFilter("all");
+                    setIssuePriorityFilter("all");
+                    setIssueCategoryFilter("all");
+                  }}
+                  data-testid="button-reset-issue-filters"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Reset Filters
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Issues List */}
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">
+              All Issues ({filteredIssues.length})
+            </h2>
+          </div>
+
+          {issuesLoading ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3].map((i) => (
+                <Card key={i}>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-full" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-20 w-full" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : filteredIssues.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No issues found</h3>
+                <p className="text-muted-foreground">
+                  {issueSearchQuery || issueStatusFilter !== "all" || issuePriorityFilter !== "all" || issueCategoryFilter !== "all"
+                    ? "Try adjusting your filters"
+                    : "No issues have been reported yet"}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filteredIssues.map(issue => renderIssueCard(issue))}
+            </div>
+          )}
+        </div>
+      </TabsContent>
+
+    </Tabs>
       </div>
 
       {/* Job Details Modal */}
@@ -1393,6 +1743,167 @@ export default function OfficialsDashboard() {
                 </DialogFooter>
               </form>
             </Form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Issue Details Modal */}
+      <Dialog open={!!selectedIssue} onOpenChange={(open) => !open && setSelectedIssue(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-issue-details">
+          {selectedIssue && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center justify-between">
+                  <span data-testid="text-modal-issue-title">{selectedIssue.title}</span>
+                  <div className="flex gap-2">
+                    <Badge className={getPriorityColor(selectedIssue.priority)}>
+                      {selectedIssue.priority.toUpperCase()}
+                    </Badge>
+                    <Badge className={getStatusColor(selectedIssue.status)}>
+                      {selectedIssue.status.replace("_", " ").toUpperCase()}
+                    </Badge>
+                  </div>
+                </DialogTitle>
+                <DialogDescription className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="font-mono">
+                      Ticket: {selectedIssue.ticketNumber}
+                    </Badge>
+                    <Badge variant="outline">
+                      {selectedIssue.category}
+                    </Badge>
+                  </div>
+                  <p data-testid="text-modal-issue-description">{selectedIssue.description}</p>
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-6">
+                {/* Location */}
+                <div className="space-y-2">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Location
+                  </h3>
+                  <div className="text-sm" data-testid="text-modal-issue-location">
+                    {selectedIssue.location}
+                  </div>
+                  {selectedIssue.latitude && selectedIssue.longitude && (
+                    <div className="text-xs text-muted-foreground" data-testid="text-modal-issue-coordinates">
+                      Coordinates: {selectedIssue.latitude}, {selectedIssue.longitude}
+                    </div>
+                  )}
+                </div>
+
+                {/* Reporter Info */}
+                {selectedIssue.userName && (
+                  <div className="space-y-2">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Reporter
+                    </h3>
+                    <div className="text-sm" data-testid="text-modal-issue-reporter">
+                      {selectedIssue.userName}
+                    </div>
+                  </div>
+                )}
+
+                {/* Engagement Stats */}
+                <div className="space-y-2">
+                  <h3 className="font-semibold">Engagement</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div className="text-muted-foreground">Upvotes</div>
+                      <div className="text-lg font-bold text-green-600 dark:text-green-400" data-testid="text-modal-issue-upvotes">
+                        {selectedIssue.upvotes}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Downvotes</div>
+                      <div className="text-lg font-bold text-red-600 dark:text-red-400" data-testid="text-modal-issue-downvotes">
+                        {selectedIssue.downvotes}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Media Attachments */}
+                {selectedIssue.mediaUrls && selectedIssue.mediaUrls.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Media Attachments ({selectedIssue.mediaUrls.length})
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      {selectedIssue.mediaUrls.map((url, idx) => (
+                        <a
+                          key={idx}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                          data-testid={`link-media-${idx}`}
+                        >
+                          View Attachment {idx + 1}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Resolution Screenshots */}
+                {selectedIssue.resolutionScreenshots && selectedIssue.resolutionScreenshots.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Resolution Screenshots ({selectedIssue.resolutionScreenshots.length})
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      {selectedIssue.resolutionScreenshots.map((url, idx) => (
+                        <a
+                          key={idx}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-green-600 dark:text-green-400 hover:underline"
+                          data-testid={`link-resolution-${idx}`}
+                        >
+                          View Resolution {idx + 1}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Timeline */}
+                <div className="space-y-2">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Timeline
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div data-testid="text-modal-issue-created">
+                      <span className="text-muted-foreground">Created: </span>
+                      {format(new Date(selectedIssue.createdAt), "PPP 'at' p")}
+                      <span className="text-muted-foreground ml-2">
+                        ({formatDistance(new Date(selectedIssue.createdAt), new Date(), { addSuffix: true })})
+                      </span>
+                    </div>
+                    {selectedIssue.resolvedAt && (
+                      <div data-testid="text-modal-issue-resolved">
+                        <span className="text-muted-foreground">Resolved: </span>
+                        {format(new Date(selectedIssue.resolvedAt), "PPP 'at' p")}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setSelectedIssue(null)} data-testid="button-modal-issue-close">
+                  Close
+                </Button>
+              </DialogFooter>
+            </>
           )}
         </DialogContent>
       </Dialog>
