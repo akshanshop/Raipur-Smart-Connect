@@ -2,9 +2,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { motion, useInView } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 export default function Landing() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -42,7 +45,7 @@ export default function Landing() {
                 className="text-white hover:text-accent transition-colors magnetic-button px-4 py-2 bg-white/10 hover:bg-white/20 squircle-md"
                 whileHover={{ y: -2, scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-              >Features</motion.a>
+              >{t.nav.features}</motion.a>
               <motion.a 
                 href="#how-it-works" 
                 className="text-white hover:text-accent transition-colors magnetic-button px-4 py-2 bg-white/10 hover:bg-white/20 squircle-md"
@@ -50,17 +53,18 @@ export default function Landing() {
                 whileTap={{ scale: 0.95 }}
               >How It Works</motion.a>
               <motion.a 
-                href="#stats" 
+                href="#testimonials" 
                 className="text-white hover:text-accent transition-colors magnetic-button px-4 py-2 bg-white/10 hover:bg-white/20 squircle-md"
                 whileHover={{ y: -2, scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-              >Impact</motion.a>
+              >{t.nav.testimonials}</motion.a>
               <motion.a 
-                href="#pricing" 
+                href="#faq" 
                 className="text-white hover:text-accent transition-colors magnetic-button px-4 py-2 bg-white/10 hover:bg-white/20 squircle-md"
                 whileHover={{ y: -2, scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-              >Pricing</motion.a>
+              >{t.nav.faq}</motion.a>
+              <LanguageSwitcher />
               <motion.div 
                 whileHover={{ scale: 1.1 }} 
                 whileTap={{ scale: 0.95 }}
@@ -71,7 +75,7 @@ export default function Landing() {
                   data-testid="button-login"
                 >
                   <i className="fas fa-sign-in-alt mr-2"></i>
-                  Sign In
+                  {t.nav.login}
                 </Button>
               </motion.div>
             </div>
@@ -117,14 +121,14 @@ export default function Landing() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.4, duration: 0.8, ease: "easeOut" }}
             >
-              Transform Your
+              {t.hero.title}
               <motion.span 
                 className="block text-gradient bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent"
                 initial={{ x: -50, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.6, duration: 0.8, ease: "easeOut" }}
               >
-                Civic Experience
+                {t.hero.subtitle}
               </motion.span>
             </motion.h1>
             <motion.p 
@@ -133,7 +137,7 @@ export default function Landing() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.8, duration: 0.8, ease: "easeOut" }}
             >
-              Join thousands of citizens using AI-powered solutions to create a smarter, more responsive city. Report issues, track progress, and build community.
+              {t.hero.description}
             </motion.p>
             <motion.div 
               className="flex flex-col items-center gap-8 justify-center mb-16"
@@ -155,7 +159,7 @@ export default function Landing() {
                       animate={{ rotate: [0, 10, -10, 0] }}
                       transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
                     />
-                    Get Started Free
+                    {t.hero.cta}
                   </Button>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
