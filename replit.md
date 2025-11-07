@@ -6,6 +6,20 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Updates
 
+## Token and Reward System (November 7, 2025)
+Implemented a comprehensive gamification system to incentivize civic participation:
+- **Token Earning**: Users automatically earn 10 tokens for each complaint or community issue they submit
+- **Token Balance Display**: Token count is prominently displayed in the header with an attractive coin icon and gradient badge
+- **Rewards Page**: Dedicated page showing:
+  - Current token balance
+  - Complete transaction history with timestamps and descriptions
+  - Browse available rewards filtered by category (badges, discounts, features, merchandise)
+  - Redemption history tracking all past reward claims
+- **Reward Redemption**: Users can redeem tokens for various rewards including badges, discounts, priority support, and merchandise
+- **Database Schema**: New tables for token_transactions, rewards, and reward_redemptions with full type safety
+- **API Endpoints**: Complete RESTful API for token balance, transactions, rewards catalog, and redemption functionality
+- **Navigation**: Rewards link added to both desktop and mobile navigation menus
+
 ## Visual Status Indicators for Officials Dashboard (November 7, 2025)
 Enhanced issue card visualization in the officials dashboard:
 - **Color-Coded Issue Cards**: Issue cards now have full background colors based on resolution status
