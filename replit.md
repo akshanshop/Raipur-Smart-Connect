@@ -6,6 +6,14 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Updates
 
+## Category Streamlining and Language Cleanup (November 7, 2025)
+Removed unnecessary complaint categories and finalized bilingual support:
+- **Category Removal**: Removed "drainage", "parks & recreation", and "noise pollution" categories from all complaint and community issue forms across the application
+- **UI Updates**: Updated category dropdowns in community feed, advanced search, complaint form, and community issues form to show only the core categories: water supply, garbage collection, road maintenance, street lighting, and other
+- **Translation Cleanup**: Removed corresponding category translations from both English and Hindi translation files
+- **Marathi Removal**: Completed the removal of Marathi language support by eliminating all Marathi fallback responses from the AI chatbot system (server/openai.ts)
+- **Consistency**: Ensured all category color mappings, filters, and badge displays are aligned with the reduced category set
+
 ## Bilingual Language Support (November 7, 2025)
 Complete bilingual implementation with seamless Hindi and English language switching across the landing page:
 - **Translation System**: Centralized translation dictionary (`translations.ts`) with all UI strings for both languages
