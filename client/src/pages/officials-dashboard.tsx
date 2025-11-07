@@ -523,12 +523,20 @@ export default function OfficialsDashboard() {
             ) : (
               <div className="space-y-4">
                 {filteredIssues.map((issue) => (
-                  <Card key={issue.id} data-testid={`card-issue-${issue.id}`}>
+                  <Card 
+                    key={issue.id} 
+                    data-testid={`card-issue-${issue.id}`}
+                    className={
+                      issue.status === 'resolved' || issue.status === 'closed'
+                        ? 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700'
+                        : 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700'
+                    }
+                  >
                     <CardContent className="pt-4 sm:pt-6">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-0">
                         <div className="flex-1 space-y-2">
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-base sm:text-lg font-semibold" data-testid={`text-issue-title-${issue.id}`}>{issue.title}</h3>
+                            <h3 className="text-base sm:text-lg font-semibold text-foreground" data-testid={`text-issue-title-${issue.id}`}>{issue.title}</h3>
                             <Badge className={getPriorityColor(issue.priority)}>{issue.priority}</Badge>
                             <Badge className={getStatusColor(issue.status)}>{issue.status}</Badge>
                           </div>
