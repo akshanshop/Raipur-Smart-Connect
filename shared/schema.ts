@@ -41,6 +41,7 @@ export const users = pgTable("users", {
   contributionScore: integer("contribution_score").default(0),
   complaintsCount: integer("complaints_count").default(0),
   upvotesCount: integer("upvotes_count").default(0),
+  tokens: integer("tokens").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -124,6 +125,36 @@ export const chatMessages = pgTable("chat_messages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const tokenTransactions = pgTable("token_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  amount: integer("amount").notNull(),
+  type: varchar("type").notNull(), // earned, spent
+  reason: varchar("reason").notNull(), // complaint_filed, issue_posted, reward_redeemed
+  relatedId: varchar("related_id"), // complaint, issue, or reward ID
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const rewards = pgTable("rewards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  description: text("description").notNull(),
+  tokenCost: integer("token_cost").notNull(),
+  category: varchar("category").notNull(), // badge, discount, feature, merchandise
+  imageUrl: varchar("image_url"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const rewardRedemptions = pgTable("reward_redemptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  rewardId: varchar("reward_id").references(() => rewards.id).notNull(),
+  tokensCost: integer("tokens_cost").notNull(),
+  status: varchar("status").default("pending").notNull(), // pending, fulfilled, cancelled
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   complaints: many(complaints),
@@ -132,6 +163,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   comments: many(comments),
   notifications: many(notifications),
   chatMessages: many(chatMessages),
+  tokenTransactions: many(tokenTransactions),
+  rewardRedemptions: many(rewardRedemptions),
 }));
 
 export const complaintsRelations = relations(complaints, ({ one, many }) => ({
@@ -196,6 +229,28 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
   }),
 }));
 
+export const tokenTransactionsRelations = relations(tokenTransactions, ({ one }) => ({
+  user: one(users, {
+    fields: [tokenTransactions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const rewardsRelations = relations(rewards, ({ many }) => ({
+  redemptions: many(rewardRedemptions),
+}));
+
+export const rewardRedemptionsRelations = relations(rewardRedemptions, ({ one }) => ({
+  user: one(users, {
+    fields: [rewardRedemptions.userId],
+    references: [users.id],
+  }),
+  reward: one(rewards, {
+    fields: [rewardRedemptions.rewardId],
+    references: [rewards.id],
+  }),
+}));
+
 // Insert schemas
 export const insertComplaintSchema = createInsertSchema(complaints).omit({
   id: true,
@@ -250,6 +305,17 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
   createdAt: true,
 });
 
+export const insertRewardSchema = createInsertSchema(rewards).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRewardRedemptionSchema = createInsertSchema(rewardRedemptions).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -264,3 +330,8 @@ export type Notification = typeof notifications.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type Upvote = typeof upvotes.$inferSelect;
+export type TokenTransaction = typeof tokenTransactions.$inferSelect;
+export type InsertReward = z.infer<typeof insertRewardSchema>;
+export type Reward = typeof rewards.$inferSelect;
+export type InsertRewardRedemption = z.infer<typeof insertRewardRedemptionSchema>;
+export type RewardRedemption = typeof rewardRedemptions.$inferSelect;
