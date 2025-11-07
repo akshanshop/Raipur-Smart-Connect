@@ -140,9 +140,6 @@ export default function CommunityFeed() {
       'garbage-collection': 'bg-green-500 text-white',
       'road-maintenance': 'bg-yellow-500 text-white',
       'street-lighting': 'bg-purple-500 text-white',
-      'drainage': 'bg-cyan-500 text-white',
-      'parks-recreation': 'bg-emerald-500 text-white',
-      'noise-pollution': 'bg-red-500 text-white',
       'other': 'bg-gray-500 text-white',
     };
     return colors[category as keyof typeof colors] || 'bg-gray-500 text-white';
@@ -202,9 +199,6 @@ export default function CommunityFeed() {
                 <SelectItem value="garbage-collection">Garbage Collection</SelectItem>
                 <SelectItem value="road-maintenance">Road Maintenance</SelectItem>
                 <SelectItem value="street-lighting">Street Lighting</SelectItem>
-                <SelectItem value="drainage">Drainage</SelectItem>
-                <SelectItem value="parks-recreation">Parks & Recreation</SelectItem>
-                <SelectItem value="noise-pollution">Noise Pollution</SelectItem>
                 <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>

@@ -182,9 +182,7 @@ export const translations = {
         water: "Water Supply",
         electricity: "Electricity",
         garbage: "Garbage Collection",
-        drainage: "Drainage",
         streetlights: "Street Lights",
-        parks: "Parks & Gardens",
         other: "Other",
       },
       priority: {
@@ -397,9 +395,7 @@ export const translations = {
         water: "पानी की आपूर्ति",
         electricity: "बिजली",
         garbage: "कचरा संग्रह",
-        drainage: "जल निकासी",
         streetlights: "स्ट्रीट लाइट",
-        parks: "पार्क और बगीचे",
         other: "अन्य",
       },
       priority: {

@@ -336,9 +336,6 @@ export default function Community() {
                                 <SelectItem value="garbage-collection">Garbage Collection</SelectItem>
                                 <SelectItem value="road-maintenance">Road Maintenance</SelectItem>
                                 <SelectItem value="street-lighting">Street Lighting</SelectItem>
-                                <SelectItem value="drainage">Drainage</SelectItem>
-                                <SelectItem value="parks-recreation">Parks & Recreation</SelectItem>
-                                <SelectItem value="noise-pollution">Noise Pollution</SelectItem>
                                 <SelectItem value="other">Other</SelectItem>
                               </SelectContent>
                             </Select>
