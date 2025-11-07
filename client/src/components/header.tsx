@@ -2,11 +2,18 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import CitizenNotificationPanel from "@/components/citizen-notification-panel";
+import { useQuery } from "@tanstack/react-query";
+import { Coins } from "lucide-react";
 
 export default function Header() {
   const { user } = useAuth();
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const { data: tokenData } = useQuery<{ tokens: number }>({
+    queryKey: ["/api/tokens"],
+    retry: false,
+  });
 
   return (
     <header className="sticky top-0 z-50 glass-effect border-b border-border/50 cool-shadow rounded-b-squircle-md">
@@ -47,6 +54,13 @@ export default function Header() {
                 >
                   Community
                 </a>
+                <a 
+                  href="/rewards" 
+                  className="text-sm lg:text-base text-foreground hover:text-primary font-medium transition-colors"
+                  data-testid="link-rewards"
+                >
+                  Rewards
+                </a>
               </div>
             </nav>
 
@@ -61,6 +75,17 @@ export default function Header() {
           </div>
           
           <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-4">
+            {/* Token Display */}
+            <a
+              href="/rewards"
+              className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-squircle-lg px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 hover:from-orange-600 hover:to-orange-700 transition-all duration-300 min-h-[44px] shadow-md hover:shadow-lg"
+              data-testid="link-tokens"
+              title="View your rewards"
+            >
+              <Coins className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="text-xs sm:text-sm font-bold" data-testid="text-token-balance">{tokenData?.tokens || 0}</span>
+            </a>
+
             {/* Language Selector */}
             <select 
               className="bg-input border border-border rounded-squircle-xs px-2 sm:px-3 md:px-4 py-2.5 sm:py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-ring glow-on-hover transition-all duration-300 min-h-[44px]"
@@ -139,6 +164,15 @@ export default function Header() {
                 >
                   <i className="fas fa-users mr-3"></i>
                   Community
+                </a>
+                <a 
+                  href="/rewards" 
+                  className="block text-foreground hover:text-primary font-medium transition-colors py-3 min-h-[44px] flex items-center"
+                  data-testid="mobile-link-rewards"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <i className="fas fa-gift mr-3"></i>
+                  Rewards
                 </a>
               </div>
               

@@ -11,6 +11,7 @@ import Complaints from "@/pages/complaints";
 import Community from "@/pages/community";
 import Dashboard from "@/pages/dashboard";
 import OfficialsDashboard from "@/pages/officials-dashboard";
+import Rewards from "@/pages/rewards";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ 
@@ -43,6 +44,7 @@ function Router() {
           <Route path="/complaints" component={Complaints} />
           <Route path="/community" component={Community} />
           <Route path="/dashboard" component={Dashboard} />
+          <Route path="/rewards" component={Rewards} />
           <Route path="/officials">
             {() => <ProtectedRoute component={OfficialsDashboard} requireOfficial={true} />}
           </Route>
