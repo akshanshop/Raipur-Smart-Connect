@@ -13,9 +13,20 @@ Implemented a comprehensive gamification system to incentivize civic participati
 - **Rewards Page**: Dedicated page showing:
   - Current token balance
   - Complete transaction history with timestamps and descriptions
-  - Browse available rewards filtered by category (badges, discounts, features, merchandise)
+  - Browse available rewards filtered by category (badges, discounts, features, merchandise, vouchers)
   - Redemption history tracking all past reward claims
-- **Reward Redemption**: Users can redeem tokens for various rewards including badges, discounts, priority support, and merchandise
+- **Extensive Reward Catalog**: 63 real-world rewards including:
+  - **Digital Vouchers**: Paytm Cash (₹50-₹500), Google Play (₹50-₹500), Amazon (₹100-₹1000), Flipkart (₹100-₹500)
+  - **Food & Dining**: Zomato, Swiggy, Dominos, Pizza Hut, KFC, McDonald's, Starbucks discounts
+  - **Transportation**: Uber, Ola ride discounts and coupons
+  - **Grocery**: BigBasket, Grofers/Blinkit, Dunzo discount coupons
+  - **Entertainment**: BookMyShow tickets, Netflix, Amazon Prime, Disney+ Hotstar, Spotify, YouTube Premium subscriptions
+  - **Shopping**: Myntra, Ajio, FirstCry, Lenskart discount vouchers
+  - **Travel**: MakeMyTrip, OYO booking discounts
+  - **Services**: PhonePe cashback, Pharmeasy medicine discounts, Urban Company, HealthifyMe, Cult.fit
+  - **Achievement Badges**: Bronze, Silver, Gold badges and City Ambassador certificates
+  - **Premium Features**: Priority Support, Advanced Analytics, municipal service discounts
+- **Reward Redemption**: Users can redeem tokens for various rewards with unique redemption codes
 - **Database Schema**: New tables for token_transactions, rewards, and reward_redemptions with full type safety
 - **API Endpoints**: Complete RESTful API for token balance, transactions, rewards catalog, and redemption functionality
 - **Navigation**: Rewards link added to both desktop and mobile navigation menus
