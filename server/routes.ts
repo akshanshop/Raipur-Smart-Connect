@@ -194,11 +194,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mediaUrls
       });
 
+      // Award tokens for filing a complaint
+      await storage.awardTokens(userId, 10, 'complaint_filed', complaint.id);
+
       // Create notification for user
       await storage.createNotification({
         userId,
         title: "Complaint Registered",
-        message: `Your complaint has been registered with ticket number ${complaint.ticketNumber}`,
+        message: `Your complaint has been registered with ticket number ${complaint.ticketNumber}. You earned 10 tokens!`,
         type: "complaint_update",
         relatedId: complaint.id
       });
@@ -415,6 +418,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...issueData,
         userId,
         mediaUrls
+      });
+
+      // Award tokens for posting a community issue
+      await storage.awardTokens(userId, 5, 'issue_posted', issue.id);
+
+      // Create notification for user
+      await storage.createNotification({
+        userId,
+        title: "Community Issue Posted",
+        message: `Your community issue "${issue.title}" has been posted successfully. You earned 5 tokens!`,
+        type: "complaint_update",
+        relatedId: issue.id
       });
 
       res.json(issue);
@@ -977,6 +992,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error unblocking IP:", error);
       res.status(500).json({ message: "Failed to unblock IP" });
+    }
+  });
+
+  // Token and Reward Endpoints
+  app.get('/api/tokens', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const tokens = await storage.getUserTokens(userId);
+      res.json({ tokens });
+    } catch (error) {
+      console.error("Error fetching tokens:", error);
+      res.status(500).json({ message: "Failed to fetch tokens" });
+    }
+  });
+
+  app.get('/api/tokens/transactions', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const transactions = await storage.getTokenTransactions(userId);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error fetching token transactions:", error);
+      res.status(500).json({ message: "Failed to fetch token transactions" });
+    }
+  });
+
+  app.get('/api/rewards', async (req, res) => {
+    try {
+      const rewards = await storage.getActiveRewards();
+      res.json(rewards);
+    } catch (error) {
+      console.error("Error fetching rewards:", error);
+      res.status(500).json({ message: "Failed to fetch rewards" });
+    }
+  });
+
+  app.post('/api/rewards/redeem', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { rewardId } = req.body;
+      
+      if (!rewardId) {
+        return res.status(400).json({ message: "Reward ID is required" });
+      }
+
+      const redemption = await storage.redeemReward(userId, rewardId);
+      res.json(redemption);
+    } catch (error: any) {
+      console.error("Error redeeming reward:", error);
+      res.status(400).json({ message: error.message || "Failed to redeem reward" });
+    }
+  });
+
+  app.get('/api/rewards/redemptions', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const redemptions = await storage.getUserRedemptions(userId);
+      res.json(redemptions);
+    } catch (error) {
+      console.error("Error fetching redemptions:", error);
+      res.status(500).json({ message: "Failed to fetch redemptions" });
     }
   });
 
