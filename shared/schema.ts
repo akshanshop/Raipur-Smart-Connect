@@ -192,8 +192,8 @@ export const officialJobs = pgTable("official_jobs", {
   longitude: decimal("longitude", { precision: 11, scale: 8 }).notNull(),
   assignedOfficialId: varchar("assigned_official_id").references(() => users.id),
   status: varchar("status").default("pending").notNull(), // pending, in_progress, completed, cancelled
-  estimatedHours: integer("estimated_hours").default(1),
-  actualHours: integer("actual_hours"),
+  estimatedHours: decimal("estimated_hours", { precision: 5, scale: 2 }).default("1").notNull(),
+  actualHours: decimal("actual_hours", { precision: 5, scale: 2 }),
   deadline: timestamp("deadline"),
   completedAt: timestamp("completed_at"),
   relatedComplaintId: varchar("related_complaint_id").references(() => complaints.id),

@@ -37,7 +37,7 @@ A comprehensive token and reward system incentivizes civic participation. Users 
 Users can create, discover, and join communities with various categories and privacy settings. Creators and admins manage members and community settings. A dedicated `/communities` route provides discovery, user-specific communities, and creation functionalities.
 
 ## Official Time-Based Job Management
-Officials have a dedicated dashboard to manage assigned and unassigned jobs. Features include time tracking (estimated vs. actual hours), job assignment with notifications, status tracking (pending, in_progress, completed/cancelled), priority and categorization, deadline warnings, detailed job information, and a stats dashboard.
+Officials have a dedicated dashboard to manage assigned and unassigned jobs. Features include time tracking (estimated vs. actual hours using decimal values), job assignment with notifications, status tracking (pending, in_progress, completed/cancelled), priority and categorization, deadline warnings, detailed job information, and a stats dashboard. The officials dashboard includes a separate Issues Management section with an interactive map showing all reported complaints with color-coded markers based on priority and status.
 
 # External Dependencies
 

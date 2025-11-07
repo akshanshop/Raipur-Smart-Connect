@@ -15,7 +15,7 @@ import {
   ClipboardList, Clock, CheckCircle2, AlertTriangle, 
   MapPin, Plus, Filter, Search, Calendar,
   TrendingUp, Target, Zap, BarChart3, Play, 
-  FileText, User, Building2, LogOut, Bell, MoreVertical, X, AlertCircle
+  FileText, User, Building2, LogOut, Bell, MoreVertical, X, AlertCircle, Map as MapIcon
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +25,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format, formatDistance, isPast, differenceInHours, isWithinInterval, startOfWeek, startOfMonth } from "date-fns";
 import OfficialsNotificationPanel from "@/components/officials-notification-panel";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import "leaflet.heat";
+
+import icon from "leaflet/dist/images/marker-icon.png";
+import iconShadow from "leaflet/dist/images/marker-shadow.png";
+
+let DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
 
 interface OfficialJob {
   id: string;
@@ -37,8 +53,8 @@ interface OfficialJob {
   longitude: string;
   assignedOfficialId: string | null;
   status: string;
-  estimatedHours: number;
-  actualHours: number | null;
+  estimatedHours: string;
+  actualHours: string | null;
   deadline: string | null;
   completedAt: string | null;
   relatedComplaintId: string | null;
@@ -125,6 +141,7 @@ export default function OfficialsDashboard() {
   const [issueStatusFilter, setIssueStatusFilter] = useState("all");
   const [issuePriorityFilter, setIssuePriorityFilter] = useState("all");
   const [issueCategoryFilter, setIssueCategoryFilter] = useState("all");
+  const [showMap, setShowMap] = useState(true);
 
   // Scroll to top on mount
   useEffect(() => {
@@ -315,7 +332,7 @@ export default function OfficialsDashboard() {
         j.status === "completed" && j.actualHours
       );
       if (completedWithTime.length === 0) return 0;
-      const total = completedWithTime.reduce((sum, j) => sum + (j.actualHours || 0), 0);
+      const total = completedWithTime.reduce((sum, j) => sum + (parseFloat(j.actualHours || "0")), 0);
       return Math.round(total / completedWithTime.length * 10) / 10;
     })(),
     efficiency: (() => {
@@ -323,8 +340,8 @@ export default function OfficialsDashboard() {
         j.status === "completed" && j.actualHours && j.estimatedHours
       );
       if (completedWithBothTimes.length === 0) return 100;
-      const totalEstimated = completedWithBothTimes.reduce((sum, j) => sum + j.estimatedHours, 0);
-      const totalActual = completedWithBothTimes.reduce((sum, j) => sum + (j.actualHours || 0), 0);
+      const totalEstimated = completedWithBothTimes.reduce((sum, j) => sum + parseFloat(j.estimatedHours), 0);
+      const totalActual = completedWithBothTimes.reduce((sum, j) => sum + parseFloat(j.actualHours || "0"), 0);
       return Math.round((totalEstimated / totalActual) * 100);
     })(),
   };
@@ -429,6 +446,40 @@ export default function OfficialsDashboard() {
       return `Overdue by ${formatDistance(deadlineDate, new Date())}`;
     }
     return `${formatDistance(new Date(), deadlineDate)} left`;
+  };
+
+  const getMarkerColor = (status: string, priority: string) => {
+    if (status === "resolved" || status === "closed") return "#22c55e"; // green
+    
+    switch (priority) {
+      case "urgent": return "#ef4444"; // red
+      case "high": return "#f97316"; // orange
+      case "medium": return "#eab308"; // yellow
+      case "low": return "#3b82f6"; // blue
+      default: return "#6b7280"; // gray
+    }
+  };
+
+  const createCustomIcon = (status: string, priority: string) => {
+    const color = getMarkerColor(status, priority);
+    const size = priority === 'urgent' || priority === 'high' ? 40 : priority === 'medium' ? 32 : 28;
+    
+    return L.divIcon({
+      className: 'custom-marker',
+      html: `
+        <svg width="${size}" height="${size * 1.4}" viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 0C7.58 0 4 3.58 4 8c0 5.25 8 16 8 16s8-10.75 8-16c0-4.42-3.58-8-8-8z" 
+                fill="${color}" 
+                stroke="white" 
+                stroke-width="2"
+                filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"/>
+          <circle cx="12" cy="8" r="3" fill="white" opacity="0.9"/>
+        </svg>
+      `,
+      iconSize: [size, size * 1.4],
+      iconAnchor: [size / 2, size * 1.4],
+      popupAnchor: [0, -size * 1.4],
+    });
   };
 
   const renderIssueCard = (issue: Issue) => {
@@ -609,14 +660,14 @@ export default function OfficialsDashboard() {
                 <span data-testid={`text-time-progress-${job.id}`}>
                   {Math.min(100, Math.round(
                     (differenceInHours(new Date(), new Date(job.createdAt)) / 
-                    (job.estimatedHours || 1)) * 100
+                    (parseFloat(job.estimatedHours) || 1)) * 100
                   ))}%
                 </span>
               </div>
               <Progress 
                 value={Math.min(100, 
                   (differenceInHours(new Date(), new Date(job.createdAt)) / 
-                  (job.estimatedHours || 1)) * 100
+                  (parseFloat(job.estimatedHours) || 1)) * 100
                 )}
                 data-testid={`progress-time-${job.id}`}
               />
@@ -1473,6 +1524,90 @@ export default function OfficialsDashboard() {
           </CardContent>
         </Card>
 
+        {/* Map View */}
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle className="flex items-center gap-2">
+                <MapIcon className="h-5 w-5" />
+                Issues Map
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMap(!showMap)}
+                data-testid="button-toggle-map"
+              >
+                {showMap ? "Hide Map" : "Show Map"}
+              </Button>
+            </div>
+          </CardHeader>
+          {showMap && (
+            <CardContent>
+              <div className="h-[500px] rounded-lg overflow-hidden border border-border">
+                <MapContainer
+                  center={[21.2514, 81.6296]}
+                  zoom={12}
+                  style={{ height: '100%', width: '100%' }}
+                  data-testid="map-container"
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  
+                  {filteredIssues
+                    .filter(issue => issue.latitude && issue.longitude)
+                    .map((issue) => (
+                      <Marker
+                        key={issue.id}
+                        position={[parseFloat(issue.latitude), parseFloat(issue.longitude)]}
+                        icon={createCustomIcon(issue.status, issue.priority)}
+                      >
+                        <Popup>
+                          <div className="p-2 min-w-[250px]">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge variant="outline" className="font-mono text-xs">
+                                {issue.ticketNumber}
+                              </Badge>
+                              <Badge className={getPriorityColor(issue.priority)}>
+                                {issue.priority.toUpperCase()}
+                              </Badge>
+                            </div>
+                            <h3 className="font-semibold text-sm mb-1">{issue.title}</h3>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">
+                              {issue.description}
+                            </p>
+                            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
+                              <MapPin className="h-3 w-3" />
+                              <span className="line-clamp-1">{issue.location}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-2">
+                              <Badge className={getStatusColor(issue.status)}>
+                                {issue.status.replace("_", " ").toUpperCase()}
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setSelectedIssue(issue)}
+                                className="h-6 text-xs"
+                              >
+                                View Details
+                              </Button>
+                            </div>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    ))}
+                </MapContainer>
+              </div>
+              <div className="mt-3 text-sm text-muted-foreground">
+                Showing {filteredIssues.filter(i => i.latitude && i.longitude).length} issues on the map
+              </div>
+            </CardContent>
+          )}
+        </Card>
+
         {/* Issues List */}
         <div>
           <div className="flex justify-between items-center mb-4">
@@ -1564,7 +1699,7 @@ export default function OfficialsDashboard() {
                       <div className="text-muted-foreground">Efficiency</div>
                       <div className="text-lg font-bold" data-testid="text-modal-efficiency">
                         {selectedJob.actualHours 
-                          ? `${Math.round((selectedJob.estimatedHours / selectedJob.actualHours) * 100)}%`
+                          ? `${Math.round((parseFloat(selectedJob.estimatedHours) / parseFloat(selectedJob.actualHours)) * 100)}%`
                           : "-"
                         }
                       </div>
@@ -1576,11 +1711,11 @@ export default function OfficialsDashboard() {
                       <div className="flex justify-between text-xs text-muted-foreground mb-1">
                         <span>Time Usage</span>
                         <span data-testid="text-modal-time-usage">
-                          {Math.round((selectedJob.actualHours / selectedJob.estimatedHours) * 100)}%
+                          {Math.round((parseFloat(selectedJob.actualHours) / parseFloat(selectedJob.estimatedHours)) * 100)}%
                         </span>
                       </div>
                       <Progress 
-                        value={Math.min(100, (selectedJob.actualHours / selectedJob.estimatedHours) * 100)}
+                        value={Math.min(100, (parseFloat(selectedJob.actualHours) / parseFloat(selectedJob.estimatedHours)) * 100)}
                         data-testid="progress-modal-time"
                       />
                     </div>
