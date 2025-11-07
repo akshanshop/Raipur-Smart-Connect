@@ -37,7 +37,7 @@ export default function Landing() {
               <div className="w-12 h-12 bg-primary squircle-lg flex items-center justify-center">
                 <i className="fas fa-city text-white text-xl"></i>
               </div>
-              <span className="text-2xl font-bold text-white">Raipur Smart Connect</span>
+              <span className="text-2xl font-bold text-white">{t.nav.brand}</span>
             </div>
             <div className="hidden md:flex items-center space-x-8">
               <motion.a 
@@ -51,7 +51,7 @@ export default function Landing() {
                 className="text-white hover:text-accent transition-colors magnetic-button px-4 py-2 bg-white/10 hover:bg-white/20 squircle-md"
                 whileHover={{ y: -2, scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-              >{t.nav.features}</motion.a>
+              >{t.nav.howItWorks}</motion.a>
               <motion.a 
                 href="#testimonials" 
                 className="text-white hover:text-accent transition-colors magnetic-button px-4 py-2 bg-white/10 hover:bg-white/20 squircle-md"
@@ -173,7 +173,7 @@ export default function Landing() {
                       whileHover={{ scale: 1.2 }}
                       transition={{ type: "spring", stiffness: 400 }}
                     />
-                    Watch Demo
+                    {t.hero.watchDemo}
                   </Button>
                 </motion.div>
               </motion.div>
@@ -196,9 +196,9 @@ export default function Landing() {
                     <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mr-3">
                       <i className="fas fa-users text-2xl text-blue-300"></i>
                     </div>
-                    <h3 className="text-xl font-bold text-white">Citizens Login</h3>
+                    <h3 className="text-xl font-bold text-white">{t.hero.citizensLogin}</h3>
                   </div>
-                  <p className="text-white/70 text-sm mb-4 text-center">Report issues and track civic matters</p>
+                  <p className="text-white/70 text-sm mb-4 text-center">{t.hero.citizensLoginDesc}</p>
                   <div className="flex flex-wrap justify-center gap-3">
                     <motion.div 
                       whileHover={{ scale: 1.1, y: -2 }} 
@@ -213,7 +213,7 @@ export default function Landing() {
                         data-testid="button-login-citizen-google"
                       >
                         <i className="fab fa-google mr-2"></i>
-                        Google
+                        {t.auth.providers.google}
                       </Button>
                     </motion.div>
                     <motion.div 
@@ -229,7 +229,7 @@ export default function Landing() {
                         data-testid="button-login-citizen-github"
                       >
                         <i className="fab fa-github mr-2"></i>
-                        GitHub
+                        {t.auth.providers.github}
                       </Button>
                     </motion.div>
                   </div>
@@ -245,9 +245,9 @@ export default function Landing() {
                     <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mr-3">
                       <i className="fas fa-shield-alt text-2xl text-green-300"></i>
                     </div>
-                    <h3 className="text-xl font-bold text-white">Officials Login</h3>
+                    <h3 className="text-xl font-bold text-white">{t.hero.officialsLogin}</h3>
                   </div>
-                  <p className="text-white/70 text-sm mb-4 text-center">Manage and resolve citizen issues</p>
+                  <p className="text-white/70 text-sm mb-4 text-center">{t.hero.officialsLoginDesc}</p>
                   <div className="flex flex-wrap justify-center gap-3">
                     <motion.div 
                       whileHover={{ scale: 1.1, y: -2 }} 
@@ -262,7 +262,7 @@ export default function Landing() {
                         data-testid="button-login-official-google"
                       >
                         <i className="fab fa-google mr-2"></i>
-                        Google
+                        {t.auth.providers.google}
                       </Button>
                     </motion.div>
                     <motion.div 
@@ -278,12 +278,12 @@ export default function Landing() {
                         data-testid="button-login-official-github"
                       >
                         <i className="fab fa-github mr-2"></i>
-                        GitHub
+                        {t.auth.providers.github}
                       </Button>
                     </motion.div>
                   </div>
                   <p className="text-white/60 text-xs mt-4 text-center italic">
-                    ⚠️ Restricted to authorized accounts only
+                    {t.hero.officialsAccessNote}
                   </p>
                 </motion.div>
               </motion.div>
@@ -613,24 +613,24 @@ export default function Landing() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="text-center floating-card bg-card p-8 icon-squircle-xl">
-              <div className="text-6xl font-bold text-primary mb-4">15K+</div>
-              <div className="text-xl font-semibold text-foreground mb-2">Active Citizens</div>
-              <div className="text-muted-foreground">Engaged daily</div>
+              <div className="text-6xl font-bold text-primary mb-4">{t.stats.activeValue}</div>
+              <div className="text-xl font-semibold text-foreground mb-2">{t.stats.activeLabel}</div>
+              <div className="text-muted-foreground">{t.stats.activeSubtext}</div>
             </div>
             <div className="text-center floating-card bg-card p-8 icon-squircle-xl">
-              <div className="text-6xl font-bold text-secondary mb-4">8.2K</div>
-              <div className="text-xl font-semibold text-foreground mb-2">Issues Resolved</div>
-              <div className="text-muted-foreground">This year</div>
+              <div className="text-6xl font-bold text-secondary mb-4">{t.stats.resolvedValue}</div>
+              <div className="text-xl font-semibold text-foreground mb-2">{t.stats.resolvedLabel}</div>
+              <div className="text-muted-foreground">{t.stats.resolvedSubtext}</div>
             </div>
             <div className="text-center floating-card bg-card p-8 icon-squircle-xl">
-              <div className="text-6xl font-bold text-accent mb-4">18h</div>
-              <div className="text-xl font-semibold text-foreground mb-2">Avg Response</div>
-              <div className="text-muted-foreground">Time</div>
+              <div className="text-6xl font-bold text-accent mb-4">{t.stats.responseValue}</div>
+              <div className="text-xl font-semibold text-foreground mb-2">{t.stats.responseLabel}</div>
+              <div className="text-muted-foreground">{t.stats.responseSubtext}</div>
             </div>
             <div className="text-center floating-card bg-card p-8 icon-squircle-xl">
-              <div className="text-6xl font-bold text-primary mb-4">96%</div>
-              <div className="text-xl font-semibold text-foreground mb-2">Satisfaction</div>
-              <div className="text-muted-foreground">Rate</div>
+              <div className="text-6xl font-bold text-primary mb-4">{t.stats.satisfactionValue}</div>
+              <div className="text-xl font-semibold text-foreground mb-2">{t.stats.satisfactionLabel}</div>
+              <div className="text-muted-foreground">{t.stats.satisfactionSubtext}</div>
             </div>
           </div>
         </div>
@@ -640,9 +640,9 @@ export default function Landing() {
       <section className="py-24 modern-gradient text-white">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-5xl font-bold mb-6">What Citizens Say</h2>
+            <h2 className="text-5xl font-bold mb-6">{t.testimonials.title}</h2>
             <p className="text-xl opacity-90 max-w-3xl mx-auto">
-              Real stories from real people making a difference in their communities.
+              {t.testimonials.subtitle}
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -656,15 +656,15 @@ export default function Landing() {
                   <i className="fas fa-star text-yellow-400"></i>
                 </div>
                 <p className="text-lg mb-6 italic">
-                  "The AI assistant helped me resolve my water bill issue in minutes. No more waiting in long queues!"
+                  "{t.testimonials.testimonial1.text}"
                 </p>
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-white bg-opacity-20 squircle-full flex items-center justify-center mr-4">
                     <i className="fas fa-user"></i>
                   </div>
                   <div>
-                    <div className="font-semibold">Priya Sharma</div>
-                    <div className="text-sm opacity-75">Raipur Resident</div>
+                    <div className="font-semibold">{t.testimonials.testimonial1.name}</div>
+                    <div className="text-sm opacity-75">{t.testimonials.testimonial1.role}</div>
                   </div>
                 </div>
               </CardContent>
@@ -680,15 +680,15 @@ export default function Landing() {
                   <i className="fas fa-star text-yellow-400"></i>
                 </div>
                 <p className="text-lg mb-6 italic">
-                  "Finally, a platform where my voice matters. The community voting feature helps prioritize real issues."
+                  "{t.testimonials.testimonial2.text}"
                 </p>
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-white bg-opacity-20 squircle-full flex items-center justify-center mr-4">
                     <i className="fas fa-user"></i>
                   </div>
                   <div>
-                    <div className="font-semibold">Rajesh Kumar</div>
-                    <div className="text-sm opacity-75">Community Leader</div>
+                    <div className="font-semibold">{t.testimonials.testimonial2.name}</div>
+                    <div className="text-sm opacity-75">{t.testimonials.testimonial2.role}</div>
                   </div>
                 </div>
               </CardContent>
@@ -704,15 +704,15 @@ export default function Landing() {
                   <i className="fas fa-star text-yellow-400"></i>
                 </div>
                 <p className="text-lg mb-6 italic">
-                  "The real-time tracking gave me confidence that my street lighting complaint was being handled."
+                  "{t.testimonials.testimonial3.text}"
                 </p>
                 <div className="flex items-center">
                   <div className="w-12 h-12 bg-white bg-opacity-20 squircle-full flex items-center justify-center mr-4">
                     <i className="fas fa-user"></i>
                   </div>
                   <div>
-                    <div className="font-semibold">Anita Patel</div>
-                    <div className="text-sm opacity-75">Small Business Owner</div>
+                    <div className="font-semibold">{t.testimonials.testimonial3.name}</div>
+                    <div className="text-sm opacity-75">{t.testimonials.testimonial3.role}</div>
                   </div>
                 </div>
               </CardContent>
@@ -725,9 +725,9 @@ export default function Landing() {
       <section className="py-24 modern-gradient text-white">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-5xl font-bold mb-6">Frequently Asked Questions</h2>
+            <h2 className="text-5xl font-bold mb-6">{t.faq.title}</h2>
             <p className="text-xl opacity-90 max-w-3xl mx-auto">
-              Got questions? We've got answers. Find everything you need to know about our platform.
+              {t.faq.subtitle}
             </p>
           </div>
           <div className="max-w-4xl mx-auto space-y-6">
@@ -735,10 +735,10 @@ export default function Landing() {
               <CardContent className="text-white">
                 <h3 className="text-xl font-bold mb-3 flex items-center">
                   <i className="fas fa-question-circle mr-3 text-accent"></i>
-                  Is this platform really free for citizens?
+                  {t.faq.q1.question}
                 </h3>
                 <p className="opacity-90 pl-8">
-                  Absolutely! All core features including complaint registration, AI assistant, tracking, and community features are completely free for citizens. We believe civic engagement should be accessible to everyone.
+                  {t.faq.q1.answer}
                 </p>
               </CardContent>
             </Card>
@@ -747,10 +747,10 @@ export default function Landing() {
               <CardContent className="text-white">
                 <h3 className="text-xl font-bold mb-3 flex items-center">
                   <i className="fas fa-question-circle mr-3 text-accent"></i>
-                  How does the AI assistant work?
+                  {t.faq.q2.question}
                 </h3>
                 <p className="opacity-90 pl-8">
-                  Our AI assistant uses advanced natural language processing to understand your queries in English, Hindi, and Marathi. It can help with water bills, tax information, bus schedules, complaint status, and much more.
+                  {t.faq.q2.answer}
                 </p>
               </CardContent>
             </Card>
@@ -759,10 +759,10 @@ export default function Landing() {
               <CardContent className="text-white">
                 <h3 className="text-xl font-bold mb-3 flex items-center">
                   <i className="fas fa-question-circle mr-3 text-accent"></i>
-                  How secure is my personal information?
+                  {t.faq.q3.question}
                 </h3>
                 <p className="opacity-90 pl-8">
-                  We take privacy seriously. All data is encrypted, we follow GDPR guidelines, and we never share personal information without consent. Your data is used only to improve civic services.
+                  {t.faq.q3.answer}
                 </p>
               </CardContent>
             </Card>
@@ -771,10 +771,10 @@ export default function Landing() {
               <CardContent className="text-white">
                 <h3 className="text-xl font-bold mb-3 flex items-center">
                   <i className="fas fa-question-circle mr-3 text-accent"></i>
-                  Can I track the status of my complaints?
+                  {t.faq.q4.question}
                 </h3>
                 <p className="opacity-90 pl-8">
-                  Yes! Every complaint gets a unique ticket ID and you can track its progress in real-time. You'll receive notifications at every stage - from acknowledgment to resolution.
+                  {t.faq.q4.answer}
                 </p>
               </CardContent>
             </Card>
@@ -783,10 +783,10 @@ export default function Landing() {
               <CardContent className="text-white">
                 <h3 className="text-xl font-bold mb-3 flex items-center">
                   <i className="fas fa-question-circle mr-3 text-accent"></i>
-                  Is there a mobile app available?
+                  {t.faq.q5.question}
                 </h3>
                 <p className="opacity-90 pl-8">
-                  Our platform is fully responsive and works great on mobile browsers. Native iOS and Android apps are coming soon with additional features like offline complaint drafting.
+                  {t.faq.q5.answer}
                 </p>
               </CardContent>
             </Card>
@@ -798,9 +798,9 @@ export default function Landing() {
       <section className="py-24 bg-background">
         <div className="container mx-auto px-6 text-center">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-5xl font-bold text-gradient mb-6">Ready to Transform Your City?</h2>
+            <h2 className="text-5xl font-bold text-gradient mb-6">{t.cta.title}</h2>
             <p className="text-2xl text-muted-foreground mb-12">
-              Join thousands of citizens already making a difference. Start your journey today.
+              {t.cta.subtitle}
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
               <Button 
@@ -810,7 +810,7 @@ export default function Landing() {
                 data-testid="button-join-now"
               >
                 <i className="fas fa-rocket mr-3"></i>
-                Join Now - It's Free
+                {t.cta.button}
               </Button>
               <Button 
                 variant="outline"
@@ -818,7 +818,7 @@ export default function Landing() {
                 className="modern-button px-12 py-6 text-xl font-semibold card-squircle-lg"
               >
                 <i className="fas fa-envelope mr-3"></i>
-                Contact Support
+                {t.cta.contactSupport}
               </Button>
             </div>
           </div>

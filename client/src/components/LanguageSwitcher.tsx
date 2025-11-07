@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function LanguageSwitcher() {
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
 
   return (
     <DropdownMenu>
@@ -21,7 +21,7 @@ export default function LanguageSwitcher() {
           data-testid="button-language-switcher"
         >
           <Languages className="h-5 w-5" />
-          <span className="sr-only">Switch language</span>
+          <span className="sr-only">{t.nav.switchLanguage}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" data-testid="dropdown-language-menu">

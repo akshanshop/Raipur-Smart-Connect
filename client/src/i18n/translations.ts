@@ -3,25 +3,40 @@ export const translations = {
     nav: {
       home: "Home",
       features: "Features",
+      howItWorks: "How It Works",
       testimonials: "Testimonials",
       faq: "FAQ",
       getStarted: "Get Started",
       login: "Login",
       dashboard: "Dashboard",
+      brand: "Raipur Smart Connect",
+      switchLanguage: "Switch language",
     },
     hero: {
       title: "Transform Your",
       subtitle: "Civic Experience",
       description: "Join thousands of citizens using AI-powered solutions to create a smarter, more responsive city. Report issues, track progress, and build community.",
       cta: "Get Started Free",
+      watchDemo: "Watch Demo",
       emergency: "Emergency SOS",
+      citizensLogin: "Citizens Login",
+      citizensLoginDesc: "Report issues and track civic matters",
+      officialsLogin: "Officials Login",
+      officialsLoginDesc: "Manage and resolve city issues",
+      officialsAccessNote: "⚠️ Restricted to authorized accounts only",
+    },
+    auth: {
+      providers: {
+        google: "Google",
+        github: "GitHub",
+      },
     },
     features: {
       title: "Powerful Features for Modern Citizens",
       subtitle: "Everything you need to engage with your city and make your voice heard.",
       aiAssistant: {
         title: "AI Assistant",
-        description: "Get instant answers in English, Hindi, and Marathi. Ask about water bills, taxes, bus schedules, and more.",
+        description: "Get instant answers in English and Hindi. Ask about water bills, taxes, bus schedules, and more.",
       },
       smartTracking: {
         title: "Smart Tracking",
@@ -70,16 +85,33 @@ export const translations = {
       responseTime: "Avg Response Time",
       satisfaction: "Satisfaction Rate",
       hours: "hours",
+      activeValue: "15K+",
+      activeLabel: "Active Citizens",
+      activeSubtext: "Engaged daily",
+      resolvedValue: "8.2K",
+      resolvedLabel: "Issues Resolved",
+      resolvedSubtext: "This year",
+      responseValue: "18h",
+      responseLabel: "Avg Response",
+      responseSubtext: "Time",
+      satisfactionValue: "96%",
+      satisfactionLabel: "Satisfaction",
+      satisfactionSubtext: "Rate",
     },
     testimonials: {
       title: "What Citizens Are Saying",
       subtitle: "Real stories from real people making a difference in their communities.",
       testimonial1: {
+        text: "The AI assistant helped me resolve my water bill issue in minutes. No more waiting in long queues!",
+        name: "Priya Sharma",
+        role: "Raipur Resident",
+      },
+      testimonial2: {
         text: "Finally, a platform where my voice matters. The community voting feature helps prioritize real issues.",
         name: "Rajesh Kumar",
         role: "Community Leader",
       },
-      testimonial2: {
+      testimonial3: {
         text: "The real-time tracking gave me confidence that my street lighting complaint was being handled.",
         name: "Anita Patel",
         role: "Small Business Owner",
@@ -94,7 +126,7 @@ export const translations = {
       },
       q2: {
         question: "How does the AI assistant work?",
-        answer: "Our AI assistant uses advanced natural language processing to understand your queries in English, Hindi, and Marathi. It can help with water bills, tax information, bus schedules, complaint status, and much more.",
+        answer: "Our AI assistant uses advanced natural language processing to understand your queries in English and Hindi. It can help with water bills, tax information, bus schedules, complaint status, and much more.",
       },
       q3: {
         question: "How secure is my personal information?",
@@ -111,8 +143,9 @@ export const translations = {
     },
     cta: {
       title: "Ready to Transform Your City?",
-      subtitle: "Join thousands of active citizens making a real difference. Start reporting, tracking, and resolving issues today.",
-      button: "Start Free Today",
+      subtitle: "Join thousands of citizens already making a difference. Start your journey today.",
+      button: "Join Now - It's Free",
+      contactSupport: "Contact Support",
     },
     footer: {
       tagline: "Empowering citizens through technology.",
@@ -185,25 +218,40 @@ export const translations = {
     nav: {
       home: "होम",
       features: "विशेषताएं",
+      howItWorks: "यह कैसे काम करता है",
       testimonials: "प्रशंसापत्र",
       faq: "सामान्य प्रश्न",
       getStarted: "शुरू करें",
       login: "लॉगिन",
       dashboard: "डैशबोर्ड",
+      brand: "रायपुर स्मार्ट कनेक्ट",
+      switchLanguage: "भाषा बदलें",
     },
     hero: {
       title: "बदलें अपना",
       subtitle: "नागरिक अनुभव",
       description: "हजारों नागरिकों के साथ शामिल हों जो AI-संचालित समाधानों का उपयोग करके एक स्मार्ट, अधिक जवाबदेह शहर बना रहे हैं। समस्याओं की रिपोर्ट करें, प्रगति ट्रैक करें और समुदाय बनाएं।",
       cta: "मुफ्त में शुरू करें",
+      watchDemo: "डेमो देखें",
       emergency: "आपातकालीन SOS",
+      citizensLogin: "नागरिक लॉगिन",
+      citizensLoginDesc: "समस्याओं की रिपोर्ट करें और नागरिक मामलों को ट्रैक करें",
+      officialsLogin: "अधिकारी लॉगिन",
+      officialsLoginDesc: "शहर के मुद्दों को प्रबंधित और हल करें",
+      officialsAccessNote: "⚠️ केवल अधिकृत खातों तक सीमित",
+    },
+    auth: {
+      providers: {
+        google: "गूगल",
+        github: "गिटहब",
+      },
     },
     features: {
       title: "आधुनिक नागरिकों के लिए शक्तिशाली सुविधाएं",
       subtitle: "अपने शहर के साथ जुड़ने और अपनी आवाज़ उठाने के लिए आवश्यक सब कुछ।",
       aiAssistant: {
         title: "AI सहायक",
-        description: "अंग्रेजी, हिंदी और मराठी में तुरंत जवाब पाएं। पानी के बिल, टैक्स, बस शेड्यूल और अधिक के बारे में पूछें।",
+        description: "अंग्रेजी और हिंदी में तुरंत जवाब पाएं। पानी के बिल, टैक्स, बस शेड्यूल और अधिक के बारे में पूछें।",
       },
       smartTracking: {
         title: "स्मार्ट ट्रैकिंग",
@@ -252,16 +300,33 @@ export const translations = {
       responseTime: "औसत प्रतिक्रिया समय",
       satisfaction: "संतुष्टि दर",
       hours: "घंटे",
+      activeValue: "15K+",
+      activeLabel: "सक्रिय नागरिक",
+      activeSubtext: "रोज़ाना शामिल",
+      resolvedValue: "8.2K",
+      resolvedLabel: "मुद्दे हल किए गए",
+      resolvedSubtext: "इस साल",
+      responseValue: "18h",
+      responseLabel: "औसत प्रतिक्रिया",
+      responseSubtext: "समय",
+      satisfactionValue: "96%",
+      satisfactionLabel: "संतुष्टि",
+      satisfactionSubtext: "दर",
     },
     testimonials: {
       title: "नागरिक क्या कह रहे हैं",
       subtitle: "वास्तविक लोगों की वास्तविक कहानियां जो अपने समुदायों में बदलाव ला रहे हैं।",
       testimonial1: {
+        text: "AI सहायक ने मुझे मिनटों में मेरे पानी के बिल के मुद्दे को हल करने में मदद की। अब लंबी कतारों में इंतजार करने की ज़रूरत नहीं!",
+        name: "प्रिया शर्मा",
+        role: "रायपुर निवासी",
+      },
+      testimonial2: {
         text: "आखिरकार, एक ऐसा मंच जहां मेरी आवाज़ मायने रखती है। समुदाय मतदान सुविधा वास्तविक मुद्दों को प्राथमिकता देने में मदद करती है।",
         name: "राजेश कुमार",
         role: "समुदाय नेता",
       },
-      testimonial2: {
+      testimonial3: {
         text: "रीयल-टाइम ट्रैकिंग ने मुझे विश्वास दिलाया कि मेरी स्ट्रीट लाइटिंग की शिकायत को संभाला जा रहा था।",
         name: "अनीता पटेल",
         role: "छोटे व्यवसाय के मालिक",
@@ -276,7 +341,7 @@ export const translations = {
       },
       q2: {
         question: "AI सहायक कैसे काम करता है?",
-        answer: "हमारा AI सहायक अंग्रेजी, हिंदी और मराठी में आपके प्रश्नों को समझने के लिए उन्नत प्राकृतिक भाषा प्रसंस्करण का उपयोग करता है। यह पानी के बिल, कर की जानकारी, बस शेड्यूल, शिकायत की स्थिति और बहुत कुछ में मदद कर सकता है।",
+        answer: "हमारा AI सहायक अंग्रेजी और हिंदी में आपके प्रश्नों को समझने के लिए उन्नत प्राकृतिक भाषा प्रसंस्करण का उपयोग करता है। यह पानी के बिल, कर की जानकारी, बस शेड्यूल, शिकायत की स्थिति और बहुत कुछ में मदद कर सकता है।",
       },
       q3: {
         question: "मेरी व्यक्तिगत जानकारी कितनी सुरक्षित है?",
@@ -293,8 +358,9 @@ export const translations = {
     },
     cta: {
       title: "अपने शहर को बदलने के लिए तैयार हैं?",
-      subtitle: "हजारों सक्रिय नागरिकों के साथ शामिल हों जो वास्तविक अंतर बना रहे हैं। आज ही समस्याओं की रिपोर्ट करना, ट्रैकिंग और समाधान शुरू करें।",
-      button: "आज ही मुफ्त में शुरू करें",
+      subtitle: "हजारों नागरिक जो पहले से ही बदलाव ला रहे हैं उनके साथ शामिल हों। आज ही अपनी यात्रा शुरू करें।",
+      button: "अभी शामिल हों - यह मुफ्त है",
+      contactSupport: "सहायता से संपर्क करें",
     },
     footer: {
       tagline: "प्रौद्योगिकी के माध्यम से नागरिकों को सशक्त बनाना।",
