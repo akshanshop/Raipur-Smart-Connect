@@ -6,6 +6,14 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Updates
 
+## Visual Status Indicators for Officials Dashboard (November 7, 2025)
+Enhanced issue card visualization in the officials dashboard:
+- **Color-Coded Issue Cards**: Issue cards now have full background colors based on resolution status
+- **Green Background**: Resolved and closed issues display with a green background (light green in light mode, dark green in dark mode)
+- **Red Background**: Open and in-progress issues display with a red background (light red in light mode, dark red in dark mode)
+- **Accessibility**: Text remains readable in both light and dark modes with proper contrast ratios
+- **Visual Clarity**: Officials can now quickly identify the status of issues at a glance without reading status badges
+
 ## Category Streamlining and Language Cleanup (November 7, 2025)
 Removed unnecessary complaint categories and finalized bilingual support:
 - **Category Removal**: Removed "drainage", "parks & recreation", and "noise pollution" categories from all complaint and community issue forms across the application
