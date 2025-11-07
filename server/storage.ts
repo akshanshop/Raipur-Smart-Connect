@@ -9,6 +9,11 @@ import {
   tokenTransactions,
   rewards,
   rewardRedemptions,
+  communities,
+  communityMembers,
+  officialJobs,
+  tokenBonuses,
+  userAchievements,
   type User,
   type UpsertUser,
   type InsertComplaint,
@@ -27,9 +32,19 @@ import {
   type InsertReward,
   type RewardRedemption,
   type InsertRewardRedemption,
+  type Community,
+  type InsertCommunity,
+  type CommunityMember,
+  type InsertCommunityMember,
+  type OfficialJob,
+  type InsertOfficialJob,
+  type TokenBonus,
+  type InsertTokenBonus,
+  type UserAchievement,
+  type InsertUserAchievement,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, count, sql } from "drizzle-orm";
+import { eq, desc, and, count, sql, ilike } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -130,6 +145,47 @@ export interface IStorage {
   createReward(reward: InsertReward): Promise<Reward>;
   redeemReward(userId: string, rewardId: string): Promise<RewardRedemption>;
   getUserRedemptions(userId: string): Promise<RewardRedemption[]>;
+
+  // Community Operations
+  createCommunity(community: InsertCommunity & { creatorId: string }): Promise<Community>;
+  getCommunity(id: string): Promise<Community | undefined>;
+  getAllCommunities(): Promise<Community[]>;
+  searchCommunities(query: string): Promise<Community[]>;
+  getCommunitiesByCategory(category: string): Promise<Community[]>;
+  updateCommunity(id: string, updates: Partial<Community>): Promise<void>;
+  deleteCommunity(id: string): Promise<void>;
+  getUserCommunities(userId: string): Promise<Community[]>;
+
+  // Community Member Operations
+  joinCommunity(userId: string, communityId: string, role?: string): Promise<CommunityMember>;
+  leaveCommunity(userId: string, communityId: string): Promise<void>;
+  getCommunityMembers(communityId: string): Promise<Array<CommunityMember & { user: User }>>;
+  isMemberOfCommunity(userId: string, communityId: string): Promise<boolean>;
+  updateMemberRole(communityId: string, userId: string, role: string): Promise<void>;
+
+  // Official Job Operations
+  createOfficialJob(job: InsertOfficialJob): Promise<OfficialJob>;
+  getOfficialJob(id: string): Promise<OfficialJob | undefined>;
+  getAllOfficialJobs(): Promise<OfficialJob[]>;
+  getOfficialJobsByStatus(status: string): Promise<OfficialJob[]>;
+  getAssignedJobs(officialId: string): Promise<OfficialJob[]>;
+  assignJobToOfficial(jobId: string, officialId: string): Promise<void>;
+  updateJobStatus(jobId: string, status: string, actualHours?: number): Promise<void>;
+  updateOfficialJob(id: string, updates: Partial<OfficialJob>): Promise<void>;
+
+  // Token Bonus Operations
+  createTokenBonus(bonus: InsertTokenBonus & { userId: string }): Promise<TokenBonus>;
+  getUserTokenBonuses(userId: string): Promise<TokenBonus[]>;
+  getActiveTokenBonuses(userId: string): Promise<TokenBonus[]>;
+
+  // Achievement Operations
+  awardAchievement(userId: string, achievement: Omit<InsertUserAchievement, 'userId'>): Promise<UserAchievement>;
+  getUserAchievements(userId: string): Promise<UserAchievement[]>;
+  hasAchievement(userId: string, achievementType: string): Promise<boolean>;
+
+  // Leaderboard Operations
+  getTokenLeaderboard(limit?: number): Promise<Array<{ user: User; totalEarned: number; rank: number }>>;
+  getUserRank(userId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -942,6 +998,415 @@ export class DatabaseStorage implements IStorage {
       .from(rewardRedemptions)
       .where(eq(rewardRedemptions.userId, userId))
       .orderBy(desc(rewardRedemptions.createdAt));
+  }
+
+  // Community Operations
+  async createCommunity(communityData: InsertCommunity & { creatorId: string }): Promise<Community> {
+    const [community] = await db.transaction(async (tx) => {
+      const [newCommunity] = await tx
+        .insert(communities)
+        .values(communityData)
+        .returning();
+
+      await tx.insert(communityMembers).values({
+        communityId: newCommunity.id,
+        userId: communityData.creatorId,
+        role: 'admin',
+      });
+
+      await tx
+        .update(communities)
+        .set({ memberCount: 1 })
+        .where(eq(communities.id, newCommunity.id));
+
+      return [newCommunity];
+    });
+
+    return community;
+  }
+
+  async getCommunity(id: string): Promise<Community | undefined> {
+    const [community] = await db.select().from(communities).where(eq(communities.id, id));
+    return community;
+  }
+
+  async getAllCommunities(): Promise<Community[]> {
+    return await db
+      .select()
+      .from(communities)
+      .where(eq(communities.isActive, true))
+      .orderBy(desc(communities.memberCount), desc(communities.createdAt));
+  }
+
+  async searchCommunities(query: string): Promise<Community[]> {
+    return await db
+      .select()
+      .from(communities)
+      .where(
+        and(
+          eq(communities.isActive, true),
+          sql`(${communities.name} ILIKE ${'%' + query + '%'} OR ${communities.description} ILIKE ${'%' + query + '%'})`
+        )
+      )
+      .orderBy(desc(communities.memberCount));
+  }
+
+  async getCommunitiesByCategory(category: string): Promise<Community[]> {
+    return await db
+      .select()
+      .from(communities)
+      .where(
+        and(
+          eq(communities.isActive, true),
+          eq(communities.category, category)
+        )
+      )
+      .orderBy(desc(communities.memberCount));
+  }
+
+  async updateCommunity(id: string, updates: Partial<Community>): Promise<void> {
+    await db
+      .update(communities)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(communities.id, id));
+  }
+
+  async deleteCommunity(id: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      await tx.delete(communityMembers).where(eq(communityMembers.communityId, id));
+      await tx.delete(communities).where(eq(communities.id, id));
+    });
+  }
+
+  async getUserCommunities(userId: string): Promise<Community[]> {
+    const memberships = await db
+      .select({
+        community: communities,
+      })
+      .from(communityMembers)
+      .innerJoin(communities, eq(communityMembers.communityId, communities.id))
+      .where(eq(communityMembers.userId, userId))
+      .orderBy(desc(communities.memberCount));
+
+    return memberships.map(m => m.community);
+  }
+
+  // Community Member Operations
+  async joinCommunity(userId: string, communityId: string, role: string = 'member'): Promise<CommunityMember> {
+    const [member] = await db.transaction(async (tx) => {
+      const [newMember] = await tx
+        .insert(communityMembers)
+        .values({
+          userId,
+          communityId,
+          role,
+        })
+        .returning();
+
+      await tx
+        .update(communities)
+        .set({
+          memberCount: sql`${communities.memberCount} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(eq(communities.id, communityId));
+
+      return [newMember];
+    });
+
+    return member;
+  }
+
+  async leaveCommunity(userId: string, communityId: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(communityMembers)
+        .where(
+          and(
+            eq(communityMembers.userId, userId),
+            eq(communityMembers.communityId, communityId)
+          )
+        );
+
+      await tx
+        .update(communities)
+        .set({
+          memberCount: sql`${communities.memberCount} - 1`,
+          updatedAt: new Date(),
+        })
+        .where(eq(communities.id, communityId));
+    });
+  }
+
+  async getCommunityMembers(communityId: string): Promise<Array<CommunityMember & { user: User }>> {
+    const members = await db
+      .select({
+        id: communityMembers.id,
+        communityId: communityMembers.communityId,
+        userId: communityMembers.userId,
+        role: communityMembers.role,
+        joinedAt: communityMembers.joinedAt,
+        user: users,
+      })
+      .from(communityMembers)
+      .innerJoin(users, eq(communityMembers.userId, users.id))
+      .where(eq(communityMembers.communityId, communityId))
+      .orderBy(communityMembers.joinedAt);
+
+    return members;
+  }
+
+  async isMemberOfCommunity(userId: string, communityId: string): Promise<boolean> {
+    const [member] = await db
+      .select()
+      .from(communityMembers)
+      .where(
+        and(
+          eq(communityMembers.userId, userId),
+          eq(communityMembers.communityId, communityId)
+        )
+      );
+
+    return !!member;
+  }
+
+  async updateMemberRole(communityId: string, userId: string, role: string): Promise<void> {
+    await db
+      .update(communityMembers)
+      .set({ role })
+      .where(
+        and(
+          eq(communityMembers.communityId, communityId),
+          eq(communityMembers.userId, userId)
+        )
+      );
+  }
+
+  // Official Job Operations
+  async createOfficialJob(jobData: InsertOfficialJob): Promise<OfficialJob> {
+    const [job] = await db
+      .insert(officialJobs)
+      .values(jobData)
+      .returning();
+    return job;
+  }
+
+  async getOfficialJob(id: string): Promise<OfficialJob | undefined> {
+    const [job] = await db.select().from(officialJobs).where(eq(officialJobs.id, id));
+    return job;
+  }
+
+  async getAllOfficialJobs(): Promise<OfficialJob[]> {
+    return await db
+      .select()
+      .from(officialJobs)
+      .orderBy(desc(officialJobs.createdAt));
+  }
+
+  async getOfficialJobsByStatus(status: string): Promise<OfficialJob[]> {
+    return await db
+      .select()
+      .from(officialJobs)
+      .where(eq(officialJobs.status, status))
+      .orderBy(desc(officialJobs.createdAt));
+  }
+
+  async getAssignedJobs(officialId: string): Promise<OfficialJob[]> {
+    return await db
+      .select()
+      .from(officialJobs)
+      .where(eq(officialJobs.assignedOfficialId, officialId))
+      .orderBy(desc(officialJobs.createdAt));
+  }
+
+  async assignJobToOfficial(jobId: string, officialId: string): Promise<void> {
+    await db
+      .update(officialJobs)
+      .set({
+        assignedOfficialId: officialId,
+        status: 'in_progress',
+        updatedAt: new Date(),
+      })
+      .where(eq(officialJobs.id, jobId));
+  }
+
+  async updateJobStatus(jobId: string, status: string, actualHours?: number): Promise<void> {
+    const updateData: any = {
+      status,
+      updatedAt: new Date(),
+    };
+
+    if (actualHours !== undefined) {
+      updateData.actualHours = actualHours;
+    }
+
+    if (status === 'completed') {
+      updateData.completedAt = new Date();
+    }
+
+    await db
+      .update(officialJobs)
+      .set(updateData)
+      .where(eq(officialJobs.id, jobId));
+  }
+
+  async updateOfficialJob(id: string, updates: Partial<OfficialJob>): Promise<void> {
+    await db
+      .update(officialJobs)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(officialJobs.id, id));
+  }
+
+  // Token Bonus Operations
+  async createTokenBonus(bonusData: InsertTokenBonus & { userId: string }): Promise<TokenBonus> {
+    const [bonus] = await db.transaction(async (tx) => {
+      const [newBonus] = await tx
+        .insert(tokenBonuses)
+        .values(bonusData)
+        .returning();
+
+      await tx
+        .update(users)
+        .set({
+          tokens: sql`${users.tokens} + ${bonusData.amount}`,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, bonusData.userId));
+
+      await tx.insert(tokenTransactions).values({
+        userId: bonusData.userId,
+        amount: bonusData.amount,
+        type: 'earned',
+        reason: bonusData.bonusType,
+        relatedId: newBonus.id,
+      });
+
+      return [newBonus];
+    });
+
+    return bonus;
+  }
+
+  async getUserTokenBonuses(userId: string): Promise<TokenBonus[]> {
+    return await db
+      .select()
+      .from(tokenBonuses)
+      .where(eq(tokenBonuses.userId, userId))
+      .orderBy(desc(tokenBonuses.createdAt));
+  }
+
+  async getActiveTokenBonuses(userId: string): Promise<TokenBonus[]> {
+    return await db
+      .select()
+      .from(tokenBonuses)
+      .where(
+        and(
+          eq(tokenBonuses.userId, userId),
+          sql`(${tokenBonuses.expiresAt} IS NULL OR ${tokenBonuses.expiresAt} > NOW())`
+        )
+      )
+      .orderBy(desc(tokenBonuses.createdAt));
+  }
+
+  // Achievement Operations
+  async awardAchievement(userId: string, achievement: Omit<InsertUserAchievement, 'userId'>): Promise<UserAchievement> {
+    const [newAchievement] = await db.transaction(async (tx) => {
+      const [awarded] = await tx
+        .insert(userAchievements)
+        .values({
+          ...achievement,
+          userId,
+        })
+        .returning();
+
+      if (achievement.tokensAwarded && achievement.tokensAwarded > 0) {
+        await tx
+          .update(users)
+          .set({
+            tokens: sql`${users.tokens} + ${achievement.tokensAwarded}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, userId));
+
+        await tx.insert(tokenTransactions).values({
+          userId,
+          amount: achievement.tokensAwarded,
+          type: 'earned',
+          reason: `achievement_${achievement.achievementType}`,
+          relatedId: awarded.id,
+        });
+      }
+
+      return [awarded];
+    });
+
+    return newAchievement;
+  }
+
+  async getUserAchievements(userId: string): Promise<UserAchievement[]> {
+    return await db
+      .select()
+      .from(userAchievements)
+      .where(eq(userAchievements.userId, userId))
+      .orderBy(desc(userAchievements.earnedAt));
+  }
+
+  async hasAchievement(userId: string, achievementType: string): Promise<boolean> {
+    const [achievement] = await db
+      .select()
+      .from(userAchievements)
+      .where(
+        and(
+          eq(userAchievements.userId, userId),
+          eq(userAchievements.achievementType, achievementType)
+        )
+      );
+
+    return !!achievement;
+  }
+
+  // Leaderboard Operations
+  async getTokenLeaderboard(limit: number = 10): Promise<Array<{ user: User; totalEarned: number; rank: number }>> {
+    const allUsers = await db
+      .select()
+      .from(users)
+      .orderBy(desc(users.tokens));
+
+    const leaderboardData = await Promise.all(
+      allUsers.slice(0, limit).map(async (user, index) => {
+        const earnedTransactions = await db
+          .select()
+          .from(tokenTransactions)
+          .where(
+            and(
+              eq(tokenTransactions.userId, user.id),
+              eq(tokenTransactions.type, 'earned')
+            )
+          );
+        
+        const totalEarned = earnedTransactions.reduce((sum, t) => sum + t.amount, 0);
+        
+        return {
+          user,
+          totalEarned,
+          rank: index + 1,
+        };
+      })
+    );
+
+    return leaderboardData;
+  }
+
+  async getUserRank(userId: string): Promise<number> {
+    const user = await this.getUser(userId);
+    if (!user) return 0;
+
+    const higherRankedUsers = await db
+      .select({ count: count() })
+      .from(users)
+      .where(sql`${users.tokens} > ${user.tokens}`);
+
+    return (higherRankedUsers[0]?.count || 0) + 1;
   }
 }
 

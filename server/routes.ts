@@ -4,10 +4,22 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import path from "path";
 import { storage } from "./storage";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+import { users } from "@shared/schema";
 import { setupOAuth } from "./oauthAuth";
 import { processChatMessage, generateComplaintSummary } from "./openai";
 import { detectSpam, detectCommunityIssueSpam } from "./spamDetection";
-import { insertComplaintSchema, insertCommunityIssueSchema, insertCommentSchema, insertChatMessageSchema } from "@shared/schema";
+import { 
+  insertComplaintSchema, 
+  insertCommunityIssueSchema, 
+  insertCommentSchema, 
+  insertChatMessageSchema,
+  insertCommunitySchema,
+  insertOfficialJobSchema,
+  insertTokenBonusSchema,
+  insertUserAchievementSchema
+} from "@shared/schema";
 import { 
   rateLimit, 
   validateCommentContent, 
@@ -1053,6 +1065,733 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching redemptions:", error);
       res.status(500).json({ message: "Failed to fetch redemptions" });
+    }
+  });
+
+  // Token Bonuses Endpoints
+  app.get('/api/token-bonuses', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const bonuses = await storage.getActiveTokenBonuses(userId);
+      res.json(bonuses);
+    } catch (error) {
+      console.error("Error fetching active token bonuses:", error);
+      res.status(500).json({ message: "Failed to fetch active token bonuses" });
+    }
+  });
+
+  app.get('/api/token-bonuses/all', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const bonuses = await storage.getUserTokenBonuses(userId);
+      res.json(bonuses);
+    } catch (error) {
+      console.error("Error fetching all token bonuses:", error);
+      res.status(500).json({ message: "Failed to fetch all token bonuses" });
+    }
+  });
+
+  // Achievements Endpoint
+  app.get('/api/achievements', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const achievements = await storage.getUserAchievements(userId);
+      res.json(achievements);
+    } catch (error) {
+      console.error("Error fetching achievements:", error);
+      res.status(500).json({ message: "Failed to fetch achievements" });
+    }
+  });
+
+  // Leaderboard Endpoint
+  app.get('/api/leaderboard', async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 10;
+      const leaderboard = await storage.getTokenLeaderboard(limit);
+      res.json(leaderboard);
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error);
+      res.status(500).json({ message: "Failed to fetch leaderboard" });
+    }
+  });
+
+  app.get('/api/leaderboard/rank', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const rank = await storage.getUserRank(userId);
+      res.json({ rank });
+    } catch (error) {
+      console.error("Error fetching user rank:", error);
+      res.status(500).json({ message: "Failed to fetch user rank" });
+    }
+  });
+
+  // ============================================
+  // COMMUNITY ROUTES
+  // ============================================
+
+  // Create a new community
+  app.post('/api/communities', isAuthenticatedFlexible, rateLimit('complaints'), async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const communityData = insertCommunitySchema.parse(req.body);
+
+      const community = await storage.createCommunity({
+        ...communityData,
+        creatorId: userId
+      });
+
+      // Automatically join the creator as admin
+      await storage.joinCommunity(userId, community.id, 'admin');
+
+      // Award tokens for creating a community
+      await storage.awardTokens(userId, 20, 'community_created', community.id);
+
+      // Check if this is user's first community and award achievement
+      const hasAchievement = await storage.hasAchievement(userId, 'community_creator');
+      if (!hasAchievement) {
+        await storage.awardAchievement(userId, {
+          achievementType: 'community_creator',
+          title: 'Community Creator',
+          description: 'Created your first community',
+          iconUrl: '/icons/community-creator.png',
+          tokensAwarded: 50
+        });
+        
+        // Award additional tokens for the achievement
+        await storage.awardTokens(userId, 50, 'achievement_earned', community.id);
+
+        // Create notification
+        await storage.createNotification({
+          userId,
+          title: '🏆 Achievement Unlocked!',
+          message: 'You earned the "Community Creator" achievement and received 50 bonus tokens!',
+          type: 'alert',
+          relatedId: community.id
+        });
+      }
+
+      // Create notification for community creation
+      await storage.createNotification({
+        userId,
+        title: 'Community Created',
+        message: `Your community "${community.name}" has been created successfully. You earned 20 tokens!`,
+        type: 'complaint_update',
+        relatedId: community.id
+      });
+
+      res.json(community);
+    } catch (error) {
+      console.error("Error creating community:", error);
+      res.status(500).json({ message: "Failed to create community" });
+    }
+  });
+
+  // Get all active communities
+  app.get('/api/communities', async (req, res) => {
+    try {
+      const communities = await storage.getAllCommunities();
+      
+      // Get creator data for each community
+      const communitiesWithCreator = await Promise.all(
+        communities.map(async (community) => {
+          const creator = await storage.getUser(community.creatorId);
+          return {
+            ...community,
+            creatorName: creator ? `${creator.firstName || ''} ${creator.lastName || ''}`.trim() || creator.email : 'Unknown',
+          };
+        })
+      );
+      
+      res.json(communitiesWithCreator);
+    } catch (error) {
+      console.error("Error fetching communities:", error);
+      res.status(500).json({ message: "Failed to fetch communities" });
+    }
+  });
+
+  // Search communities by name/description
+  app.get('/api/communities/search', async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      
+      if (!query) {
+        return res.status(400).json({ message: "Search query is required" });
+      }
+
+      const communities = await storage.searchCommunities(query);
+      
+      // Get creator data for each community
+      const communitiesWithCreator = await Promise.all(
+        communities.map(async (community) => {
+          const creator = await storage.getUser(community.creatorId);
+          return {
+            ...community,
+            creatorName: creator ? `${creator.firstName || ''} ${creator.lastName || ''}`.trim() || creator.email : 'Unknown',
+          };
+        })
+      );
+      
+      res.json(communitiesWithCreator);
+    } catch (error) {
+      console.error("Error searching communities:", error);
+      res.status(500).json({ message: "Failed to search communities" });
+    }
+  });
+
+  // Get community details
+  app.get('/api/communities/:id', async (req, res) => {
+    try {
+      const community = await storage.getCommunity(req.params.id);
+      
+      if (!community) {
+        return res.status(404).json({ message: "Community not found" });
+      }
+
+      // Get creator data
+      const creator = await storage.getUser(community.creatorId);
+      
+      res.json({
+        ...community,
+        creatorName: creator ? `${creator.firstName || ''} ${creator.lastName || ''}`.trim() || creator.email : 'Unknown',
+      });
+    } catch (error) {
+      console.error("Error fetching community:", error);
+      res.status(500).json({ message: "Failed to fetch community" });
+    }
+  });
+
+  // Get communities by category
+  app.get('/api/communities/category/:category', async (req, res) => {
+    try {
+      const communities = await storage.getCommunitiesByCategory(req.params.category);
+      
+      // Get creator data for each community
+      const communitiesWithCreator = await Promise.all(
+        communities.map(async (community) => {
+          const creator = await storage.getUser(community.creatorId);
+          return {
+            ...community,
+            creatorName: creator ? `${creator.firstName || ''} ${creator.lastName || ''}`.trim() || creator.email : 'Unknown',
+          };
+        })
+      );
+      
+      res.json(communitiesWithCreator);
+    } catch (error) {
+      console.error("Error fetching communities by category:", error);
+      res.status(500).json({ message: "Failed to fetch communities" });
+    }
+  });
+
+  // Get user's communities
+  app.get('/api/communities/user/:userId', async (req, res) => {
+    try {
+      const communities = await storage.getUserCommunities(req.params.userId);
+      
+      // Get creator data for each community
+      const communitiesWithCreator = await Promise.all(
+        communities.map(async (community) => {
+          const creator = await storage.getUser(community.creatorId);
+          return {
+            ...community,
+            creatorName: creator ? `${creator.firstName || ''} ${creator.lastName || ''}`.trim() || creator.email : 'Unknown',
+          };
+        })
+      );
+      
+      res.json(communitiesWithCreator);
+    } catch (error) {
+      console.error("Error fetching user communities:", error);
+      res.status(500).json({ message: "Failed to fetch user communities" });
+    }
+  });
+
+  // Update community (creator/admin only)
+  app.patch('/api/communities/:id', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const community = await storage.getCommunity(req.params.id);
+      
+      if (!community) {
+        return res.status(404).json({ message: "Community not found" });
+      }
+
+      // Check if user is creator or admin
+      const members = await storage.getCommunityMembers(req.params.id);
+      const userMember = members.find(m => m.userId === userId);
+      const isCreator = community.creatorId === userId;
+      const isAdmin = userMember?.role === 'admin';
+
+      if (!isCreator && !isAdmin) {
+        return res.status(403).json({ message: "Only community creator or admins can update community" });
+      }
+
+      await storage.updateCommunity(req.params.id, req.body);
+      res.json({ message: "Community updated successfully" });
+    } catch (error) {
+      console.error("Error updating community:", error);
+      res.status(500).json({ message: "Failed to update community" });
+    }
+  });
+
+  // Delete community (creator only)
+  app.delete('/api/communities/:id', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const community = await storage.getCommunity(req.params.id);
+      
+      if (!community) {
+        return res.status(404).json({ message: "Community not found" });
+      }
+
+      // Check if user is creator
+      if (community.creatorId !== userId) {
+        return res.status(403).json({ message: "Only community creator can delete community" });
+      }
+
+      await storage.deleteCommunity(req.params.id);
+      res.json({ message: "Community deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting community:", error);
+      res.status(500).json({ message: "Failed to delete community" });
+    }
+  });
+
+  // Join a community
+  app.post('/api/communities/:id/join', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const community = await storage.getCommunity(req.params.id);
+      
+      if (!community) {
+        return res.status(404).json({ message: "Community not found" });
+      }
+
+      // Check if already a member
+      const isMember = await storage.isMemberOfCommunity(userId, req.params.id);
+      if (isMember) {
+        return res.status(400).json({ message: "Already a member of this community" });
+      }
+
+      const membership = await storage.joinCommunity(userId, req.params.id);
+
+      // Create notification
+      await storage.createNotification({
+        userId,
+        title: 'Joined Community',
+        message: `You have successfully joined "${community.name}"`,
+        type: 'complaint_update',
+        relatedId: community.id
+      });
+
+      res.json(membership);
+    } catch (error) {
+      console.error("Error joining community:", error);
+      res.status(500).json({ message: "Failed to join community" });
+    }
+  });
+
+  // Leave a community
+  app.post('/api/communities/:id/leave', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const community = await storage.getCommunity(req.params.id);
+      
+      if (!community) {
+        return res.status(404).json({ message: "Community not found" });
+      }
+
+      // Check if user is the creator
+      if (community.creatorId === userId) {
+        return res.status(400).json({ message: "Community creator cannot leave. Please delete the community instead." });
+      }
+
+      await storage.leaveCommunity(userId, req.params.id);
+
+      // Create notification
+      await storage.createNotification({
+        userId,
+        title: 'Left Community',
+        message: `You have left "${community.name}"`,
+        type: 'complaint_update',
+        relatedId: community.id
+      });
+
+      res.json({ message: "Successfully left community" });
+    } catch (error) {
+      console.error("Error leaving community:", error);
+      res.status(500).json({ message: "Failed to leave community" });
+    }
+  });
+
+  // Get community members
+  app.get('/api/communities/:id/members', async (req, res) => {
+    try {
+      const members = await storage.getCommunityMembers(req.params.id);
+      res.json(members);
+    } catch (error) {
+      console.error("Error fetching community members:", error);
+      res.status(500).json({ message: "Failed to fetch community members" });
+    }
+  });
+
+  // Update member role (admin only)
+  app.patch('/api/communities/:communityId/members/:userId', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const requesterId = getUserId(req);
+      const { communityId, userId } = req.params;
+      const { role } = req.body;
+
+      if (!role) {
+        return res.status(400).json({ message: "Role is required" });
+      }
+
+      const community = await storage.getCommunity(communityId);
+      
+      if (!community) {
+        return res.status(404).json({ message: "Community not found" });
+      }
+
+      // Check if requester is creator or admin
+      const members = await storage.getCommunityMembers(communityId);
+      const requesterMember = members.find(m => m.userId === requesterId);
+      const isCreator = community.creatorId === requesterId;
+      const isAdmin = requesterMember?.role === 'admin';
+
+      if (!isCreator && !isAdmin) {
+        return res.status(403).json({ message: "Only community creator or admins can update member roles" });
+      }
+
+      await storage.updateMemberRole(communityId, userId, role);
+
+      // Create notification for the affected user
+      const targetUser = await storage.getUser(userId);
+      if (targetUser) {
+        await storage.createNotification({
+          userId,
+          title: 'Role Updated',
+          message: `Your role in "${community.name}" has been updated to ${role}`,
+          type: 'alert',
+          relatedId: communityId
+        });
+      }
+
+      res.json({ message: "Member role updated successfully" });
+    } catch (error) {
+      console.error("Error updating member role:", error);
+      res.status(500).json({ message: "Failed to update member role" });
+    }
+  });
+
+  // ============================================
+  // OFFICIAL JOB ROUTES
+  // ============================================
+
+  // Create a new official job
+  app.post('/api/official-jobs', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const jobData = insertOfficialJobSchema.parse(req.body);
+      const job = await storage.createOfficialJob(jobData);
+
+      res.json(job);
+    } catch (error) {
+      console.error("Error creating official job:", error);
+      res.status(500).json({ message: "Failed to create official job" });
+    }
+  });
+
+  // Get all official jobs
+  app.get('/api/official-jobs', async (req, res) => {
+    try {
+      const jobs = await storage.getAllOfficialJobs();
+      res.json(jobs);
+    } catch (error) {
+      console.error("Error fetching official jobs:", error);
+      res.status(500).json({ message: "Failed to fetch official jobs" });
+    }
+  });
+
+  // Get job details
+  app.get('/api/official-jobs/:id', async (req, res) => {
+    try {
+      const job = await storage.getOfficialJob(req.params.id);
+      
+      if (!job) {
+        return res.status(404).json({ message: "Job not found" });
+      }
+
+      res.json(job);
+    } catch (error) {
+      console.error("Error fetching job:", error);
+      res.status(500).json({ message: "Failed to fetch job" });
+    }
+  });
+
+  // Get jobs by status
+  app.get('/api/official-jobs/status/:status', async (req, res) => {
+    try {
+      const jobs = await storage.getOfficialJobsByStatus(req.params.status);
+      res.json(jobs);
+    } catch (error) {
+      console.error("Error fetching jobs by status:", error);
+      res.status(500).json({ message: "Failed to fetch jobs" });
+    }
+  });
+
+  // Get jobs assigned to an official
+  app.get('/api/official-jobs/assigned/:officialId', async (req, res) => {
+    try {
+      const jobs = await storage.getAssignedJobs(req.params.officialId);
+      res.json(jobs);
+    } catch (error) {
+      console.error("Error fetching assigned jobs:", error);
+      res.status(500).json({ message: "Failed to fetch assigned jobs" });
+    }
+  });
+
+  // Update job details
+  app.patch('/api/official-jobs/:id', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const job = await storage.getOfficialJob(req.params.id);
+      
+      if (!job) {
+        return res.status(404).json({ message: "Job not found" });
+      }
+
+      await storage.updateOfficialJob(req.params.id, req.body);
+      res.json({ message: "Job updated successfully" });
+    } catch (error) {
+      console.error("Error updating job:", error);
+      res.status(500).json({ message: "Failed to update job" });
+    }
+  });
+
+  // Assign job to official
+  app.patch('/api/official-jobs/:id/assign', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const { officialId } = req.body;
+
+      if (!officialId) {
+        return res.status(400).json({ message: "Official ID is required" });
+      }
+
+      const job = await storage.getOfficialJob(req.params.id);
+      
+      if (!job) {
+        return res.status(404).json({ message: "Job not found" });
+      }
+
+      await storage.assignJobToOfficial(req.params.id, officialId);
+
+      // Send notification to the assigned official
+      await storage.createNotification({
+        userId: officialId,
+        title: 'New Job Assignment',
+        message: `You have been assigned a new job: "${job.title}"`,
+        type: 'alert',
+        relatedId: job.id
+      });
+
+      res.json({ message: "Job assigned successfully" });
+    } catch (error) {
+      console.error("Error assigning job:", error);
+      res.status(500).json({ message: "Failed to assign job" });
+    }
+  });
+
+  // Update job status
+  app.patch('/api/official-jobs/:id/status', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const { status, actualHours } = req.body;
+
+      if (!status) {
+        return res.status(400).json({ message: "Status is required" });
+      }
+
+      const job = await storage.getOfficialJob(req.params.id);
+      
+      if (!job) {
+        return res.status(404).json({ message: "Job not found" });
+      }
+
+      await storage.updateJobStatus(req.params.id, status, actualHours);
+
+      // If job is completed and assigned to someone, send notification
+      if (status === 'completed' && job.assignedOfficialId) {
+        await storage.createNotification({
+          userId: job.assignedOfficialId,
+          title: 'Job Completed',
+          message: `Job "${job.title}" has been marked as completed`,
+          type: 'status_change',
+          relatedId: job.id
+        });
+      }
+
+      res.json({ message: "Job status updated successfully" });
+    } catch (error) {
+      console.error("Error updating job status:", error);
+      res.status(500).json({ message: "Failed to update job status" });
+    }
+  });
+
+  // Get all officials (users with role='official')
+  app.get('/api/officials/list', async (req, res) => {
+    try {
+      const allUsers = await db.select().from(users).where(eq(users.role, 'official'));
+      
+      const officials = allUsers.map(user => ({
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        profileImageUrl: user.profileImageUrl
+      }));
+      
+      res.json(officials);
+    } catch (error) {
+      console.error("Error fetching officials:", error);
+      res.status(500).json({ message: "Failed to fetch officials" });
+    }
+  });
+
+  // ============================================
+  // TOKEN BONUS ROUTES
+  // ============================================
+
+  // Get user's active token bonuses
+  app.get('/api/token-bonuses', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const bonuses = await storage.getActiveTokenBonuses(userId);
+      res.json(bonuses);
+    } catch (error) {
+      console.error("Error fetching active token bonuses:", error);
+      res.status(500).json({ message: "Failed to fetch token bonuses" });
+    }
+  });
+
+  // Get all user's token bonuses
+  app.get('/api/token-bonuses/all', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const bonuses = await storage.getUserTokenBonuses(userId);
+      res.json(bonuses);
+    } catch (error) {
+      console.error("Error fetching all token bonuses:", error);
+      res.status(500).json({ message: "Failed to fetch token bonuses" });
+    }
+  });
+
+  // Create token bonus (admin/system only)
+  app.post('/api/token-bonuses', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const requesterId = getUserId(req);
+      const requester = await storage.getUser(requesterId);
+
+      // Check if requester is an official (admin/system)
+      if (requester?.role !== 'official') {
+        return res.status(403).json({ message: "Only officials can create token bonuses" });
+      }
+
+      const { userId, bonusType, amount, description, expiresAt } = req.body;
+
+      if (!userId || !bonusType || !amount || !description) {
+        return res.status(400).json({ message: "userId, bonusType, amount, and description are required" });
+      }
+
+      const bonus = await storage.createTokenBonus({
+        userId,
+        bonusType,
+        amount,
+        description,
+        expiresAt: expiresAt ? new Date(expiresAt) : undefined
+      });
+
+      // Award the tokens immediately
+      await storage.awardTokens(userId, amount, bonusType, bonus.id);
+
+      // Send notification to user
+      await storage.createNotification({
+        userId,
+        title: 'Token Bonus Received',
+        message: `You received a ${bonusType} bonus: ${description} (+${amount} tokens)`,
+        type: 'alert',
+        relatedId: bonus.id
+      });
+
+      res.json(bonus);
+    } catch (error) {
+      console.error("Error creating token bonus:", error);
+      res.status(500).json({ message: "Failed to create token bonus" });
+    }
+  });
+
+  // ============================================
+  // ACHIEVEMENT ROUTES
+  // ============================================
+
+  // Get user's achievements
+  app.get('/api/achievements', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const achievements = await storage.getUserAchievements(userId);
+      res.json(achievements);
+    } catch (error) {
+      console.error("Error fetching achievements:", error);
+      res.status(500).json({ message: "Failed to fetch achievements" });
+    }
+  });
+
+  // Award achievement to user (system/admin only)
+  app.post('/api/achievements', isAuthenticatedFlexible, async (req: any, res) => {
+    try {
+      const requesterId = getUserId(req);
+      const requester = await storage.getUser(requesterId);
+
+      // Check if requester is an official (admin/system)
+      if (requester?.role !== 'official') {
+        return res.status(403).json({ message: "Only officials can award achievements" });
+      }
+
+      const { userId, achievementType, title, description, iconUrl, tokensAwarded } = req.body;
+
+      if (!userId || !achievementType || !title || !description) {
+        return res.status(400).json({ message: "userId, achievementType, title, and description are required" });
+      }
+
+      // Check if user already has this achievement
+      const hasAchievement = await storage.hasAchievement(userId, achievementType);
+      if (hasAchievement) {
+        return res.status(400).json({ message: "User already has this achievement" });
+      }
+
+      const achievement = await storage.awardAchievement(userId, {
+        achievementType,
+        title,
+        description,
+        iconUrl,
+        tokensAwarded: tokensAwarded || 0
+      });
+
+      // Award tokens if specified
+      if (tokensAwarded && tokensAwarded > 0) {
+        await storage.awardTokens(userId, tokensAwarded, 'achievement_earned', achievement.id);
+      }
+
+      // Send notification to user
+      await storage.createNotification({
+        userId,
+        title: '🏆 Achievement Unlocked!',
+        message: `You earned the "${title}" achievement${tokensAwarded ? ` and received ${tokensAwarded} tokens` : ''}!`,
+        type: 'alert',
+        relatedId: achievement.id
+      });
+
+      res.json(achievement);
+    } catch (error) {
+      console.error("Error awarding achievement:", error);
+      res.status(500).json({ message: "Failed to award achievement" });
     }
   });
 

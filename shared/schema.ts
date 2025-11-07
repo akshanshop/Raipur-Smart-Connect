@@ -155,6 +155,75 @@ export const rewardRedemptions = pgTable("reward_redemptions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const communities = pgTable("communities", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  description: text("description").notNull(),
+  category: varchar("category").notNull(), // neighborhood, interest, district, etc.
+  location: text("location"),
+  latitude: decimal("latitude", { precision: 10, scale: 8 }),
+  longitude: decimal("longitude", { precision: 11, scale: 8 }),
+  creatorId: varchar("creator_id").references(() => users.id).notNull(),
+  memberCount: integer("member_count").default(0),
+  imageUrl: varchar("image_url"),
+  isActive: boolean("is_active").default(true),
+  isPrivate: boolean("is_private").default(false),
+  rules: text("rules"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const communityMembers = pgTable("community_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  communityId: varchar("community_id").references(() => communities.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  role: varchar("role").default("member").notNull(), // admin, moderator, member
+  joinedAt: timestamp("joined_at").defaultNow(),
+});
+
+export const officialJobs = pgTable("official_jobs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title").notNull(),
+  description: text("description").notNull(),
+  category: varchar("category").notNull(), // infrastructure, sanitation, safety, etc.
+  priority: varchar("priority").notNull(), // low, medium, high, urgent
+  location: text("location").notNull(),
+  latitude: decimal("latitude", { precision: 10, scale: 8 }).notNull(),
+  longitude: decimal("longitude", { precision: 11, scale: 8 }).notNull(),
+  assignedOfficialId: varchar("assigned_official_id").references(() => users.id),
+  status: varchar("status").default("pending").notNull(), // pending, in_progress, completed, cancelled
+  estimatedHours: integer("estimated_hours").default(1),
+  actualHours: integer("actual_hours"),
+  deadline: timestamp("deadline"),
+  completedAt: timestamp("completed_at"),
+  relatedComplaintId: varchar("related_complaint_id").references(() => complaints.id),
+  communityId: varchar("community_id").references(() => communities.id),
+  mediaUrls: text("media_urls").array(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const tokenBonuses = pgTable("token_bonuses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  bonusType: varchar("bonus_type").notNull(), // streak, milestone, community_leader, etc.
+  amount: integer("amount").notNull(),
+  description: text("description").notNull(),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const userAchievements = pgTable("user_achievements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  achievementType: varchar("achievement_type").notNull(), // first_complaint, community_creator, top_contributor, etc.
+  title: varchar("title").notNull(),
+  description: text("description").notNull(),
+  iconUrl: varchar("icon_url"),
+  tokensAwarded: integer("tokens_awarded").default(0),
+  earnedAt: timestamp("earned_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   complaints: many(complaints),
@@ -165,6 +234,11 @@ export const usersRelations = relations(users, ({ many }) => ({
   chatMessages: many(chatMessages),
   tokenTransactions: many(tokenTransactions),
   rewardRedemptions: many(rewardRedemptions),
+  communitiesCreated: many(communities),
+  communityMemberships: many(communityMembers),
+  assignedJobs: many(officialJobs),
+  tokenBonuses: many(tokenBonuses),
+  achievements: many(userAchievements),
 }));
 
 export const complaintsRelations = relations(complaints, ({ one, many }) => ({
@@ -251,6 +325,55 @@ export const rewardRedemptionsRelations = relations(rewardRedemptions, ({ one })
   }),
 }));
 
+export const communitiesRelations = relations(communities, ({ one, many }) => ({
+  creator: one(users, {
+    fields: [communities.creatorId],
+    references: [users.id],
+  }),
+  members: many(communityMembers),
+  jobs: many(officialJobs),
+}));
+
+export const communityMembersRelations = relations(communityMembers, ({ one }) => ({
+  community: one(communities, {
+    fields: [communityMembers.communityId],
+    references: [communities.id],
+  }),
+  user: one(users, {
+    fields: [communityMembers.userId],
+    references: [users.id],
+  }),
+}));
+
+export const officialJobsRelations = relations(officialJobs, ({ one }) => ({
+  assignedOfficial: one(users, {
+    fields: [officialJobs.assignedOfficialId],
+    references: [users.id],
+  }),
+  relatedComplaint: one(complaints, {
+    fields: [officialJobs.relatedComplaintId],
+    references: [complaints.id],
+  }),
+  community: one(communities, {
+    fields: [officialJobs.communityId],
+    references: [communities.id],
+  }),
+}));
+
+export const tokenBonusesRelations = relations(tokenBonuses, ({ one }) => ({
+  user: one(users, {
+    fields: [tokenBonuses.userId],
+    references: [users.id],
+  }),
+}));
+
+export const userAchievementsRelations = relations(userAchievements, ({ one }) => ({
+  user: one(users, {
+    fields: [userAchievements.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertComplaintSchema = createInsertSchema(complaints).omit({
   id: true,
@@ -316,6 +439,37 @@ export const insertRewardRedemptionSchema = createInsertSchema(rewardRedemptions
   createdAt: true,
 });
 
+export const insertCommunitySchema = createInsertSchema(communities).omit({
+  id: true,
+  creatorId: true,
+  memberCount: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCommunityMemberSchema = createInsertSchema(communityMembers).omit({
+  id: true,
+  joinedAt: true,
+});
+
+export const insertOfficialJobSchema = createInsertSchema(officialJobs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTokenBonusSchema = createInsertSchema(tokenBonuses).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+});
+
+export const insertUserAchievementSchema = createInsertSchema(userAchievements).omit({
+  id: true,
+  userId: true,
+  earnedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -335,3 +489,13 @@ export type InsertReward = z.infer<typeof insertRewardSchema>;
 export type Reward = typeof rewards.$inferSelect;
 export type InsertRewardRedemption = z.infer<typeof insertRewardRedemptionSchema>;
 export type RewardRedemption = typeof rewardRedemptions.$inferSelect;
+export type InsertCommunity = z.infer<typeof insertCommunitySchema>;
+export type Community = typeof communities.$inferSelect;
+export type InsertCommunityMember = z.infer<typeof insertCommunityMemberSchema>;
+export type CommunityMember = typeof communityMembers.$inferSelect;
+export type InsertOfficialJob = z.infer<typeof insertOfficialJobSchema>;
+export type OfficialJob = typeof officialJobs.$inferSelect;
+export type InsertTokenBonus = z.infer<typeof insertTokenBonusSchema>;
+export type TokenBonus = typeof tokenBonuses.$inferSelect;
+export type InsertUserAchievement = z.infer<typeof insertUserAchievementSchema>;
+export type UserAchievement = typeof userAchievements.$inferSelect;

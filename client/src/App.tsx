@@ -9,6 +9,7 @@ import Landing from "@/pages/landing";
 import Home from "@/pages/home";
 import Complaints from "@/pages/complaints";
 import Community from "@/pages/community";
+import Communities from "@/pages/communities";
 import Dashboard from "@/pages/dashboard";
 import OfficialsDashboard from "@/pages/officials-dashboard";
 import Rewards from "@/pages/rewards";
@@ -43,6 +44,7 @@ function Router() {
           <Route path="/" component={isOfficial ? OfficialsDashboard : Home} />
           <Route path="/complaints" component={Complaints} />
           <Route path="/community" component={Community} />
+          <Route path="/communities" component={Communities} />
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/rewards" component={Rewards} />
           <Route path="/officials">

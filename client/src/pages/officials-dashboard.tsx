@@ -1,858 +1,1401 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState, useEffect, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
-  FileText, CheckCircle, Clock, AlertTriangle, 
-  MapPin, Trash2, Upload, Search, Filter, LogOut
+  ClipboardList, Clock, CheckCircle2, AlertTriangle, 
+  MapPin, Plus, Filter, Search, Calendar,
+  TrendingUp, Target, Zap, BarChart3, Play, 
+  FileText, User, Building2, LogOut, Bell, MoreVertical, X
 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { format, formatDistance, isPast, differenceInHours, isWithinInterval, startOfWeek, startOfMonth } from "date-fns";
 import OfficialsNotificationPanel from "@/components/officials-notification-panel";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import "leaflet.heat";
 
-interface DashboardStats {
-  total: number;
-  solved: number;
-  pending: number;
-  byPriority: {
-    urgent: number;
-    high: number;
-    medium: number;
-    low: number;
-  };
-}
-
-interface IssueItem {
+interface OfficialJob {
   id: string;
   title: string;
   description: string;
   category: string;
   priority: string;
-  status: string;
   location: string;
-  ticketNumber: string;
-  userName: string;
-  commentsCount: number;
-  upvotesCount: number;
-}
-
-interface HeatmapPoint {
-  id: string;
-  title: string;
-  category: string;
-  priority: string;
+  latitude: string;
+  longitude: string;
+  assignedOfficialId: string | null;
   status: string;
-  lat: number;
-  lng: number;
+  estimatedHours: number;
+  actualHours: number | null;
+  deadline: string | null;
+  completedAt: string | null;
+  relatedComplaintId: string | null;
+  communityId: string | null;
+  mediaUrls: string[] | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
-function MapController({ center, zoom }: { center: [number, number], zoom: number }) {
-  const map = useMap();
-  
-  useEffect(() => {
-    map.setView(center, zoom);
-  }, [center, zoom, map]);
-  
-  return null;
+interface Official {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+  profileImageUrl: string | null;
 }
 
-function HeatmapLayer({ points }: { points: Array<[number, number, number]> }) {
-  const map = useMap();
-  
-  useEffect(() => {
-    if (points.length === 0) return;
-    
-    // @ts-ignore - leaflet.heat types
-    const heatLayer = L.heatLayer(points, {
-      radius: 30,
-      blur: 25,
-      maxZoom: 17,
-      max: 4,
-      gradient: {
-        0.0: '#22c55e',
-        0.5: '#f97316', 
-        0.75: '#ef4444',
-        1.0: '#dc2626'
-      }
-    }).addTo(map);
-    
-    return () => {
-      map.removeLayer(heatLayer);
-    };
-  }, [points, map]);
-  
-  return null;
+interface Community {
+  id: string;
+  name: string;
+  category: string;
 }
+
+const jobFormSchema = z.object({
+  title: z.string().min(5, "Title must be at least 5 characters"),
+  description: z.string().min(10, "Description must be at least 10 characters"),
+  category: z.string().min(1, "Category is required"),
+  priority: z.string().min(1, "Priority is required"),
+  location: z.string().min(3, "Location is required"),
+  latitude: z.string().optional(),
+  longitude: z.string().optional(),
+  estimatedHours: z.coerce.number().min(0.5, "Must be at least 0.5 hours").default(1),
+  deadline: z.string().optional(),
+  assignedOfficialId: z.string().optional(),
+  relatedComplaintId: z.string().optional(),
+  communityId: z.string().optional(),
+});
+
+type JobFormData = z.infer<typeof jobFormSchema>;
+
+const completeJobSchema = z.object({
+  actualHours: z.coerce.number().min(0.1, "Must be at least 0.1 hours"),
+});
+
+type CompleteJobData = z.infer<typeof completeJobSchema>;
 
 export default function OfficialsDashboard() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("assigned");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
-  const [selectedIssue, setSelectedIssue] = useState<IssueItem | null>(null);
-  const [mapViewMode, setMapViewMode] = useState<"heatmap" | "individual" | "density">("individual");
-  const [mapCenter, setMapCenter] = useState<[number, number]>([21.2514, 81.6296]);
-  const [mapZoom, setMapZoom] = useState(12);
-  const mapRef = useRef<L.Map | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [assignedFilter, setAssignedFilter] = useState("all");
+  const [selectedJob, setSelectedJob] = useState<OfficialJob | null>(null);
+  const [completingJob, setCompletingJob] = useState<OfficialJob | null>(null);
 
-  // Scroll to top when page loads
+  // Scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  // Fetch dashboard stats
-  const { data: stats } = useQuery<DashboardStats>({
-    queryKey: ["/api/officials/dashboard/stats"],
+  // Fetch all jobs
+  const { data: allJobs = [], isLoading: jobsLoading } = useQuery<OfficialJob[]>({
+    queryKey: ["/api/official-jobs"],
   });
 
-  // Fetch all issues
-  const { data: issues = [], isLoading: issuesLoading } = useQuery<IssueItem[]>({
-    queryKey: ["/api/officials/issues"],
+  // Fetch assigned jobs
+  const { data: assignedJobs = [], isLoading: assignedJobsLoading } = useQuery<OfficialJob[]>({
+    queryKey: ["/api/official-jobs/assigned", user?.id],
+    enabled: !!user?.id,
   });
 
-  // Fetch heatmap data
-  const { data: heatmapData = [] } = useQuery<HeatmapPoint[]>({
-    queryKey: ["/api/officials/dashboard/heatmap"],
+  // Fetch officials list
+  const { data: officials = [] } = useQuery<Official[]>({
+    queryKey: ["/api/officials/list"],
   });
 
-  // Delete issue mutation
-  const deleteIssueMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await apiRequest("DELETE", `/api/officials/issues/${id}`);
+  // Fetch communities
+  const { data: communities = [] } = useQuery<Community[]>({
+    queryKey: ["/api/communities"],
+  });
+
+  // Create job form
+  const createJobForm = useForm<JobFormData>({
+    resolver: zodResolver(jobFormSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      category: "",
+      priority: "",
+      location: "",
+      latitude: "",
+      longitude: "",
+      estimatedHours: 1,
+      deadline: "",
+      assignedOfficialId: "",
+      relatedComplaintId: "",
+      communityId: "",
+    },
+  });
+
+  // Complete job form
+  const completeJobForm = useForm<CompleteJobData>({
+    resolver: zodResolver(completeJobSchema),
+    defaultValues: {
+      actualHours: 0,
+    },
+  });
+
+  // Create job mutation
+  const createJobMutation = useMutation({
+    mutationFn: async (data: JobFormData) => {
+      return await apiRequest("POST", "/api/official-jobs", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/officials/issues"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/officials/dashboard/stats"] });
-      toast({ title: "Issue deleted successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/official-jobs"] });
+      toast({ title: "✓ Job created successfully" });
+      createJobForm.reset();
+      setActiveTab("all");
     },
     onError: () => {
-      toast({ title: "Failed to delete issue", variant: "destructive" });
+      toast({ title: "Failed to create job", variant: "destructive" });
     },
   });
 
-  // Resolve issue mutation
-  const resolveIssueMutation = useMutation({
-    mutationFn: async ({ id, formData }: { id: string; formData: FormData }) => {
-      const response = await fetch(`/api/officials/issues/${id}/resolve`, {
-        method: "POST",
-        body: formData,
+  // Start job mutation
+  const startJobMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      return await apiRequest("PATCH", `/api/official-jobs/${jobId}/status`, {
+        status: "in_progress",
       });
-      if (!response.ok) throw new Error("Failed to resolve issue");
-      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/officials/issues"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/officials/dashboard/stats"] });
-      setSelectedIssue(null);
-      toast({ title: "Issue resolved successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/official-jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/official-jobs/assigned"] });
+      toast({ title: "✓ Job started" });
     },
     onError: () => {
-      toast({ title: "Failed to resolve issue", variant: "destructive" });
+      toast({ title: "Failed to start job", variant: "destructive" });
     },
   });
 
-  // Filter issues
-  const filteredIssues = issues.filter((issue) => {
-    const matchesSearch = issue.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         issue.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || issue.status === statusFilter;
-    const matchesPriority = priorityFilter === "all" || issue.priority === priorityFilter;
-    return matchesSearch && matchesStatus && matchesPriority;
+  // Complete job mutation
+  const completeJobMutation = useMutation({
+    mutationFn: async ({ jobId, actualHours }: { jobId: string; actualHours: number }) => {
+      return await apiRequest("PATCH", `/api/official-jobs/${jobId}/status`, {
+        status: "completed",
+        actualHours,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/official-jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/official-jobs/assigned"] });
+      toast({ title: "✓ Job completed successfully" });
+      setCompletingJob(null);
+      completeJobForm.reset();
+    },
+    onError: () => {
+      toast({ title: "Failed to complete job", variant: "destructive" });
+    },
+  });
+
+  // Assign to me mutation
+  const assignToMeMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      return await apiRequest("PATCH", `/api/official-jobs/${jobId}/assign`, {
+        officialId: user?.id,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/official-jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/official-jobs/assigned"] });
+      toast({ title: "✓ Job assigned to you" });
+    },
+    onError: () => {
+      toast({ title: "Failed to assign job", variant: "destructive" });
+    },
+  });
+
+  // Cancel job mutation
+  const cancelJobMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      return await apiRequest("PATCH", `/api/official-jobs/${jobId}/status`, {
+        status: "cancelled",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/official-jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/official-jobs/assigned"] });
+      toast({ title: "✓ Job cancelled" });
+      setSelectedJob(null);
+    },
+    onError: () => {
+      toast({ title: "Failed to cancel job", variant: "destructive" });
+    },
+  });
+
+  // Use my location
+  const useMyLocation = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          createJobForm.setValue("latitude", position.coords.latitude.toString());
+          createJobForm.setValue("longitude", position.coords.longitude.toString());
+          toast({ title: "✓ Location captured" });
+        },
+        () => {
+          toast({ title: "Failed to get location", variant: "destructive" });
+        }
+      );
+    }
+  };
+
+  // Calculate stats
+  const stats = {
+    totalAssigned: assignedJobs.length,
+    pending: assignedJobs.filter(j => j.status === "pending").length,
+    inProgress: assignedJobs.filter(j => j.status === "in_progress").length,
+    completed: assignedJobs.filter(j => j.status === "completed").length,
+    completedThisWeek: assignedJobs.filter(j => 
+      j.status === "completed" && 
+      j.completedAt && 
+      isWithinInterval(new Date(j.completedAt), { start: startOfWeek(new Date()), end: new Date() })
+    ).length,
+    completedThisMonth: assignedJobs.filter(j => 
+      j.status === "completed" && 
+      j.completedAt && 
+      isWithinInterval(new Date(j.completedAt), { start: startOfMonth(new Date()), end: new Date() })
+    ).length,
+    overdue: assignedJobs.filter(j => 
+      j.deadline && 
+      isPast(new Date(j.deadline)) && 
+      j.status !== "completed" && 
+      j.status !== "cancelled"
+    ).length,
+    avgCompletionTime: (() => {
+      const completedWithTime = assignedJobs.filter(j => 
+        j.status === "completed" && j.actualHours
+      );
+      if (completedWithTime.length === 0) return 0;
+      const total = completedWithTime.reduce((sum, j) => sum + (j.actualHours || 0), 0);
+      return Math.round(total / completedWithTime.length * 10) / 10;
+    })(),
+    efficiency: (() => {
+      const completedWithBothTimes = assignedJobs.filter(j => 
+        j.status === "completed" && j.actualHours && j.estimatedHours
+      );
+      if (completedWithBothTimes.length === 0) return 100;
+      const totalEstimated = completedWithBothTimes.reduce((sum, j) => sum + j.estimatedHours, 0);
+      const totalActual = completedWithBothTimes.reduce((sum, j) => sum + (j.actualHours || 0), 0);
+      return Math.round((totalEstimated / totalActual) * 100);
+    })(),
+  };
+
+  // Filter jobs for "All Jobs" tab
+  const filteredAllJobs = allJobs.filter((job) => {
+    const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         job.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "all" || job.status === statusFilter;
+    const matchesPriority = priorityFilter === "all" || job.priority === priorityFilter;
+    const matchesCategory = categoryFilter === "all" || job.category === categoryFilter;
+    const matchesAssigned = assignedFilter === "all" || 
+                           (assignedFilter === "assigned" && job.assignedOfficialId) ||
+                           (assignedFilter === "unassigned" && !job.assignedOfficialId);
+    return matchesSearch && matchesStatus && matchesPriority && matchesCategory && matchesAssigned;
+  });
+
+  // Filter jobs for "Assigned to Me" tab
+  const filteredAssignedJobs = assignedJobs.filter((job) => {
+    const matchesStatus = statusFilter === "all" || job.status === statusFilter;
+    return matchesStatus;
+  }).sort((a, b) => {
+    // Sort by priority first (urgent > high > medium > low)
+    const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
+    const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 4;
+    const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 4;
+    
+    if (aPriority !== bPriority) return aPriority - bPriority;
+    
+    // Then by deadline (closer deadline first)
+    if (a.deadline && b.deadline) {
+      return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+    }
+    if (a.deadline) return -1;
+    if (b.deadline) return 1;
+    
+    // Finally by created date
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case "urgent": return "bg-red-500";
-      case "high": return "bg-orange-500";
-      case "medium": return "bg-yellow-500";
-      case "low": return "bg-green-500";
-      default: return "bg-gray-500";
+      case "urgent": return "bg-red-500 hover:bg-red-600";
+      case "high": return "bg-orange-500 hover:bg-orange-600";
+      case "medium": return "bg-yellow-500 hover:bg-yellow-600";
+      case "low": return "bg-green-500 hover:bg-green-600";
+      default: return "bg-gray-500 hover:bg-gray-600";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "resolved": return "bg-green-500";
+      case "completed": return "bg-green-500";
       case "in_progress": return "bg-blue-500";
-      case "open": return "bg-yellow-500";
-      case "closed": return "bg-gray-500";
+      case "pending": return "bg-yellow-500";
+      case "cancelled": return "bg-gray-500";
       default: return "bg-gray-500";
     }
   };
 
-  const handleResolve = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!selectedIssue) return;
-
-    const formData = new FormData(e.currentTarget);
-    resolveIssueMutation.mutate({ id: selectedIssue.id, formData });
-  };
-
-  const getMarkerColor = (status: string, priority: string) => {
-    // Green for resolved issues
-    if (status === 'resolved') {
-      return '#22c55e'; // green
+  const getDeadlineWarning = (deadline: string | null, status: string) => {
+    if (!deadline || status === "completed" || status === "cancelled") return null;
+    
+    const deadlineDate = new Date(deadline);
+    if (isPast(deadlineDate)) {
+      return { color: "text-red-600 dark:text-red-400", label: "OVERDUE", icon: AlertTriangle };
     }
     
-    // Color based on priority for active issues
-    switch (priority) {
-      case 'urgent':
-      case 'high':
-        return '#ef4444'; // red (>7 reports in area)
-      case 'medium':
-        return '#f97316'; // orange (3-7 reports in area)
-      case 'low':
-        return '#eab308'; // yellow (<3 reports in area)
-      default:
-        return '#6b7280';
+    const hoursUntil = differenceInHours(deadlineDate, new Date());
+    if (hoursUntil <= 24) {
+      return { color: "text-orange-600 dark:text-orange-400", label: "DUE SOON", icon: Clock };
+    }
+    
+    return null;
+  };
+
+  const formatTimeRemaining = (deadline: string | null) => {
+    if (!deadline) return "No deadline";
+    const deadlineDate = new Date(deadline);
+    if (isPast(deadlineDate)) {
+      return `Overdue by ${formatDistance(deadlineDate, new Date())}`;
+    }
+    return `${formatDistance(new Date(), deadlineDate)} left`;
+  };
+
+  const renderJobCard = (job: OfficialJob, showActions: boolean = true) => {
+    const warning = getDeadlineWarning(job.deadline, job.status);
+    const isAssigned = job.assignedOfficialId === user?.id;
+    const canStart = isAssigned && job.status === "pending";
+    const canComplete = isAssigned && job.status === "in_progress";
+    
+    return (
+      <Card 
+        key={job.id} 
+        className="hover:shadow-lg transition-all duration-200 border-l-4"
+        style={{ borderLeftColor: `var(--${job.priority})` }}
+        data-testid={`card-job-${job.id}`}
+      >
+        <CardHeader>
+          <div className="flex justify-between items-start gap-2">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-lg truncate" data-testid={`text-job-title-${job.id}`}>
+                {job.title}
+              </CardTitle>
+              <CardDescription className="line-clamp-2 mt-1" data-testid={`text-job-description-${job.id}`}>
+                {job.description}
+              </CardDescription>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSelectedJob(job)}
+              data-testid={`button-view-details-${job.id}`}
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="flex flex-wrap gap-2 mt-3">
+            <Badge className={getPriorityColor(job.priority)} data-testid={`badge-priority-${job.id}`}>
+              {job.priority.toUpperCase()}
+            </Badge>
+            <Badge className={getStatusColor(job.status)} data-testid={`badge-status-${job.id}`}>
+              {job.status.replace("_", " ").toUpperCase()}
+            </Badge>
+            <Badge variant="outline" data-testid={`badge-category-${job.id}`}>
+              {job.category}
+            </Badge>
+            {warning && (
+              <Badge variant="outline" className={warning.color} data-testid={`badge-warning-${job.id}`}>
+                <warning.icon className="h-3 w-3 mr-1" />
+                {warning.label}
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-3">
+          <div className="flex items-center text-sm text-muted-foreground" data-testid={`text-location-${job.id}`}>
+            <MapPin className="h-4 w-4 mr-2" />
+            {job.location}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div data-testid={`text-estimated-hours-${job.id}`}>
+              <div className="text-muted-foreground">Estimated</div>
+              <div className="font-semibold">{job.estimatedHours}h</div>
+            </div>
+            <div data-testid={`text-actual-hours-${job.id}`}>
+              <div className="text-muted-foreground">Actual</div>
+              <div className="font-semibold">{job.actualHours ? `${job.actualHours}h` : "-"}</div>
+            </div>
+          </div>
+
+          {job.deadline && (
+            <div className="text-sm" data-testid={`text-deadline-${job.id}`}>
+              <div className="text-muted-foreground">Deadline</div>
+              <div className="font-semibold flex items-center gap-2 mt-1">
+                <Calendar className="h-4 w-4" />
+                {format(new Date(job.deadline), "PPp")}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {formatTimeRemaining(job.deadline)}
+              </div>
+            </div>
+          )}
+
+          {job.status === "in_progress" && job.deadline && (
+            <div>
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>Time Progress</span>
+                <span data-testid={`text-time-progress-${job.id}`}>
+                  {Math.min(100, Math.round(
+                    (differenceInHours(new Date(), new Date(job.createdAt)) / 
+                    (job.estimatedHours || 1)) * 100
+                  ))}%
+                </span>
+              </div>
+              <Progress 
+                value={Math.min(100, 
+                  (differenceInHours(new Date(), new Date(job.createdAt)) / 
+                  (job.estimatedHours || 1)) * 100
+                )}
+                data-testid={`progress-time-${job.id}`}
+              />
+            </div>
+          )}
+
+          {(job.relatedComplaintId || job.communityId) && (
+            <div className="flex flex-wrap gap-2 pt-2 border-t">
+              {job.relatedComplaintId && (
+                <Badge variant="secondary" data-testid={`badge-complaint-${job.id}`}>
+                  <FileText className="h-3 w-3 mr-1" />
+                  Complaint: {job.relatedComplaintId.slice(0, 8)}
+                </Badge>
+              )}
+              {job.communityId && (
+                <Badge variant="secondary" data-testid={`badge-community-${job.id}`}>
+                  <Building2 className="h-3 w-3 mr-1" />
+                  Community: {job.communityId.slice(0, 8)}
+                </Badge>
+              )}
+            </div>
+          )}
+        </CardContent>
+
+        {showActions && (
+          <CardFooter className="flex gap-2">
+            {!job.assignedOfficialId && (
+              <Button
+                onClick={() => assignToMeMutation.mutate(job.id)}
+                disabled={assignToMeMutation.isPending}
+                className="flex-1"
+                data-testid={`button-assign-to-me-${job.id}`}
+              >
+                <User className="h-4 w-4 mr-2" />
+                Assign to Me
+              </Button>
+            )}
+            
+            {canStart && (
+              <Button
+                onClick={() => startJobMutation.mutate(job.id)}
+                disabled={startJobMutation.isPending}
+                className="flex-1"
+                data-testid={`button-start-job-${job.id}`}
+              >
+                <Play className="h-4 w-4 mr-2" />
+                Start Job
+              </Button>
+            )}
+
+            {canComplete && (
+              <Button
+                onClick={() => setCompletingJob(job)}
+                className="flex-1"
+                data-testid={`button-complete-job-${job.id}`}
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Complete
+              </Button>
+            )}
+          </CardFooter>
+        )}
+      </Card>
+    );
+  };
+
+  const handleCreateJob = (data: JobFormData) => {
+    createJobMutation.mutate(data);
+  };
+
+  const handleCompleteJob = (data: CompleteJobData) => {
+    if (completingJob) {
+      completeJobMutation.mutate({
+        jobId: completingJob.id,
+        actualHours: data.actualHours,
+      });
     }
   };
-
-  const getDensityColor = (count: number) => {
-    if (count < 3) return '#eab308'; // yellow
-    if (count >= 3 && count <= 7) return '#f97316'; // orange
-    return '#ef4444'; // red (>7)
-  };
-
-  const createCustomIcon = (status: string, priority: string) => {
-    const color = getMarkerColor(status, priority);
-    const size = priority === 'urgent' || priority === 'high' ? 40 : priority === 'medium' ? 32 : 28;
-    
-    return L.divIcon({
-      className: 'custom-marker',
-      html: `
-        <svg width="${size}" height="${size * 1.4}" viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 0C7.58 0 4 3.58 4 8c0 5.25 8 16 8 16s8-10.75 8-16c0-4.42-3.58-8-8-8z" 
-                fill="${color}" 
-                stroke="white" 
-                stroke-width="2"
-                filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"/>
-          <circle cx="12" cy="8" r="3" fill="white" opacity="0.9"/>
-        </svg>
-      `,
-      iconSize: [size, size * 1.4],
-      iconAnchor: [size / 2, size * 1.4],
-      popupAnchor: [0, -size * 1.4],
-    });
-  };
-
-  const createDensityIcon = (count: number) => {
-    const color = getDensityColor(count);
-    const baseSize = Math.min(30 + (count * 2), 50);
-    const fontSize = Math.min(10 + count, 16);
-    
-    return L.divIcon({
-      className: 'custom-marker',
-      html: `
-        <svg width="${baseSize}" height="${baseSize * 1.4}" viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 0C7.58 0 4 3.58 4 8c0 5.25 8 16 8 16s8-10.75 8-16c0-4.42-3.58-8-8-8z" 
-                fill="${color}" 
-                stroke="white" 
-                stroke-width="2"
-                filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"/>
-          <text x="12" y="11" text-anchor="middle" fill="white" font-size="8" font-weight="bold">${count}</text>
-        </svg>
-      `,
-      iconSize: [baseSize, baseSize * 1.4],
-      iconAnchor: [baseSize / 2, baseSize * 1.4],
-      popupAnchor: [0, -baseSize * 1.4],
-    });
-  };
-
-  const getHeatmapWeight = (priority: string): number => {
-    switch (priority) {
-      case 'urgent':
-        return 4;
-      case 'high':
-        return 3;
-      case 'medium':
-        return 2;
-      case 'low':
-        return 1;
-      default:
-        return 1;
-    }
-  };
-
-  const heatmapPoints: Array<[number, number, number]> = heatmapData.map(point => [
-    point.lat,
-    point.lng,
-    getHeatmapWeight(point.priority)
-  ]);
-
-  // Group issues by location for density view (proximity-based grouping)
-  // Round coordinates to 3 decimal places (~100m precision) to group nearby issues
-  const locationGroups = heatmapData.reduce((acc, point) => {
-    const roundedLat = Math.round(point.lat * 1000) / 1000;
-    const roundedLng = Math.round(point.lng * 1000) / 1000;
-    const key = `${roundedLat},${roundedLng}`;
-    
-    if (!acc[key]) {
-      acc[key] = {
-        lat: roundedLat,
-        lng: roundedLng,
-        issues: [],
-        count: 0
-      };
-    }
-    acc[key].issues.push(point);
-    acc[key].count++;
-    return acc;
-  }, {} as Record<string, { lat: number; lng: number; issues: HeatmapPoint[]; count: number }>);
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Enhanced Header with Logout */}
+      {/* Header */}
       <header className="sticky top-0 z-50 glass-effect border-b border-border/50 cool-shadow">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap md:flex-nowrap justify-between items-center gap-2 py-2 sm:py-0 min-h-[64px] sm:h-20">
-            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary rounded-lg flex items-center justify-center magnetic-button flex-shrink-0">
-                <i className="fas fa-user-shield text-white text-base sm:text-lg"></i>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16 sm:h-20">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary rounded-lg flex items-center justify-center">
+                <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
-              <div className="min-w-0 max-w-[150px] sm:max-w-none">
-                <h1 className="text-base sm:text-2xl font-bold text-gradient truncate">Officials Dashboard</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Manage and resolve civic issues</p>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold" data-testid="text-dashboard-title">
+                  Job Management
+                </h1>
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
+                  Track and manage official jobs
+                </p>
               </div>
             </div>
             
-            <div className="flex items-center gap-1 sm:gap-4 flex-shrink-0">
-              {/* Notifications */}
+            <div className="flex items-center gap-2 sm:gap-4">
               <OfficialsNotificationPanel />
               
-              {/* User Profile */}
-              <div className="flex items-center gap-1 sm:gap-3 bg-card/30 backdrop-blur-sm rounded-lg px-2 sm:px-4 py-1.5 sm:py-2 border border-border/30">
+              <div className="flex items-center gap-2 bg-card/30 backdrop-blur-sm rounded-lg px-3 py-2 border border-border/30">
                 {user?.profileImageUrl ? (
                   <img 
                     src={user.profileImageUrl} 
                     alt="Profile" 
-                    className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-cover ring-2 ring-primary/20 flex-shrink-0"
-                    data-testid="img-official-avatar"
+                    className="w-8 h-8 rounded-lg object-cover ring-2 ring-primary/20"
+                    data-testid="img-profile"
                   />
                 ) : (
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center flex-shrink-0">
-                    <i className="fas fa-user text-primary text-sm sm:text-lg"></i>
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+                    <User className="h-4 w-4 text-primary" />
                   </div>
                 )}
-                <div className="hidden md:block min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate" data-testid="text-official-name">
-                    {user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user?.email || 'Official'}
+                <div className="hidden sm:block">
+                  <p className="text-sm font-medium" data-testid="text-user-name">
+                    {user?.firstName} {user?.lastName}
                   </p>
-                  <Badge className="bg-primary/20 text-primary border-primary/30">Official</Badge>
+                  <p className="text-xs text-muted-foreground">Official</p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => window.location.href = '/api/logout'}
-                  data-testid="button-official-logout"
-                  className="rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all duration-300 p-1.5 sm:p-2 flex-shrink-0"
-                  title="Sign out"
-                >
-                  <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  <span className="ml-2 hidden lg:inline">Logout</span>
-                </Button>
               </div>
+
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => window.location.href = '/api/logout'}
+                data-testid="button-logout"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
-        {/* Enhanced Hero Section */}
-        <div className="relative rounded-3xl overflow-hidden hero-enhanced p-8 text-white pattern-overlay cool-shadow animate-fade-in-up">
-          <div className="relative z-10">
-            <h2 className="text-3xl font-bold mb-2 flex items-center">
-              <i className="fas fa-chart-line mr-3 animate-float"></i>
-              Dashboard Overview
-            </h2>
-            <p className="text-lg opacity-95">
-              Monitor and manage all civic issues efficiently
-            </p>
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* Stats Section */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+          <Card data-testid="card-stat-total">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <ClipboardList className="h-4 w-4" />
+                <span className="text-xs font-medium">Total Assigned</span>
+              </div>
+              <p className="text-2xl font-bold" data-testid="text-stat-total">{stats.totalAssigned}</p>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-stat-completed-week">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <CheckCircle2 className="h-4 w-4" />
+                <span className="text-xs font-medium">This Week</span>
+              </div>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400" data-testid="text-stat-completed-week">
+                {stats.completedThisWeek}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-stat-completed-month">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <BarChart3 className="h-4 w-4" />
+                <span className="text-xs font-medium">This Month</span>
+              </div>
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400" data-testid="text-stat-completed-month">
+                {stats.completedThisMonth}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-stat-overdue">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="text-xs font-medium">Overdue</span>
+              </div>
+              <p className="text-2xl font-bold text-red-600 dark:text-red-400" data-testid="text-stat-overdue">
+                {stats.overdue}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-stat-avg-time">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <Clock className="h-4 w-4" />
+                <span className="text-xs font-medium">Avg. Time</span>
+              </div>
+              <p className="text-2xl font-bold" data-testid="text-stat-avg-time">{stats.avgCompletionTime}h</p>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-stat-efficiency">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <TrendingUp className="h-4 w-4" />
+                <span className="text-xs font-medium">Efficiency</span>
+              </div>
+              <p className="text-2xl font-bold text-purple-600 dark:text-purple-400" data-testid="text-stat-efficiency">
+                {stats.efficiency}%
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Enhanced Stats Cards with Animations */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card data-testid="card-stats-total" className="floating-card animate-fade-in-up delay-100 hover:border-primary/50 transition-all duration-300">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Issues</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gradient" data-testid="text-total-issues">{stats?.total ?? 0}</div>
-            </CardContent>
-          </Card>
-
-          <Card data-testid="card-stats-solved" className="floating-card animate-fade-in-up delay-200 hover:border-green-500/50 transition-all duration-300">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Solved</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-500" data-testid="text-solved-issues">{stats?.solved ?? 0}</div>
-            </CardContent>
-          </Card>
-
-          <Card data-testid="card-stats-pending" className="floating-card animate-fade-in-up delay-300 hover:border-yellow-500/50 transition-all duration-300">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending</CardTitle>
-              <Clock className="h-4 w-4 text-yellow-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-500" data-testid="text-pending-issues">{stats?.pending ?? 0}</div>
-            </CardContent>
-          </Card>
-
-          <Card data-testid="card-stats-urgent" className="floating-card animate-fade-in-up delay-400 hover:border-red-500/50 transition-all duration-300">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Urgent</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-red-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-500" data-testid="text-urgent-issues">{stats?.byPriority?.urgent ?? 0}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Priority Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Priority Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-500">{stats?.byPriority?.urgent ?? 0}</div>
-                <div className="text-sm text-muted-foreground">Urgent</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-orange-500">{stats?.byPriority?.high ?? 0}</div>
-                <div className="text-sm text-muted-foreground">High</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-500">{stats?.byPriority?.medium ?? 0}</div>
-                <div className="text-sm text-muted-foreground">Medium</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-500">{stats?.byPriority?.low ?? 0}</div>
-                <div className="text-sm text-muted-foreground">Low</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Enhanced Tabs for different views */}
-        <Tabs defaultValue="issues" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="issues" data-testid="tab-issues" className="transition-all duration-300">
-              <FileText className="h-4 w-4 mr-2" />
-              Issues List
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3" data-testid="tabs-job-management">
+            <TabsTrigger value="assigned" data-testid="tab-assigned">
+              Assigned to Me ({stats.totalAssigned})
             </TabsTrigger>
-            <TabsTrigger value="heatmap" data-testid="tab-heatmap" className="transition-all duration-300">
-              <MapPin className="h-4 w-4 mr-2" />
-              Data View
+            <TabsTrigger value="all" data-testid="tab-all">
+              All Jobs ({allJobs.length})
             </TabsTrigger>
-            <TabsTrigger value="map" data-testid="tab-map" className="transition-all duration-300">
-              <i className="fas fa-map mr-2"></i>
-              Live Map
+            <TabsTrigger value="create" data-testid="tab-create">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Job
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="issues" className="space-y-4">
-            {/* Filters */}
-            <Card>
-              <CardContent className="pt-4 sm:pt-6">
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search issues..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                      data-testid="input-search-issues"
-                    />
-                  </div>
-                  <div className="flex gap-2 sm:gap-4">
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-full sm:w-[180px]" data-testid="select-status-filter">
-                        <SelectValue placeholder="Filter by status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="open">Open</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="resolved">Resolved</SelectItem>
-                        <SelectItem value="closed">Closed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                      <SelectTrigger className="w-full sm:w-[180px]" data-testid="select-priority-filter">
-                        <SelectValue placeholder="Filter by priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Priorities</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="low">Low</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Assigned to Me Tab */}
+          <TabsContent value="assigned" className="space-y-4">
+            <div className="flex items-center gap-4">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-48" data-testid="select-status-filter">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
 
-            {/* Issues List */}
-            {issuesLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin" />
+              <div className="text-sm text-muted-foreground">
+                Showing {filteredAssignedJobs.length} of {assignedJobs.length} jobs
               </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredIssues.map((issue) => (
-                  <Card 
-                    key={issue.id} 
-                    data-testid={`card-issue-${issue.id}`}
-                    className={
-                      issue.status === 'resolved' || issue.status === 'closed'
-                        ? 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700'
-                        : 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700'
-                    }
-                  >
-                    <CardContent className="pt-4 sm:pt-6">
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-0">
-                        <div className="flex-1 space-y-2">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-base sm:text-lg font-semibold text-foreground" data-testid={`text-issue-title-${issue.id}`}>{issue.title}</h3>
-                            <Badge className={getPriorityColor(issue.priority)}>{issue.priority}</Badge>
-                            <Badge className={getStatusColor(issue.status)}>{issue.status}</Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground line-clamp-2 sm:line-clamp-none">{issue.description}</p>
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                              <span className="truncate">{issue.location}</span>
-                            </div>
-                            <span className="hidden sm:inline">•</span>
-                            <span className="truncate">Ticket: {issue.ticketNumber}</span>
-                            <span className="hidden sm:inline">•</span>
-                            <span className="truncate">By: {issue.userName}</span>
-                            <span className="hidden sm:inline">•</span>
-                            <div className="flex items-center gap-3">
-                              <span>{issue.commentsCount} comments</span>
-                              <span>•</span>
-                              <span>{issue.upvotesCount} upvotes</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 justify-end sm:justify-start">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setSelectedIssue(issue)}
-                                data-testid={`button-resolve-${issue.id}`}
-                                className="flex-1 sm:flex-none"
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                <span className="hidden sm:inline">Resolve</span>
-                                <span className="sm:hidden">Resolve</span>
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Resolve Issue</DialogTitle>
-                              </DialogHeader>
-                              <form onSubmit={handleResolve} className="space-y-4">
-                                <div>
-                                  <label className="text-sm font-medium">Resolution Notes</label>
-                                  <Input name="notes" placeholder="Enter resolution notes..." className="mt-1" />
-                                </div>
-                                <div>
-                                  <label className="text-sm font-medium">Upload Resolution Screenshots</label>
-                                  <Input type="file" name="screenshots" multiple accept="image/*" className="mt-1" />
-                                </div>
-                                <Button type="submit" disabled={resolveIssueMutation.isPending}>
-                                  {resolveIssueMutation.isPending ? (
-                                    <>
-                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                      Resolving...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Upload className="h-4 w-4 mr-2" />
-                                      Submit Resolution
-                                    </>
-                                  )}
-                                </Button>
-                              </form>
-                            </DialogContent>
-                          </Dialog>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => {
-                              if (confirm("Are you sure you want to delete this issue?")) {
-                                deleteIssueMutation.mutate(issue.id);
-                              }
-                            }}
-                            data-testid={`button-delete-${issue.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
+            </div>
+
+            {assignedJobsLoading ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                {[1, 2, 3, 4].map(i => (
+                  <Card key={i}>
+                    <CardHeader>
+                      <Skeleton className="h-6 w-3/4" />
+                      <Skeleton className="h-4 w-full mt-2" />
+                    </CardHeader>
+                    <CardContent>
+                      <Skeleton className="h-20 w-full" />
                     </CardContent>
                   </Card>
                 ))}
-                {filteredIssues.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No issues found
-                  </div>
-                )}
+              </div>
+            ) : filteredAssignedJobs.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-lg font-medium">No jobs assigned to you</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {statusFilter !== "all" 
+                      ? "Try changing the filter" 
+                      : "Check the 'All Jobs' tab to find jobs to work on"}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2" data-testid="grid-assigned-jobs">
+                {filteredAssignedJobs.map(job => renderJobCard(job, true))}
               </div>
             )}
           </TabsContent>
 
-          <TabsContent value="heatmap">
-            <Card className="floating-card">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <MapPin className="h-5 w-5 mr-2 text-primary" />
-                  Issues Data View
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    {heatmapData.length} issues with location data
+          {/* All Jobs Tab */}
+          <TabsContent value="all" className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search jobs by title or description..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                  data-testid="input-search-jobs"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-40" data-testid="select-all-status-filter">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger className="w-40" data-testid="select-priority-filter">
+                  <SelectValue placeholder="Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Priority</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-44" data-testid="select-category-filter">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="infrastructure">Infrastructure</SelectItem>
+                  <SelectItem value="sanitation">Sanitation</SelectItem>
+                  <SelectItem value="safety">Safety</SelectItem>
+                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                  <SelectItem value="emergency">Emergency</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={assignedFilter} onValueChange={setAssignedFilter}>
+                <SelectTrigger className="w-44" data-testid="select-assigned-filter">
+                  <SelectValue placeholder="Assignment" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Jobs</SelectItem>
+                  <SelectItem value="assigned">Assigned</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {(statusFilter !== "all" || priorityFilter !== "all" || categoryFilter !== "all" || assignedFilter !== "all" || searchQuery) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setStatusFilter("all");
+                    setPriorityFilter("all");
+                    setCategoryFilter("all");
+                    setAssignedFilter("all");
+                    setSearchQuery("");
+                  }}
+                  data-testid="button-clear-filters"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Clear Filters
+                </Button>
+              )}
+
+              <div className="text-sm text-muted-foreground self-center ml-auto">
+                Showing {filteredAllJobs.length} of {allJobs.length} jobs
+              </div>
+            </div>
+
+            {jobsLoading ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <Card key={i}>
+                    <CardHeader>
+                      <Skeleton className="h-6 w-3/4" />
+                      <Skeleton className="h-4 w-full mt-2" />
+                    </CardHeader>
+                    <CardContent>
+                      <Skeleton className="h-20 w-full" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : filteredAllJobs.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-lg font-medium">No jobs found</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Try adjusting your filters or search query
                   </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {heatmapData.map((point) => (
-                      <Card key={point.id} data-testid={`card-heatmap-${point.id}`} className="floating-card hover:border-primary/50 transition-all duration-300">
-                        <CardContent className="pt-6">
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <h4 className="font-semibold text-sm">{point.title}</h4>
-                              <Badge className={getPriorityColor(point.priority)}>{point.priority}</Badge>
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              <div>Category: {point.category}</div>
-                              <div>Status: {point.status}</div>
-                              <div>Location: {point.lat.toFixed(4)}, {point.lng.toFixed(4)}</div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                  {heatmapData.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No location data available
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" data-testid="grid-all-jobs">
+                {filteredAllJobs.map(job => renderJobCard(job, true))}
+              </div>
+            )}
           </TabsContent>
 
-          {/* New Map Tab */}
-          <TabsContent value="map">
-            <Card className="floating-card animate-fade-in-up">
+          {/* Create Job Tab */}
+          <TabsContent value="create">
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center text-gradient">
-                  <i className="fas fa-map-marked-alt mr-2"></i>
-                  Live Issues Map
-                </CardTitle>
+                <CardTitle data-testid="text-create-job-title">Create New Official Job</CardTitle>
+                <CardDescription>
+                  Fill out the form below to create a new job assignment
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {/* Map Controls */}
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2">
-                      <Button
-                        variant={mapViewMode === "individual" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setMapViewMode("individual")}
-                        data-testid="button-map-individual-view"
-                        className="modern-button w-full sm:w-auto"
-                      >
-                        <i className="fas fa-map-pin mr-2"></i>
-                        Individual
-                      </Button>
-                      <Button
-                        variant={mapViewMode === "heatmap" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setMapViewMode("heatmap")}
-                        data-testid="button-map-heatmap-view"
-                        className="modern-button w-full sm:w-auto"
-                      >
-                        <i className="fas fa-fire mr-2"></i>
-                        Heatmap
-                      </Button>
-                      <Button
-                        variant={mapViewMode === "density" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setMapViewMode("density")}
-                        data-testid="button-map-density-view"
-                        className="modern-button w-full sm:w-auto"
-                      >
-                        <i className="fas fa-layer-group mr-2"></i>
-                        By Count
-                      </Button>
-                    </div>
-                    <Badge variant="outline" className="pulse-glow self-start md:self-auto">
-                      {mapViewMode === "density" ? `${Object.keys(locationGroups).length} locations` : `${heatmapData.length} issues`} on map
-                    </Badge>
-                  </div>
+                <Form {...createJobForm}>
+                  <form onSubmit={createJobForm.handleSubmit(handleCreateJob)} className="space-y-4">
+                    <FormField
+                      control={createJobForm.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Title *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., Fix broken streetlight on Main St" {...field} data-testid="input-job-title" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  {/* Map Container */}
-                  <div className="h-96 bg-muted rounded-lg relative overflow-hidden" data-testid="officials-map-container">
-                    <MapContainer
-                      center={mapCenter}
-                      zoom={mapZoom}
-                      className="w-full h-full rounded-lg"
-                      ref={mapRef}
-                    >
-                      <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    <FormField
+                      control={createJobForm.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description *</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Provide detailed information about the job..." 
+                              rows={4}
+                              {...field} 
+                              data-testid="input-job-description"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <FormField
+                        control={createJobForm.control}
+                        name="category"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Category *</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-job-category">
+                                  <SelectValue placeholder="Select category" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="infrastructure">Infrastructure</SelectItem>
+                                <SelectItem value="sanitation">Sanitation</SelectItem>
+                                <SelectItem value="safety">Safety</SelectItem>
+                                <SelectItem value="maintenance">Maintenance</SelectItem>
+                                <SelectItem value="emergency">Emergency</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
-                      
-                      <MapController center={mapCenter} zoom={mapZoom} />
-                      
-                      {mapViewMode === "heatmap" ? (
-                        <HeatmapLayer points={heatmapPoints} />
-                      ) : mapViewMode === "density" ? (
-                        Object.values(locationGroups).map((group, index) => (
-                          <Marker
-                            key={`group-${index}`}
-                            position={[group.lat, group.lng]}
-                            icon={createDensityIcon(group.count)}
-                          >
-                            <Popup>
-                              <div className="p-2">
-                                <h3 className="font-semibold text-sm">{group.count} Reports at this location</h3>
-                                <div className="mt-2 max-h-40 overflow-y-auto space-y-1">
-                                  {group.issues.map((issue) => (
-                                    <div key={issue.id} className="text-xs border-b pb-1">
-                                      <p className="font-medium">{issue.title}</p>
-                                      <div className="flex gap-1 mt-1">
-                                        <Badge className="text-xs">{issue.priority}</Badge>
-                                        <Badge className="text-xs">{issue.status}</Badge>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </Popup>
-                          </Marker>
-                        ))
-                      ) : (
-                        heatmapData.map((point) => (
-                          <Marker
-                            key={point.id}
-                            position={[point.lat, point.lng]}
-                            icon={createCustomIcon(point.status, point.priority)}
-                          >
-                            <Popup>
-                              <div className="p-2">
-                                <h3 className="font-semibold text-sm">{point.title}</h3>
-                                <p className="text-xs text-muted-foreground mt-1">{point.category}</p>
-                                <div className="flex items-center gap-2 mt-2">
-                                  <Badge className="text-xs">{point.priority}</Badge>
-                                  <Badge className="text-xs">{point.status}</Badge>
-                                </div>
-                              </div>
-                            </Popup>
-                          </Marker>
-                        ))
+
+                      <FormField
+                        control={createJobForm.control}
+                        name="priority"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Priority *</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-job-priority">
+                                  <SelectValue placeholder="Select priority" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="low">Low</SelectItem>
+                                <SelectItem value="medium">Medium</SelectItem>
+                                <SelectItem value="high">High</SelectItem>
+                                <SelectItem value="urgent">Urgent</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={createJobForm.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Location *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., Main Street, Sector 21" {...field} data-testid="input-job-location" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
                       )}
-                    </MapContainer>
+                    />
 
-                    {/* Map Legend */}
-                    <div className="absolute bottom-4 left-4 bg-card rounded-lg p-3 shadow-md z-[1000]">
-                      {mapViewMode === "density" ? (
-                        <>
-                          <h5 className="text-sm font-medium text-foreground mb-2">Report Density</h5>
-                          <div className="space-y-1">
-                            <div className="flex items-center space-x-2">
-                              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                              <span className="text-xs text-muted-foreground">&lt;3 reports</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                              <span className="text-xs text-muted-foreground">3-7 reports</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                              <span className="text-xs text-muted-foreground">&gt;7 reports</span>
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <h5 className="text-sm font-medium text-foreground mb-2">Issue Status</h5>
-                          <div className="space-y-1">
-                            <div className="flex items-center space-x-2">
-                              <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                              <span className="text-xs text-muted-foreground">Resolved</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                              <span className="text-xs text-muted-foreground">Urgent (&gt;7 reports)</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                              <span className="text-xs text-muted-foreground">Medium (3-7 reports)</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                              <span className="text-xs text-muted-foreground">Low (&lt;3 reports)</span>
-                            </div>
-                          </div>
-                        </>
-                      )}
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <FormField
+                        control={createJobForm.control}
+                        name="latitude"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Latitude</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="any" placeholder="21.2514" {...field} data-testid="input-job-latitude" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={createJobForm.control}
+                        name="longitude"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Longitude</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="any" placeholder="81.6296" {...field} data-testid="input-job-longitude" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="flex items-end">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={useMyLocation}
+                          className="w-full"
+                          data-testid="button-use-location"
+                        >
+                          <MapPin className="h-4 w-4 mr-2" />
+                          Use My Location
+                        </Button>
+                      </div>
                     </div>
 
-                    {/* View Mode Info */}
-                    <div className="absolute top-4 left-4 bg-card rounded-lg p-2 shadow-md z-[1000]">
-                      <Badge variant="outline">
-                        {mapViewMode === "heatmap" ? "Heatmap View" : mapViewMode === "density" ? "Density View" : "Individual Markers"}
-                      </Badge>
-                    </div>
-                  </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <FormField
+                        control={createJobForm.control}
+                        name="estimatedHours"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Estimated Hours</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                step="0.5" 
+                                min="0.5"
+                                placeholder="1" 
+                                {...field} 
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 1)}
+                                data-testid="input-job-estimated-hours"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                  {/* Map Info */}
-                  <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
-                    <div className="flex items-center space-x-2">
-                      <i className="fas fa-info-circle text-primary"></i>
-                      <span className="text-sm text-foreground">
-                        <strong>OpenStreetMap Integration:</strong> Showing live data for Raipur, Chhattisgarh. 
-                        Toggle between Individual markers, Heatmap, and By Count views to analyze issue distribution and density.
-                      </span>
+                      <FormField
+                        control={createJobForm.control}
+                        name="deadline"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Deadline</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="datetime-local" 
+                                {...field} 
+                                data-testid="input-job-deadline"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
-                  </div>
-                </div>
+
+                    <div className="grid md:grid-cols-3 gap-4">
+                      <FormField
+                        control={createJobForm.control}
+                        name="assignedOfficialId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Assign To (Optional)</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-job-assign">
+                                  <SelectValue placeholder="Select official" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="">Unassigned</SelectItem>
+                                {officials.map(official => (
+                                  <SelectItem key={official.id} value={official.id}>
+                                    {official.firstName} {official.lastName} ({official.email})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={createJobForm.control}
+                        name="relatedComplaintId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Related Complaint ID</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Optional" {...field} data-testid="input-job-complaint-id" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={createJobForm.control}
+                        name="communityId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Community (Optional)</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-job-community">
+                                  <SelectValue placeholder="Select community" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="">None</SelectItem>
+                                {communities.map(community => (
+                                  <SelectItem key={community.id} value={community.id}>
+                                    {community.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="flex gap-4 pt-4">
+                      <Button
+                        type="submit"
+                        disabled={createJobMutation.isPending}
+                        className="flex-1"
+                        data-testid="button-create-job"
+                      >
+                        {createJobMutation.isPending ? (
+                          <>Creating...</>
+                        ) : (
+                          <>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create Job
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => createJobForm.reset()}
+                        data-testid="button-reset-form"
+                      >
+                        Reset
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Job Details Modal */}
+      <Dialog open={!!selectedJob} onOpenChange={(open) => !open && setSelectedJob(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-job-details">
+          {selectedJob && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center justify-between">
+                  <span data-testid="text-modal-job-title">{selectedJob.title}</span>
+                  <div className="flex gap-2">
+                    <Badge className={getPriorityColor(selectedJob.priority)}>
+                      {selectedJob.priority.toUpperCase()}
+                    </Badge>
+                    <Badge className={getStatusColor(selectedJob.status)}>
+                      {selectedJob.status.replace("_", " ").toUpperCase()}
+                    </Badge>
+                  </div>
+                </DialogTitle>
+                <DialogDescription data-testid="text-modal-job-description">
+                  {selectedJob.description}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-6">
+                {/* Time Tracking */}
+                <div className="space-y-3">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Time Tracking
+                  </h3>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <div className="text-muted-foreground">Estimated</div>
+                      <div className="text-lg font-bold" data-testid="text-modal-estimated">
+                        {selectedJob.estimatedHours}h
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Actual</div>
+                      <div className="text-lg font-bold" data-testid="text-modal-actual">
+                        {selectedJob.actualHours ? `${selectedJob.actualHours}h` : "-"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Efficiency</div>
+                      <div className="text-lg font-bold" data-testid="text-modal-efficiency">
+                        {selectedJob.actualHours 
+                          ? `${Math.round((selectedJob.estimatedHours / selectedJob.actualHours) * 100)}%`
+                          : "-"
+                        }
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {selectedJob.actualHours && selectedJob.estimatedHours && (
+                    <div>
+                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                        <span>Time Usage</span>
+                        <span data-testid="text-modal-time-usage">
+                          {Math.round((selectedJob.actualHours / selectedJob.estimatedHours) * 100)}%
+                        </span>
+                      </div>
+                      <Progress 
+                        value={Math.min(100, (selectedJob.actualHours / selectedJob.estimatedHours) * 100)}
+                        data-testid="progress-modal-time"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Deadline Info */}
+                {selectedJob.deadline && (
+                  <div className="space-y-2">
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Deadline
+                    </h3>
+                    <div className="text-sm">
+                      <div data-testid="text-modal-deadline">
+                        {format(new Date(selectedJob.deadline), "PPP 'at' p")}
+                      </div>
+                      <div className="text-muted-foreground mt-1" data-testid="text-modal-deadline-countdown">
+                        {formatTimeRemaining(selectedJob.deadline)}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Location */}
+                <div className="space-y-2">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Location
+                  </h3>
+                  <div className="text-sm" data-testid="text-modal-location">
+                    {selectedJob.location}
+                  </div>
+                  {selectedJob.latitude && selectedJob.longitude && (
+                    <div className="text-xs text-muted-foreground" data-testid="text-modal-coordinates">
+                      {selectedJob.latitude}, {selectedJob.longitude}
+                    </div>
+                  )}
+                </div>
+
+                {/* Related Information */}
+                {(selectedJob.relatedComplaintId || selectedJob.communityId) && (
+                  <div className="space-y-2">
+                    <h3 className="font-semibold">Related Information</h3>
+                    <div className="space-y-2 text-sm">
+                      {selectedJob.relatedComplaintId && (
+                        <div data-testid="text-modal-complaint">
+                          <span className="text-muted-foreground">Complaint ID: </span>
+                          {selectedJob.relatedComplaintId}
+                        </div>
+                      )}
+                      {selectedJob.communityId && (
+                        <div data-testid="text-modal-community">
+                          <span className="text-muted-foreground">Community ID: </span>
+                          {selectedJob.communityId}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Status Timeline */}
+                <div className="space-y-2">
+                  <h3 className="font-semibold">Timeline</h3>
+                  <div className="space-y-2 text-sm">
+                    <div data-testid="text-modal-created">
+                      <span className="text-muted-foreground">Created: </span>
+                      {format(new Date(selectedJob.createdAt), "PPP 'at' p")}
+                    </div>
+                    {selectedJob.completedAt && (
+                      <div data-testid="text-modal-completed">
+                        <span className="text-muted-foreground">Completed: </span>
+                        {format(new Date(selectedJob.completedAt), "PPP 'at' p")}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter className="flex gap-2">
+                {selectedJob.status !== "completed" && selectedJob.status !== "cancelled" && (
+                  <Button
+                    variant="destructive"
+                    onClick={() => cancelJobMutation.mutate(selectedJob.id)}
+                    disabled={cancelJobMutation.isPending}
+                    data-testid="button-modal-cancel-job"
+                  >
+                    Cancel Job
+                  </Button>
+                )}
+                <Button variant="outline" onClick={() => setSelectedJob(null)} data-testid="button-modal-close">
+                  Close
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Complete Job Dialog */}
+      <Dialog open={!!completingJob} onOpenChange={(open) => !open && setCompletingJob(null)}>
+        <DialogContent data-testid="dialog-complete-job">
+          <DialogHeader>
+            <DialogTitle>Complete Job</DialogTitle>
+            <DialogDescription>
+              Enter the actual hours spent on this job
+            </DialogDescription>
+          </DialogHeader>
+
+          {completingJob && (
+            <Form {...completeJobForm}>
+              <form onSubmit={completeJobForm.handleSubmit(handleCompleteJob)} className="space-y-4">
+                <div className="text-sm">
+                  <div className="font-medium mb-2" data-testid="text-complete-job-title">
+                    {completingJob.title}
+                  </div>
+                  <div className="text-muted-foreground">
+                    Estimated: {completingJob.estimatedHours} hours
+                  </div>
+                </div>
+
+                <FormField
+                  control={completeJobForm.control}
+                  name="actualHours"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Actual Hours Spent *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          step="0.1" 
+                          min="0.1"
+                          placeholder="e.g., 2.5" 
+                          {...field} 
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          data-testid="input-actual-hours"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setCompletingJob(null)}
+                    data-testid="button-cancel-complete"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={completeJobMutation.isPending}
+                    data-testid="button-submit-complete"
+                  >
+                    {completeJobMutation.isPending ? "Completing..." : "Complete Job"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
