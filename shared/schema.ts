@@ -224,6 +224,38 @@ export const userAchievements = pgTable("user_achievements", {
   earnedAt: timestamp("earned_at").defaultNow(),
 });
 
+export const userSanctions = pgTable("user_sanctions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  triggerType: varchar("trigger_type").notNull(), // ai_high_confidence, heuristic_combo, moderator, user_report
+  action: varchar("action").notNull(), // warning, temp_block, permanent_block
+  reason: text("reason").notNull(),
+  evidence: jsonb("evidence"), // JSON payload with AI result, heuristics, etc.
+  startTime: timestamp("start_time").defaultNow().notNull(),
+  endTime: timestamp("end_time"), // null for permanent blocks
+  appealStatus: varchar("appeal_status").default("none"), // none, pending, approved, rejected
+  appealMessage: text("appeal_message"),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  reviewNotes: text("review_notes"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const moderationLogs = pgTable("moderation_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  action: varchar("action").notNull(), // report_flagged, report_removed, user_warned, user_blocked, appeal_submitted, appeal_approved, appeal_rejected
+  targetType: varchar("target_type"), // complaint, community_issue, comment
+  targetId: varchar("target_id"), // ID of the flagged item
+  performedBy: varchar("performed_by").references(() => users.id), // null for automated actions
+  evidence: jsonb("evidence"), // AI scores, heuristics, moderator notes
+  ipAddress: varchar("ip_address"),
+  deviceFingerprint: varchar("device_fingerprint"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   complaints: many(complaints),
@@ -239,6 +271,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   assignedJobs: many(officialJobs),
   tokenBonuses: many(tokenBonuses),
   achievements: many(userAchievements),
+  sanctions: many(userSanctions),
+  moderationLogs: many(moderationLogs),
 }));
 
 export const complaintsRelations = relations(complaints, ({ one, many }) => ({
@@ -374,6 +408,28 @@ export const userAchievementsRelations = relations(userAchievements, ({ one }) =
   }),
 }));
 
+export const userSanctionsRelations = relations(userSanctions, ({ one }) => ({
+  user: one(users, {
+    fields: [userSanctions.userId],
+    references: [users.id],
+  }),
+  reviewer: one(users, {
+    fields: [userSanctions.reviewedBy],
+    references: [users.id],
+  }),
+}));
+
+export const moderationLogsRelations = relations(moderationLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [moderationLogs.userId],
+    references: [users.id],
+  }),
+  performer: one(users, {
+    fields: [moderationLogs.performedBy],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertComplaintSchema = createInsertSchema(complaints).omit({
   id: true,
@@ -470,6 +526,17 @@ export const insertUserAchievementSchema = createInsertSchema(userAchievements).
   earnedAt: true,
 });
 
+export const insertUserSanctionSchema = createInsertSchema(userSanctions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertModerationLogSchema = createInsertSchema(moderationLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -499,3 +566,7 @@ export type InsertTokenBonus = z.infer<typeof insertTokenBonusSchema>;
 export type TokenBonus = typeof tokenBonuses.$inferSelect;
 export type InsertUserAchievement = z.infer<typeof insertUserAchievementSchema>;
 export type UserAchievement = typeof userAchievements.$inferSelect;
+export type InsertUserSanction = z.infer<typeof insertUserSanctionSchema>;
+export type UserSanction = typeof userSanctions.$inferSelect;
+export type InsertModerationLog = z.infer<typeof insertModerationLogSchema>;
+export type ModerationLog = typeof moderationLogs.$inferSelect;

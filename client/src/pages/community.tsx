@@ -12,12 +12,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { insertCommunityIssueSchema } from "@shared/schema";
+import { insertCommunityIssueSchema, type Community } from "@shared/schema";
 import { z } from "zod";
+import { Users, Plus, Building2 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
 interface CityStats {
   totalComplaints: number;
@@ -25,6 +28,15 @@ interface CityStats {
   highPriorityCount?: number;
   mediumPriorityCount?: number;
   lowPriorityCount?: number;
+}
+
+interface CommunityWithCreator extends Community {
+  creatorName: string;
+}
+
+interface CommunityMembership extends Community {
+  role: string;
+  joinedAt: string;
 }
 
 const communityIssueFormSchema = insertCommunityIssueSchema.extend({
@@ -35,9 +47,11 @@ type CommunityIssueFormData = z.infer<typeof communityIssueFormSchema>;
 
 export default function Community() {
   const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [locationStatus, setLocationStatus] = useState<'pending' | 'success' | 'error'>('pending');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const queryClient = useQueryClient();
 
   // Scroll to top when page loads
@@ -64,6 +78,37 @@ export default function Community() {
     queryKey: ["/api/stats/city"],
     retry: false,
   });
+
+  // Fetch user's communities
+  const { data: userCommunities } = useQuery<CommunityMembership[]>({
+    queryKey: ["/api/communities/user", user?.id],
+    enabled: !!user?.id,
+  });
+
+  // Fetch all communities for discover tab
+  const { data: allCommunities, isLoading: isLoadingAllCommunities } = useQuery<CommunityWithCreator[]>({
+    queryKey: ["/api/communities"],
+  });
+
+  // Filter and compute
+  const createdCommunities = userCommunities?.filter(c => c.creatorId === user?.id) || [];
+  const joinedCommunities = userCommunities || [];
+  const totalMembers = createdCommunities.reduce((sum, c) => sum + (c.memberCount || 0), 0);
+
+  // Filter communities for discover tab
+  const filteredCommunities = allCommunities?.filter(c => {
+    const matchesSearch = searchQuery
+      ? c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.description.toLowerCase().includes(searchQuery.toLowerCase())
+      : true;
+    const matchesCategory = categoryFilter === "all" || c.category === categoryFilter;
+    return matchesSearch && matchesCategory;
+  }) || [];
+
+  // Check if user is member
+  const isMember = (communityId: string) => {
+    return joinedCommunities.some(c => c.id === communityId);
+  };
 
   const form = useForm<CommunityIssueFormData>({
     resolver: zodResolver(communityIssueFormSchema),
@@ -133,6 +178,74 @@ export default function Community() {
       toast({
         title: "Error",
         description: "Failed to post community issue. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const joinCommunityMutation = useMutation({
+    mutationFn: async (communityId: string) => {
+      return apiRequest(`/api/communities/${communityId}/join`, {
+        method: 'POST',
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "You've joined the community!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/communities/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/communities"] });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error as Error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to join community. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const leaveCommunityMutation = useMutation({
+    mutationFn: async (communityId: string) => {
+      return apiRequest(`/api/communities/${communityId}/leave`, {
+        method: 'POST',
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "You've left the community.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/communities/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/communities"] });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error as Error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to leave community. Please try again.",
         variant: "destructive",
       });
     },
@@ -263,7 +376,7 @@ export default function Community() {
         </div>
 
         <Tabs defaultValue="browse" className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-2 h-auto">
+          <TabsList className="grid w-full grid-cols-4 h-auto">
             <TabsTrigger value="browse" data-testid="tab-browse-issues" className="min-h-[44px] text-sm sm:text-base py-2 sm:py-2.5">
               <i className="fas fa-list mr-1.5 sm:mr-2"></i>
               Browse Issues
@@ -271,6 +384,14 @@ export default function Community() {
             <TabsTrigger value="post" data-testid="tab-post-issue" className="min-h-[44px] text-sm sm:text-base py-2 sm:py-2.5">
               <i className="fas fa-plus mr-1.5 sm:mr-2"></i>
               Post New Issue
+            </TabsTrigger>
+            <TabsTrigger value="my-communities" data-testid="tab-my-communities" className="min-h-[44px] text-sm sm:text-base py-2 sm:py-2.5">
+              <Users className="w-4 h-4 mr-1.5 sm:mr-2" />
+              My Communities
+            </TabsTrigger>
+            <TabsTrigger value="discover" data-testid="tab-discover-communities" className="min-h-[44px] text-sm sm:text-base py-2 sm:py-2.5">
+              <Building2 className="w-4 h-4 mr-1.5 sm:mr-2" />
+              Discover
             </TabsTrigger>
           </TabsList>
 

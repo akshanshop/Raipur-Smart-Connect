@@ -3,13 +3,26 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import Header from "@/components/header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useQuery } from "@tanstack/react-query";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { apiRequest } from "@/lib/queryClient";
+import { insertCommunitySchema, type Community, type CommunityMember, type User } from "@shared/schema";
+import { z } from "zod";
+import { Users, MapPin, Shield, Edit, Trash2, UserPlus, UserMinus, Crown, Plus, Settings as SettingsIcon } from "lucide-react";
 
 // Import new feature components
 import AdvancedSearch from "@/components/advanced-search";
@@ -41,11 +54,33 @@ interface Complaint {
   createdAt: string;
 }
 
+interface CommunityWithCreator extends Community {
+  creatorName: string;
+}
+
+interface MemberWithUser extends CommunityMember {
+  user: User;
+}
+
+const communityFormSchema = insertCommunitySchema.extend({
+  name: z.string().min(3, "Name must be at least 3 characters"),
+  description: z.string().min(10, "Description must be at least 10 characters"),
+});
+
+type CommunityFormData = z.infer<typeof communityFormSchema>;
+
 export default function Dashboard() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { user, isAuthenticated, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
   const [searchFilters, setSearchFilters] = useState<any>(null);
+  
+  // Communities state
+  const [isCreateCommunityOpen, setIsCreateCommunityOpen] = useState(false);
+  const [isManageCommunityOpen, setIsManageCommunityOpen] = useState(false);
+  const [selectedCommunity, setSelectedCommunity] = useState<CommunityWithCreator | null>(null);
+  const [managementTab, setManagementTab] = useState("details");
 
   // Scroll to top when page loads
   useEffect(() => {
@@ -86,6 +121,118 @@ export default function Dashboard() {
     queryKey: ["/api/complaints"],
     retry: false,
   });
+
+  // Fetch user communities
+  const { data: userCommunities, isLoading: isLoadingCommunities } = useQuery<CommunityWithCreator[]>({
+    queryKey: ["/api/communities/user", user?.id],
+    enabled: !!user?.id,
+    retry: false,
+  });
+
+  const createdCommunities = userCommunities?.filter(c => c.creatorId === user?.id) || [];
+  const joinedCommunities = userCommunities || [];
+  const totalMembers = createdCommunities.reduce((sum, c) => sum + (c.memberCount || 0), 0);
+
+  // Community form
+  const communityForm = useForm<CommunityFormData>({
+    resolver: zodResolver(communityFormSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      category: "",
+      location: undefined,
+      latitude: undefined,
+      longitude: undefined,
+      isPrivate: false,
+      rules: undefined,
+      isActive: true,
+    },
+  });
+
+  // Create community mutation
+  const createCommunityMutation = useMutation({
+    mutationFn: async (data: CommunityFormData) => {
+      const response = await apiRequest('POST', '/api/communities', data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "🎉 Community Created!",
+        description: "You earned 20 tokens! Check your notifications for achievements.",
+      });
+      communityForm.reset();
+      queryClient.invalidateQueries({ queryKey: ["/api/communities/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/user"] });
+      setIsCreateCommunityOpen(false);
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error as Error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to create community. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Leave community mutation
+  const leaveCommunityMutation = useMutation({
+    mutationFn: async (communityId: string) => {
+      const response = await apiRequest('POST', `/api/communities/${communityId}/leave`);
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Left community successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/communities/user"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: (error as Error).message || "Failed to leave community.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const getCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          communityForm.setValue("latitude", position.coords.latitude.toString());
+          communityForm.setValue("longitude", position.coords.longitude.toString());
+          toast({
+            title: "Location captured",
+            description: "Your current location has been added.",
+          });
+        },
+        () => {
+          toast({
+            title: "Location error",
+            description: "Could not get your location. Please enter it manually.",
+            variant: "destructive",
+          });
+        }
+      );
+    }
+  };
+
+  const onCommunityFormSubmit = (data: CommunityFormData) => {
+    createCommunityMutation.mutate(data);
+  };
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
@@ -351,6 +498,10 @@ export default function Dashboard() {
                     <TabsTrigger value="settings" className="squircle-md text-xs flex-1 min-w-[80px]">Settings</TabsTrigger>
                     <TabsTrigger value="complaint" className="squircle-md text-xs flex-1 min-w-[80px]">File Issue</TabsTrigger>
                     <TabsTrigger value="community" className="squircle-md text-xs flex-1 min-w-[80px]">Community</TabsTrigger>
+                    <TabsTrigger value="communities" className="squircle-md text-xs flex-1 min-w-[80px]" data-testid="tab-communities">
+                      <Users className="w-3 h-3 mr-1" />
+                      Communities
+                    </TabsTrigger>
                     <TabsTrigger value="map" className="squircle-md text-xs flex-1 min-w-[80px]">Map</TabsTrigger>
                   </TabsList>
 
@@ -577,12 +728,451 @@ export default function Dashboard() {
                   <TabsContent value="map" className="space-y-6">
                     <MapsIntegration />
                   </TabsContent>
+
+                  {/* Communities Tab */}
+                  <TabsContent value="communities" className="space-y-6">
+                    {/* Section A: My Communities Summary Card */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <Users className="w-5 h-5 mr-2" />
+                          My Communities
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {isLoadingCommunities ? (
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            {[1, 2, 3, 4].map((i) => (
+                              <Skeleton key={i} className="h-16" />
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                              <p className="text-sm text-muted-foreground">Communities Joined</p>
+                              <p className="text-2xl font-bold" data-testid="text-communities-joined">
+                                {joinedCommunities?.length || 0}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Communities Created</p>
+                              <p className="text-2xl font-bold" data-testid="text-communities-created">
+                                {createdCommunities?.length || 0}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Total Members</p>
+                              <p className="text-2xl font-bold" data-testid="text-total-members">
+                                {totalMembers}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                onClick={() => setIsCreateCommunityOpen(true)}
+                                data-testid="button-create-community"
+                              >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Create Community
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Section B: Created Communities Grid */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <Crown className="w-5 h-5 mr-2" />
+                          Communities I Created
+                        </CardTitle>
+                        <CardDescription>
+                          Manage your created communities
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {isLoadingCommunities ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {[1, 2, 3].map((i) => (
+                              <Skeleton key={i} className="h-48" />
+                            ))}
+                          </div>
+                        ) : createdCommunities.length === 0 ? (
+                          <div className="text-center py-12">
+                            <Crown className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                            <p className="text-muted-foreground mb-4">You haven't created any communities yet</p>
+                            <Button 
+                              onClick={() => setIsCreateCommunityOpen(true)}
+                              data-testid="button-create-first-community"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Create Your First Community
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {createdCommunities.map((community) => (
+                              <Card key={community.id} data-testid={`card-created-community-${community.id}`}>
+                                <CardHeader>
+                                  <CardTitle className="text-lg">{community.name}</CardTitle>
+                                  <CardDescription className="line-clamp-2">
+                                    {community.description}
+                                  </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="space-y-2">
+                                    <div className="flex items-center justify-between text-sm">
+                                      <span className="text-muted-foreground flex items-center">
+                                        <Users className="w-4 h-4 mr-1" />
+                                        Members
+                                      </span>
+                                      <span className="font-medium">{community.memberCount || 0}</span>
+                                    </div>
+                                    <Badge variant="secondary">{community.category}</Badge>
+                                  </div>
+                                </CardContent>
+                                <CardFooter className="gap-2">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="flex-1"
+                                    onClick={() => window.location.href = `/community?id=${community.id}`}
+                                    data-testid={`button-manage-community-${community.id}`}
+                                  >
+                                    <SettingsIcon className="w-4 h-4 mr-1" />
+                                    Manage
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    className="flex-1"
+                                    onClick={() => window.location.href = `/community?id=${community.id}`}
+                                    data-testid={`button-view-created-community-${community.id}`}
+                                  >
+                                    View
+                                  </Button>
+                                </CardFooter>
+                              </Card>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Section C: Joined Communities Grid */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <Users className="w-5 h-5 mr-2" />
+                          Communities I Joined
+                        </CardTitle>
+                        <CardDescription>
+                          Communities you're a member of
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {isLoadingCommunities ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {[1, 2, 3].map((i) => (
+                              <Skeleton key={i} className="h-48" />
+                            ))}
+                          </div>
+                        ) : joinedCommunities.length === 0 ? (
+                          <div className="text-center py-12">
+                            <Users className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                            <p className="text-muted-foreground mb-4">You haven't joined any communities yet</p>
+                            <Button 
+                              onClick={() => window.location.href = '/communities'}
+                              data-testid="button-browse-communities"
+                            >
+                              Browse Communities
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {joinedCommunities.map((community) => {
+                              const isCreator = community.creatorId === user?.id;
+                              return (
+                                <Card key={community.id} data-testid={`card-joined-community-${community.id}`}>
+                                  <CardHeader>
+                                    <CardTitle className="text-lg">{community.name}</CardTitle>
+                                    <CardDescription className="line-clamp-2">
+                                      {community.description}
+                                    </CardDescription>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="space-y-2">
+                                      <div className="flex items-center justify-between text-sm">
+                                        <span className="text-muted-foreground flex items-center">
+                                          <Users className="w-4 h-4 mr-1" />
+                                          Members
+                                        </span>
+                                        <span className="font-medium">{community.memberCount || 0}</span>
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <Badge variant="secondary">{community.category}</Badge>
+                                        {isCreator && (
+                                          <Badge variant="default">
+                                            <Crown className="w-3 h-3 mr-1" />
+                                            Creator
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                  <CardFooter className="gap-2">
+                                    <Button 
+                                      size="sm" 
+                                      className="flex-1"
+                                      onClick={() => window.location.href = `/community?id=${community.id}`}
+                                      data-testid={`button-view-joined-community-${community.id}`}
+                                    >
+                                      View
+                                    </Button>
+                                    <Button 
+                                      variant="destructive" 
+                                      size="sm" 
+                                      className="flex-1"
+                                      onClick={() => leaveCommunityMutation.mutate(community.id)}
+                                      disabled={isCreator || leaveCommunityMutation.isPending}
+                                      data-testid={`button-leave-community-${community.id}`}
+                                    >
+                                      <UserMinus className="w-4 h-4 mr-1" />
+                                      {isCreator ? "Creator" : "Leave"}
+                                    </Button>
+                                  </CardFooter>
+                                </Card>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
                 </Tabs>
               </CardContent>
             </Card>
           </div>
         </div>
       </main>
+
+      {/* Section D: Create Community Dialog */}
+      <Dialog open={isCreateCommunityOpen} onOpenChange={setIsCreateCommunityOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create a New Community</DialogTitle>
+            <DialogDescription>
+              Create a community to connect with others in your area. You'll earn 20 tokens!
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...communityForm}>
+            <form onSubmit={communityForm.handleSubmit(onCommunityFormSubmit)} className="space-y-4">
+              <FormField
+                control={communityForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Community Name *</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="e.g., Downtown Neighborhood Watch" 
+                        {...field} 
+                        data-testid="input-community-name"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={communityForm.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description *</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Describe your community's purpose and goals..." 
+                        rows={4}
+                        {...field} 
+                        data-testid="input-community-description"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={communityForm.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-community-category">
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="neighborhood">Neighborhood</SelectItem>
+                        <SelectItem value="district">District</SelectItem>
+                        <SelectItem value="interest">Interest Group</SelectItem>
+                        <SelectItem value="safety">Safety & Security</SelectItem>
+                        <SelectItem value="environment">Environment</SelectItem>
+                        <SelectItem value="development">Development</SelectItem>
+                        <SelectItem value="culture">Culture & Arts</SelectItem>
+                        <SelectItem value="sports">Sports & Recreation</SelectItem>
+                        <SelectItem value="education">Education</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={communityForm.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location (Optional)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="e.g., Downtown, City Center" 
+                        {...field}
+                        value={field.value || ""}
+                        data-testid="input-community-location"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      General area or neighborhood
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={communityForm.control}
+                  name="latitude"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Latitude (Optional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="e.g., 21.2514" 
+                          {...field}
+                          value={field.value || ""}
+                          data-testid="input-community-latitude"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={communityForm.control}
+                  name="longitude"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Longitude (Optional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="e.g., 81.6296" 
+                          {...field}
+                          value={field.value || ""}
+                          data-testid="input-community-longitude"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={getCurrentLocation}
+                className="w-full"
+                data-testid="button-use-my-location"
+              >
+                <MapPin className="w-4 h-4 mr-2" />
+                Use My Location
+              </Button>
+
+              <FormField
+                control={communityForm.control}
+                name="isPrivate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value || false}
+                        onCheckedChange={field.onChange}
+                        data-testid="checkbox-community-private"
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>
+                        Private Community
+                      </FormLabel>
+                      <FormDescription>
+                        Only approved members can join and see content
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={communityForm.control}
+                name="rules"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Community Rules (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="List any community guidelines or rules..." 
+                        rows={3}
+                        {...field}
+                        value={field.value || ""}
+                        data-testid="input-community-rules"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsCreateCommunityOpen(false)}
+                  data-testid="button-cancel-community"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={createCommunityMutation.isPending}
+                  data-testid="button-submit-community"
+                >
+                  {createCommunityMutation.isPending ? "Creating..." : "Create Community"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
 
       {/* Enhanced Floating Chatbot */}
       <EnhancedChatbot />
