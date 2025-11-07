@@ -6,6 +6,15 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Updates
 
+## Bilingual Language Support (November 7, 2025)
+Complete bilingual implementation with seamless Hindi and English language switching across the landing page:
+- **Translation System**: Centralized translation dictionary (`translations.ts`) with all UI strings for both languages
+- **Language Context**: React Context-based state management for language selection with localStorage persistence
+- **Language Switcher**: Dropdown component in navigation bar allowing users to toggle between English (🇬🇧) and हिंदी (🇮🇳)
+- **Comprehensive Coverage**: All landing page elements translated including navigation, hero section, login sections, stats, features, testimonials, FAQ, CTA section, OAuth provider labels, and accessibility labels
+- **Marathi Removed**: All Marathi language references have been completely removed from translations, features, and FAQ content as per requirements
+- **Production Ready**: SSR-safe implementation with no hardcoded strings, full accessibility support including screen reader labels
+
 ## Mobile Responsive Optimizations (November 6, 2025)
 All layouts have been optimized for mobile view while keeping desktop view completely unchanged:
 - **Homepage Hero Section**: Buttons stack vertically on mobile, text sizing adjusted for better readability
@@ -35,7 +44,7 @@ Drizzle ORM with Neon's serverless PostgreSQL is used. The schema includes table
 
 ## AI Integration
 OpenAI's GPT-5 powers several features:
-- **Multilingual Chatbot**: Supports English, Hindi, and Marathi, providing contextual responses and persistent chat history.
+- **Multilingual Chatbot**: Supports English and Hindi, providing contextual responses and persistent chat history.
 - **Spam Detection System**: Automatically analyzes new complaints and community posts for spam, fake content, and abusive language with a >70% confidence threshold. It sends warning notifications to users for detected spam and logs decisions.
 - **Other AI Features**: Includes automatic complaint summarization and priority assessment.
 
