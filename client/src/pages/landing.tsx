@@ -51,7 +51,7 @@ export default function Landing() {
                 className="text-white hover:text-accent transition-colors magnetic-button px-4 py-2 bg-white/10 hover:bg-white/20 squircle-md"
                 whileHover={{ y: -2, scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-              >How It Works</motion.a>
+              >{t.nav.features}</motion.a>
               <motion.a 
                 href="#testimonials" 
                 className="text-white hover:text-accent transition-colors magnetic-button px-4 py-2 bg-white/10 hover:bg-white/20 squircle-md"
