@@ -6,6 +6,9 @@ import {
   comments,
   notifications,
   chatMessages,
+  tokenTransactions,
+  rewards,
+  rewardRedemptions,
   type User,
   type UpsertUser,
   type InsertComplaint,
@@ -19,6 +22,11 @@ import {
   type InsertChatMessage,
   type ChatMessage,
   type Upvote,
+  type TokenTransaction,
+  type Reward,
+  type InsertReward,
+  type RewardRedemption,
+  type InsertRewardRedemption,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, count, sql } from "drizzle-orm";
@@ -112,6 +120,16 @@ export interface IStorage {
 
   // Priority escalation
   escalateComplaint(id: string, newPriority: string, reason: string): Promise<void>;
+
+  // Token and Reward operations
+  awardTokens(userId: string, amount: number, reason: string, relatedId?: string): Promise<void>;
+  getUserTokens(userId: string): Promise<number>;
+  getTokenTransactions(userId: string): Promise<TokenTransaction[]>;
+  getAllRewards(): Promise<Reward[]>;
+  getActiveRewards(): Promise<Reward[]>;
+  createReward(reward: InsertReward): Promise<Reward>;
+  redeemReward(userId: string, rewardId: string): Promise<RewardRedemption>;
+  getUserRedemptions(userId: string): Promise<RewardRedemption[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -823,6 +841,107 @@ export class DatabaseStorage implements IStorage {
         });
       }
     });
+  }
+
+  // Token and Reward operations
+  async awardTokens(userId: string, amount: number, reason: string, relatedId?: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      await tx
+        .update(users)
+        .set({ 
+          tokens: sql`${users.tokens} + ${amount}`,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId));
+
+      await tx.insert(tokenTransactions).values({
+        userId,
+        amount,
+        type: 'earned',
+        reason,
+        relatedId,
+      });
+    });
+  }
+
+  async getUserTokens(userId: string): Promise<number> {
+    const [user] = await db.select({ tokens: users.tokens }).from(users).where(eq(users.id, userId));
+    return user?.tokens || 0;
+  }
+
+  async getTokenTransactions(userId: string): Promise<TokenTransaction[]> {
+    return await db
+      .select()
+      .from(tokenTransactions)
+      .where(eq(tokenTransactions.userId, userId))
+      .orderBy(desc(tokenTransactions.createdAt));
+  }
+
+  async getAllRewards(): Promise<Reward[]> {
+    return await db.select().from(rewards).orderBy(rewards.tokenCost);
+  }
+
+  async getActiveRewards(): Promise<Reward[]> {
+    return await db
+      .select()
+      .from(rewards)
+      .where(eq(rewards.isActive, true))
+      .orderBy(rewards.tokenCost);
+  }
+
+  async createReward(reward: InsertReward): Promise<Reward> {
+    const [newReward] = await db.insert(rewards).values(reward).returning();
+    return newReward;
+  }
+
+  async redeemReward(userId: string, rewardId: string): Promise<RewardRedemption> {
+    return await db.transaction(async (tx) => {
+      const [reward] = await tx.select().from(rewards).where(eq(rewards.id, rewardId));
+      if (!reward) {
+        throw new Error('Reward not found');
+      }
+
+      const [user] = await tx.select().from(users).where(eq(users.id, userId));
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      if ((user.tokens || 0) < reward.tokenCost) {
+        throw new Error('Insufficient tokens');
+      }
+
+      await tx
+        .update(users)
+        .set({ 
+          tokens: sql`${users.tokens} - ${reward.tokenCost}`,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, userId));
+
+      await tx.insert(tokenTransactions).values({
+        userId,
+        amount: -reward.tokenCost,
+        type: 'spent',
+        reason: 'reward_redeemed',
+        relatedId: rewardId,
+      });
+
+      const [redemption] = await tx.insert(rewardRedemptions).values({
+        userId,
+        rewardId,
+        tokensCost: reward.tokenCost,
+      }).returning();
+
+      return redemption;
+    });
+  }
+
+  async getUserRedemptions(userId: string): Promise<RewardRedemption[]> {
+    return await db
+      .select()
+      .from(rewardRedemptions)
+      .where(eq(rewardRedemptions.userId, userId))
+      .orderBy(desc(rewardRedemptions.createdAt));
   }
 }
 
