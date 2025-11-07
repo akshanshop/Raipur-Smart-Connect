@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { insertComplaintSchema } from "@shared/schema";
 import { z } from "zod";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const complaintFormSchema = insertComplaintSchema.extend({
   title: z.string().min(1, "Title is required"),
@@ -34,6 +35,7 @@ export default function ComplaintForm() {
   const [locationStatus, setLocationStatus] = useState<'pending' | 'success' | 'error'>('pending');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
 
   const form = useForm<ComplaintFormData>({
     resolver: zodResolver(complaintFormSchema),
@@ -188,7 +190,7 @@ export default function ComplaintForm() {
       <CardContent className="p-6">
         <h3 className="text-lg font-semibold text-gradient mb-4 flex items-center">
           <i className="fas fa-file-alt mr-3 animate-float"></i>
-          Register Complaint
+          {t.complaintForm.title}
         </h3>
         
         <Form {...form}>
@@ -198,19 +200,19 @@ export default function ComplaintForm() {
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Category</FormLabel>
+                  <FormLabel>{t.complaintForm.categoryLabel}</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger data-testid="select-category">
-                        <SelectValue placeholder="Select a category" />
+                        <SelectValue placeholder={t.complaintForm.categoryPlaceholder} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="water-supply">Water Supply</SelectItem>
-                      <SelectItem value="garbage-collection">Garbage Collection</SelectItem>
-                      <SelectItem value="road-maintenance">Road Maintenance</SelectItem>
-                      <SelectItem value="street-lighting">Street Lighting</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="water-supply">{t.complaintForm.categories.water}</SelectItem>
+                      <SelectItem value="garbage-collection">{t.complaintForm.categories.garbage}</SelectItem>
+                      <SelectItem value="road-maintenance">{t.complaintForm.categories.roads}</SelectItem>
+                      <SelectItem value="street-lighting">{t.complaintForm.categories.streetlights}</SelectItem>
+                      <SelectItem value="other">{t.complaintForm.categories.other}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -223,10 +225,10 @@ export default function ComplaintForm() {
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Title</FormLabel>
+                  <FormLabel>{t.complaintForm.titleLabel}</FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder="Brief description of the issue" 
+                      placeholder={t.complaintForm.titlePlaceholder} 
                       {...field} 
                       data-testid="input-title"
                     />
@@ -241,10 +243,10 @@ export default function ComplaintForm() {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>{t.complaintForm.descriptionLabel}</FormLabel>
                   <FormControl>
                     <Textarea 
-                      placeholder="Describe the issue in detail..." 
+                      placeholder={t.complaintForm.descriptionPlaceholder} 
                       className="h-24" 
                       {...field} 
                       data-testid="textarea-description"
@@ -261,11 +263,11 @@ export default function ComplaintForm() {
               name="location"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Location Address</FormLabel>
+                  <FormLabel>{t.complaintForm.locationLabel}</FormLabel>
                   <div className="flex space-x-2">
                     <FormControl>
                       <Input 
-                        placeholder="Enter address or landmark" 
+                        placeholder={t.complaintForm.locationPlaceholder} 
                         {...field} 
                         data-testid="input-location"
                       />

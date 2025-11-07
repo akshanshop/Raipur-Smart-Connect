@@ -380,7 +380,7 @@ export default function Landing() {
               whileInView={{ y: 0, opacity: 1 }}
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
-            >Powerful Features</motion.h2>
+            >{t.features.title}</motion.h2>
             <motion.p 
               className="text-xl text-muted-foreground max-w-3xl mx-auto"
               initial={{ y: 20, opacity: 0 }}
@@ -388,7 +388,7 @@ export default function Landing() {
               viewport={{ once: true }}
               transition={{ delay: 0.2, duration: 0.8 }}
             >
-              Experience the future of civic engagement with our comprehensive suite of tools designed for modern citizens.
+              {t.features.subtitle}
             </motion.p>
           </motion.div>
           <motion.div 
