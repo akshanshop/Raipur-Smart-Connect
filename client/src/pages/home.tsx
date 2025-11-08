@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import introVideo from "@assets/raipur-smart-connect-intro.mp4";
 
 interface CityStats {
   totalComplaints: number;
@@ -30,6 +31,7 @@ export default function Home() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
   const [emergencyDialogOpen, setEmergencyDialogOpen] = useState(false);
+  const [videoDialogOpen, setVideoDialogOpen] = useState(false);
 
   // Scroll to top when page loads
   useEffect(() => {
@@ -273,6 +275,21 @@ export default function Home() {
                     </span>
                     <i className="fas fa-arrow-right text-base sm:text-xl ml-2"></i>
                   </Button>
+                  
+                  <Button 
+                    variant="outline"
+                    className="w-full min-h-[56px] sm:h-16 modern-button flex items-center justify-between rounded-[2rem] text-sm sm:text-base lg:text-lg font-semibold px-3 sm:px-4"
+                    onClick={() => setVideoDialogOpen(true)}
+                    data-testid="button-watch-video"
+                  >
+                    <span className="flex items-center">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary bg-opacity-20 rounded-[1.5rem] flex items-center justify-center mr-2 sm:mr-4">
+                        <i className="fas fa-play-circle text-base sm:text-xl text-primary"></i>
+                      </div>
+                      <span className="text-left">Watch Video</span>
+                    </span>
+                    <i className="fas fa-arrow-right text-base sm:text-xl ml-2"></i>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -440,6 +457,34 @@ export default function Home() {
                 Reporting emergency...
               </div>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Watch Video Dialog */}
+      <Dialog open={videoDialogOpen} onOpenChange={setVideoDialogOpen}>
+        <DialogContent className="sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl">
+              <i className="fas fa-play-circle text-primary"></i>
+              Welcome to Raipur Smart Connect
+            </DialogTitle>
+            <DialogDescription>
+              Watch this introduction video to learn how to use the platform effectively.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="aspect-video bg-black rounded-lg overflow-hidden">
+              <video 
+                controls 
+                className="w-full h-full"
+                data-testid="video-intro"
+              >
+                <source src={introVideo} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
