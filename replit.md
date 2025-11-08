@@ -27,6 +27,16 @@ A multi-layered security system includes intelligent rate limiting for various a
 ## Real-time Features
 A comprehensive notification system provides updates via in-app notifications (polling, WebSockets planned), SMS (Twilio), and email (SendGrid) for complaint status, community activities, and city alerts.
 
+## Emergency Alert System
+A dedicated emergency reporting system allows citizens to instantly report urgent situations (fire, medical, water, power, gas leak, road hazard). Emergency reports are processed through a separate `/api/emergency` endpoint that:
+- Creates complaints with automatic "urgent" priority
+- Captures GPS location using browser geolocation API
+- Awards 20 tokens (vs 10 for regular complaints)
+- Sends immediate SMS and email notifications to the reporter using their stored contact information
+- Notifies ALL officials instantly via SMS, email, and in-app notifications
+- Generates unique ticket numbers for tracking
+Emergency reports bypass normal complaint processing to ensure fastest response times.
+
 ## Complaint Management
 The system assigns automatic priority based on nearby reports (~0.5km radius). Users can vote on nearby complaints (7km radius). Both citizen and official dashboards feature interactive maps with Individual Markers (color-coded by status/priority), Heatmap View, and Density View. The Officials Dashboard provides role-based access, statistics, and issue management (search, filter, resolve with proof, delete).
 
