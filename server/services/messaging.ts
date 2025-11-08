@@ -21,7 +21,9 @@ export type NotificationType =
   | 'complaint_submitted' 
   | 'complaint_acknowledged' 
   | 'complaint_in_progress' 
-  | 'complaint_resolved';
+  | 'complaint_resolved'
+  | 'emergency_reported'
+  | 'emergency_notification';
 
 const messageTemplates: Record<NotificationType, (ticketNumber: string, title: string) => string> = {
   complaint_submitted: (ticketNumber, title) => 
@@ -34,7 +36,13 @@ const messageTemplates: Record<NotificationType, (ticketNumber: string, title: s
     `Your issue is now being resolved! Ticket #${ticketNumber}: ${title}. Officials are actively working on this complaint.`,
   
   complaint_resolved: (ticketNumber, title) => 
-    `Great news! Your complaint has been resolved. Ticket #${ticketNumber}: ${title}. Thank you for making your city better!`
+    `Great news! Your complaint has been resolved. Ticket #${ticketNumber}: ${title}. Thank you for making your city better!`,
+
+  emergency_reported: (ticketNumber, title) =>
+    `🚨 EMERGENCY ALERT SUBMITTED! Ticket #${ticketNumber}: ${title}. Authorities have been notified immediately. Emergency services are being dispatched. If life-threatening, call 100 (Police), 101 (Fire), or 108 (Ambulance).`,
+
+  emergency_notification: (ticketNumber, title) =>
+    `🚨 URGENT EMERGENCY ALERT! Ticket #${ticketNumber}: ${title}. IMMEDIATE ACTION REQUIRED. Please review and respond immediately via the Officials Dashboard.`
 };
 
 export async function sendSMS(

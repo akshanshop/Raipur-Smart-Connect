@@ -186,6 +186,9 @@ export interface IStorage {
   // Leaderboard Operations
   getTokenLeaderboard(limit?: number): Promise<Array<{ user: User; totalEarned: number; rank: number }>>;
   getUserRank(userId: string): Promise<number>;
+
+  // Official Operations
+  getAllOfficials(): Promise<User[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1407,6 +1410,16 @@ export class DatabaseStorage implements IStorage {
       .where(sql`${users.tokens} > ${user.tokens}`);
 
     return (higherRankedUsers[0]?.count || 0) + 1;
+  }
+
+  // Official Operations
+  async getAllOfficials(): Promise<User[]> {
+    const officials = await db
+      .select()
+      .from(users)
+      .where(eq(users.role, 'official'));
+    
+    return officials;
   }
 }
 

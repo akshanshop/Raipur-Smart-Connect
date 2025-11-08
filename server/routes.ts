@@ -250,6 +250,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Emergency Alert Endpoint
+  app.post('/api/emergency', isAuthenticatedFlexible, upload.array('media'), async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      
+      const { emergencyType, location, latitude, longitude, email, phoneNumber, description } = req.body;
+      
+      if (!emergencyType) {
+        return res.status(400).json({ message: "Emergency type is required" });
+      }
+
+      // Handle uploaded files
+      const mediaUrls = req.files ? req.files.map((file: any) => `/uploads/${file.filename}`) : [];
+      
+      // Create emergency complaint with urgent priority
+      const title = `🚨 EMERGENCY: ${emergencyType}`;
+      const emergencyDescription = description || `Emergency ${emergencyType} situation reported. Immediate attention required.`;
+      const emergencyLocation = location || (latitude && longitude ? `${latitude}, ${longitude}` : "Location unavailable");
+
+      const emergencyComplaint = {
+        userId,
+        category: emergencyType,
+        priority: "urgent",
+        title,
+        description: emergencyDescription,
+        location: emergencyLocation,
+        status: "open",
+        mediaUrls,
+        ...(latitude && { latitude: parseFloat(latitude).toString() }),
+        ...(longitude && { longitude: parseFloat(longitude).toString() })
+      };
+
+      const complaint = await storage.createComplaint(emergencyComplaint);
+
+      // Award tokens for reporting emergency
+      await storage.awardTokens(userId, 20, 'emergency_reported', complaint.id);
+
+      // Create notification for user
+      await storage.createNotification({
+        userId,
+        title: "🚨 Emergency Alert Submitted",
+        message: `Your emergency alert has been submitted with ticket number ${complaint.ticketNumber}. Authorities have been notified immediately.`,
+        type: "emergency",
+        relatedId: complaint.id
+      });
+
+      // Get user details
+      const user = await storage.getUser(userId);
+      const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : undefined;
+      
+      // Use provided contact info or fall back to user's stored information
+      const reporterPhone = phoneNumber || user?.phoneNumber;
+      const reporterEmail = email || user?.email;
+      
+      // Send immediate notifications to the reporter
+      if (reporterPhone) {
+        await sendSMS(
+          reporterPhone,
+          'emergency_reported',
+          complaint.ticketNumber,
+          title
+        );
+      }
+      
+      if (reporterEmail) {
+        await sendEmail(
+          reporterEmail,
+          'emergency_reported',
+          complaint.ticketNumber,
+          title,
+          userName
+        );
+      }
+
+      // Notify ALL officials immediately about the emergency
+      const officials = await storage.getAllOfficials();
+      
+      for (const official of officials) {
+        // Create in-app notification for each official
+        await storage.createNotification({
+          userId: official.id,
+          title: "🚨 URGENT: Emergency Alert",
+          message: `Emergency ${emergencyType} reported at ${emergencyLocation}. Ticket: ${complaint.ticketNumber}. IMMEDIATE ACTION REQUIRED.`,
+          type: "emergency",
+          relatedId: complaint.id
+        });
+
+        // Send SMS to officials if they have phone numbers
+        if (official.phoneNumber) {
+          await sendSMS(
+            official.phoneNumber,
+            'emergency_notification',
+            complaint.ticketNumber,
+            title
+          );
+        }
+
+        // Send email to officials
+        if (official.email) {
+          await sendEmail(
+            official.email,
+            'emergency_notification',
+            complaint.ticketNumber,
+            title,
+            userName
+          );
+        }
+      }
+
+      console.log(`Emergency alert created: ${complaint.ticketNumber} - ${emergencyType} at ${emergencyLocation}`);
+      console.log(`Notified ${officials.length} officials about the emergency`);
+
+      res.json({
+        ...complaint,
+        message: "Emergency alert submitted successfully. Authorities have been notified immediately.",
+        officialsNotified: officials.length
+      });
+    } catch (error) {
+      console.error("Error creating emergency alert:", error);
+      res.status(500).json({ message: "Failed to submit emergency alert. Please call emergency services directly." });
+    }
+  });
+
   app.get('/api/complaints', isAuthenticatedFlexible, async (req: any, res) => {
     try {
       const userId = getUserId(req);

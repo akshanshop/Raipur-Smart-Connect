@@ -12,7 +12,9 @@ export type NotificationType =
   | 'complaint_submitted' 
   | 'complaint_acknowledged' 
   | 'complaint_in_progress' 
-  | 'complaint_resolved';
+  | 'complaint_resolved'
+  | 'emergency_reported'
+  | 'emergency_notification';
 
 const emailTemplates: Record<NotificationType, (ticketNumber: string, title: string, userName?: string) => { subject: string; html: string }> = {
   complaint_submitted: (ticketNumber, title, userName) => ({
@@ -182,6 +184,122 @@ const emailTemplates: Record<NotificationType, (ticketNumber: string, title: str
           <div class="footer">
             <p>This is an automated message from Nagar Nigam Complaint System.</p>
             <p>&copy; 2025 Smart City Initiative</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+  }),
+
+  emergency_reported: (ticketNumber, title, userName) => ({
+    subject: `🚨 EMERGENCY ALERT SUBMITTED - ${ticketNumber}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #dc2626; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background-color: #ffffff; padding: 30px; border: 1px solid #e5e7eb; }
+          .footer { background-color: #f9fafb; padding: 20px; text-align: center; font-size: 12px; color: #6b7280; border-radius: 0 0 8px 8px; }
+          .ticket { background-color: #fee2e2; padding: 15px; border-left: 4px solid #dc2626; margin: 20px 0; }
+          .emergency-notice { background-color: #fef2f2; border: 2px solid #dc2626; padding: 15px; border-radius: 6px; margin: 20px 0; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🚨 EMERGENCY ALERT SYSTEM</h1>
+          </div>
+          <div class="content">
+            <h2>Emergency Reported${userName ? ' by ' + userName : ''}!</h2>
+            <div class="emergency-notice">
+              <strong>⚠️ IMMEDIATE ATTENTION REQUIRED ⚠️</strong>
+            </div>
+            <p>Your emergency alert has been submitted and authorities have been notified immediately.</p>
+            
+            <div class="ticket">
+              <strong>Emergency Ticket:</strong> ${ticketNumber}<br>
+              <strong>Type:</strong> ${title}<br>
+              <strong>Priority:</strong> URGENT 🚨<br>
+              <strong>Status:</strong> Dispatched to Emergency Services
+            </div>
+            
+            <p><strong>What happens next:</strong></p>
+            <ul>
+              <li>Emergency services have been immediately notified</li>
+              <li>Authorities are being dispatched to the location</li>
+              <li>You will receive updates via SMS and email</li>
+            </ul>
+            
+            <p style="color: #dc2626; font-weight: bold;">If this is a life-threatening emergency, please also call:</p>
+            <ul>
+              <li>Police: 100</li>
+              <li>Fire: 101</li>
+              <li>Ambulance: 108</li>
+            </ul>
+          </div>
+          <div class="footer">
+            <p>This is an automated emergency alert from Raipur Smart Connect</p>
+            <p>&copy; 2025 Smart City Initiative</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+  }),
+
+  emergency_notification: (ticketNumber, title, userName) => ({
+    subject: `🚨 URGENT: Emergency Alert - ${ticketNumber}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #dc2626; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background-color: #ffffff; padding: 30px; border: 1px solid #e5e7eb; }
+          .footer { background-color: #f9fafb; padding: 20px; text-align: center; font-size: 12px; color: #6b7280; border-radius: 0 0 8px 8px; }
+          .ticket { background-color: #fee2e2; padding: 15px; border-left: 4px solid #dc2626; margin: 20px 0; }
+          .urgent { background-color: #fef2f2; border: 2px solid #dc2626; padding: 15px; border-radius: 6px; margin: 20px 0; text-align: center; font-weight: bold; color: #dc2626; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🚨 EMERGENCY NOTIFICATION</h1>
+          </div>
+          <div class="content">
+            <div class="urgent">
+              ⚠️ URGENT: IMMEDIATE ACTION REQUIRED ⚠️
+            </div>
+            <h2>New Emergency Alert Reported${userName ? ' by ' + userName : ''}!</h2>
+            <p><strong>An emergency situation has been reported that requires immediate attention.</strong></p>
+            
+            <div class="ticket">
+              <strong>Emergency Ticket:</strong> ${ticketNumber}<br>
+              <strong>Type:</strong> ${title}<br>
+              <strong>Priority:</strong> URGENT 🚨<br>
+              <strong>Time Reported:</strong> Just Now
+            </div>
+            
+            <p><strong>Required Actions:</strong></p>
+            <ul>
+              <li>Review the emergency details immediately</li>
+              <li>Dispatch appropriate response team</li>
+              <li>Acknowledge the emergency in the system</li>
+              <li>Provide status updates to the reporter</li>
+            </ul>
+            
+            <p style="margin-top: 20px;"><strong>Please log in to the Officials Dashboard to view complete details and take action.</strong></p>
+          </div>
+          <div class="footer">
+            <p>This is an automated emergency notification from Raipur Smart Connect</p>
+            <p>&copy; 2025 Smart City Initiative - Emergency Response System</p>
           </div>
         </div>
       </body>

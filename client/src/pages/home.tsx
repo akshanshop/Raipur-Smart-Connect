@@ -63,21 +63,43 @@ export default function Home() {
 
   const emergencyMutation = useMutation({
     mutationFn: async (emergencyType: string) => {
+      let latitude: string | null = null;
+      let longitude: string | null = null;
+      let location = "Location unavailable";
+      
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: true,
+              timeout: 5000,
+              maximumAge: 0
+            });
+          });
+          
+          latitude = position.coords.latitude.toString();
+          longitude = position.coords.longitude.toString();
+          location = `${latitude}, ${longitude}`;
+        } catch (error) {
+          console.log("Could not get location:", error);
+        }
+      }
+
       const emergencyData = {
-        category: emergencyType,
-        priority: "urgent",
-        title: `URGENT: ${emergencyType} Emergency`,
-        description: `Emergency ${emergencyType} situation reported. Immediate attention required.`,
-        location: "Current Location (Emergency)",
-        status: "open"
+        emergencyType,
+        location,
+        latitude,
+        longitude,
+        description: `Emergency ${emergencyType} situation reported. Immediate attention required.`
       };
-      return await apiRequest("POST", "/api/complaints", emergencyData);
+      
+      return await apiRequest("POST", "/api/emergency", emergencyData);
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/complaints"] });
       toast({
-        title: "🚨 Emergency Reported",
-        description: "Your emergency has been reported and marked as urgent. Authorities have been notified.",
+        title: "🚨 Emergency Alert Submitted",
+        description: `Your emergency has been reported (Ticket: ${data.ticketNumber}). Authorities have been notified immediately. ${data.officialsNotified || 0} officials alerted.`,
         variant: "default",
       });
       setEmergencyDialogOpen(false);
@@ -85,7 +107,7 @@ export default function Home() {
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to submit emergency report. Please call emergency services directly.",
+        description: "Failed to submit emergency alert. Please call emergency services directly: Police 100, Fire 101, Ambulance 108.",
         variant: "destructive",
       });
     },
