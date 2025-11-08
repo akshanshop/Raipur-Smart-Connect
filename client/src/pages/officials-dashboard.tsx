@@ -42,6 +42,44 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
+function MapController({ center, zoom }: { center: [number, number], zoom: number }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    map.setView(center, zoom);
+  }, [center, zoom, map]);
+  
+  return null;
+}
+
+function HeatmapLayer({ points }: { points: Array<[number, number, number]> }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (points.length === 0) return;
+    
+    // @ts-ignore - leaflet.heat types
+    const heatLayer = L.heatLayer(points, {
+      radius: 30,
+      blur: 25,
+      maxZoom: 17,
+      max: 4,
+      gradient: {
+        0.0: '#22c55e',
+        0.5: '#f97316', 
+        0.75: '#ef4444',
+        1.0: '#dc2626'
+      }
+    }).addTo(map);
+    
+    return () => {
+      map.removeLayer(heatLayer);
+    };
+  }, [points, map]);
+  
+  return null;
+}
+
 interface OfficialJob {
   id: string;
   title: string;
@@ -142,6 +180,9 @@ export default function OfficialsDashboard() {
   const [issuePriorityFilter, setIssuePriorityFilter] = useState("all");
   const [issueCategoryFilter, setIssueCategoryFilter] = useState("all");
   const [showMap, setShowMap] = useState(true);
+  const [viewMode, setViewMode] = useState<"heatmap" | "individual" | "density">("individual");
+  const [mapCenter, setMapCenter] = useState<[number, number]>([21.2514, 81.6296]);
+  const [mapZoom, setMapZoom] = useState(12);
 
   // Scroll to top on mount
   useEffect(() => {
@@ -480,6 +521,49 @@ export default function OfficialsDashboard() {
       iconAnchor: [size / 2, size * 1.4],
       popupAnchor: [0, -size * 1.4],
     });
+  };
+
+  const getDensityColor = (count: number) => {
+    if (count < 3) return '#eab308'; // yellow
+    if (count >= 3 && count <= 7) return '#f97316'; // orange
+    return '#ef4444'; // red (>7)
+  };
+
+  const createDensityIcon = (count: number) => {
+    const color = getDensityColor(count);
+    const baseSize = Math.min(30 + (count * 2), 50);
+    
+    return L.divIcon({
+      className: 'custom-marker',
+      html: `
+        <svg width="${baseSize}" height="${baseSize * 1.4}" viewBox="0 0 24 36" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 0C7.58 0 4 3.58 4 8c0 5.25 8 16 8 16s8-10.75 8-16c0-4.42-3.58-8-8-8z" 
+                fill="${color}" 
+                stroke="white" 
+                stroke-width="2"
+                filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"/>
+          <text x="12" y="11" text-anchor="middle" fill="white" font-size="8" font-weight="bold">${count}</text>
+        </svg>
+      `,
+      iconSize: [baseSize, baseSize * 1.4],
+      iconAnchor: [baseSize / 2, baseSize * 1.4],
+      popupAnchor: [0, -baseSize * 1.4],
+    });
+  };
+
+  const getHeatmapWeight = (priority: string): number => {
+    switch (priority) {
+      case 'urgent':
+        return 4;
+      case 'high':
+        return 3;
+      case 'medium':
+        return 2;
+      case 'low':
+        return 1;
+      default:
+        return 1;
+    }
   };
 
   const renderIssueCard = (issue: Issue) => {
@@ -1544,10 +1628,53 @@ export default function OfficialsDashboard() {
           </CardHeader>
           {showMap && (
             <CardContent>
+              {/* View Mode Toggle Buttons */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0">
+                  <Button
+                    variant={viewMode === "heatmap" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setViewMode("heatmap")}
+                    data-testid="button-heatmap-view"
+                    className="flex-shrink-0"
+                  >
+                    <TrendingUp className="h-4 w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Heatmap</span>
+                    <span className="sm:hidden">Heat</span>
+                  </Button>
+                  <Button
+                    variant={viewMode === "individual" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setViewMode("individual")}
+                    data-testid="button-individual-view"
+                    className="flex-shrink-0"
+                  >
+                    <MapPin className="h-4 w-4 mr-1 sm:mr-2" />
+                    Individual
+                  </Button>
+                  <Button
+                    variant={viewMode === "density" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setViewMode("density")}
+                    data-testid="button-density-view"
+                    className="flex-shrink-0"
+                  >
+                    <Target className="h-4 w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">By Count</span>
+                    <span className="sm:hidden">Count</span>
+                  </Button>
+                </div>
+                
+                <div className="text-sm font-medium">
+                  Total: {filteredIssues.filter(i => i.latitude && i.longitude).length} issues
+                </div>
+              </div>
+
+              {/* Map Container */}
               <div className="h-[500px] rounded-lg overflow-hidden border border-border">
                 <MapContainer
-                  center={[21.2514, 81.6296]}
-                  zoom={12}
+                  center={mapCenter}
+                  zoom={mapZoom}
                   style={{ height: '100%', width: '100%' }}
                   data-testid="map-container"
                 >
@@ -1556,53 +1683,179 @@ export default function OfficialsDashboard() {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
                   
-                  {filteredIssues
-                    .filter(issue => issue.latitude && issue.longitude)
-                    .map((issue) => (
+                  <MapController center={mapCenter} zoom={mapZoom} />
+                  
+                  {viewMode === "heatmap" ? (
+                    <HeatmapLayer 
+                      points={filteredIssues
+                        .filter(issue => issue.latitude && issue.longitude)
+                        .map(issue => [
+                          parseFloat(issue.latitude),
+                          parseFloat(issue.longitude),
+                          getHeatmapWeight(issue.priority)
+                        ])}
+                    />
+                  ) : viewMode === "density" ? (
+                    Object.values(
+                      filteredIssues
+                        .filter(issue => issue.latitude && issue.longitude)
+                        .reduce((acc, issue) => {
+                          const roundedLat = Math.round(parseFloat(issue.latitude) * 1000) / 1000;
+                          const roundedLng = Math.round(parseFloat(issue.longitude) * 1000) / 1000;
+                          const key = `${roundedLat},${roundedLng}`;
+                          
+                          if (!acc[key]) {
+                            acc[key] = {
+                              lat: roundedLat,
+                              lng: roundedLng,
+                              issues: [],
+                              count: 0
+                            };
+                          }
+                          acc[key].issues.push(issue);
+                          acc[key].count++;
+                          return acc;
+                        }, {} as Record<string, { lat: number; lng: number; issues: Issue[]; count: number }>)
+                    ).map((group, index) => (
                       <Marker
-                        key={issue.id}
-                        position={[parseFloat(issue.latitude), parseFloat(issue.longitude)]}
-                        icon={createCustomIcon(issue.status, issue.priority)}
+                        key={`group-${index}`}
+                        position={[group.lat, group.lng]}
+                        icon={createDensityIcon(group.count)}
                       >
                         <Popup>
-                          <div className="p-2 min-w-[250px]">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge variant="outline" className="font-mono text-xs">
-                                {issue.ticketNumber}
-                              </Badge>
-                              <Badge className={getPriorityColor(issue.priority)}>
-                                {issue.priority.toUpperCase()}
-                              </Badge>
-                            </div>
-                            <h3 className="font-semibold text-sm mb-1">{issue.title}</h3>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">
-                              {issue.description}
-                            </p>
-                            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
-                              <MapPin className="h-3 w-3" />
-                              <span className="line-clamp-1">{issue.location}</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-2">
-                              <Badge className={getStatusColor(issue.status)}>
-                                {issue.status.replace("_", " ").toUpperCase()}
-                              </Badge>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setSelectedIssue(issue)}
-                                className="h-6 text-xs"
-                              >
-                                View Details
-                              </Button>
+                          <div className="p-2 max-w-[300px]">
+                            <h3 className="font-semibold text-sm mb-2">{group.count} Reports at this location</h3>
+                            <p className="text-xs text-muted-foreground mb-2">{group.issues[0].location}</p>
+                            <div className="max-h-40 overflow-y-auto space-y-2">
+                              {group.issues.map((issue) => (
+                                <div key={issue.id} className="text-xs border-b pb-2 last:border-b-0">
+                                  <div className="flex items-center gap-1 mb-1">
+                                    <Badge variant="outline" className="text-xs font-mono">
+                                      {issue.ticketNumber}
+                                    </Badge>
+                                  </div>
+                                  <p className="font-medium mb-1">{issue.title}</p>
+                                  <div className="flex gap-1">
+                                    <Badge className={`text-xs ${getPriorityColor(issue.priority)}`}>
+                                      {issue.priority}
+                                    </Badge>
+                                    <Badge className={`text-xs ${getStatusColor(issue.status)}`}>
+                                      {issue.status}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           </div>
                         </Popup>
                       </Marker>
-                    ))}
+                    ))
+                  ) : (
+                    filteredIssues
+                      .filter(issue => issue.latitude && issue.longitude)
+                      .map((issue) => (
+                        <Marker
+                          key={issue.id}
+                          position={[parseFloat(issue.latitude), parseFloat(issue.longitude)]}
+                          icon={createCustomIcon(issue.status, issue.priority)}
+                        >
+                          <Popup>
+                            <div className="p-2 min-w-[250px]">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge variant="outline" className="font-mono text-xs">
+                                  {issue.ticketNumber}
+                                </Badge>
+                                <Badge className={getPriorityColor(issue.priority)}>
+                                  {issue.priority.toUpperCase()}
+                                </Badge>
+                              </div>
+                              <h3 className="font-semibold text-sm mb-1">{issue.title}</h3>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">
+                                {issue.description}
+                              </p>
+                              <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                <MapPin className="h-3 w-3" />
+                                <span className="line-clamp-1">{issue.location}</span>
+                              </div>
+                              <div className="flex items-center justify-between gap-2">
+                                <Badge className={getStatusColor(issue.status)}>
+                                  {issue.status.replace("_", " ").toUpperCase()}
+                                </Badge>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setSelectedIssue(issue)}
+                                  className="h-6 text-xs"
+                                >
+                                  View Details
+                                </Button>
+                              </div>
+                            </div>
+                          </Popup>
+                        </Marker>
+                      ))
+                  )}
                 </MapContainer>
               </div>
-              <div className="mt-3 text-sm text-muted-foreground">
-                Showing {filteredIssues.filter(i => i.latitude && i.longitude).length} issues on the map
+
+              {/* Map Legend */}
+              <div className="mt-4 p-4 bg-muted/30 rounded-lg border border-border">
+                <h4 className="font-semibold text-sm mb-3">Map Legend</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs font-medium mb-2">Priority Colors:</p>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="w-4 h-4 rounded-full bg-red-500" />
+                        <span>Urgent/High (40px)</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="w-4 h-4 rounded-full bg-orange-500" />
+                        <span>Medium (32px)</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="w-4 h-4 rounded-full bg-yellow-500" />
+                        <span>Low (28px)</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium mb-2">Status Colors:</p>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="w-4 h-4 rounded-full bg-green-500" />
+                        <span>Resolved/Closed</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="w-4 h-4 rounded-full bg-blue-500" />
+                        <span>In Progress</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="w-4 h-4 rounded-full bg-yellow-500" />
+                        <span>Open/Pending</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {viewMode === "density" && (
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <p className="text-xs font-medium mb-2">Density Count Colors:</p>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="w-4 h-4 rounded-full bg-red-500" />
+                        <span>&gt;7 reports in area</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="w-4 h-4 rounded-full bg-orange-500" />
+                        <span>3-7 reports in area</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="w-4 h-4 rounded-full bg-yellow-500" />
+                        <span>&lt;3 reports in area</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           )}

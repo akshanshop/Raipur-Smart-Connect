@@ -4,22 +4,24 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import Header from "@/components/header";
 import CommunityFeed from "@/components/community-feed";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { insertCommunityIssueSchema, type Community } from "@shared/schema";
+import { insertCommunityIssueSchema, insertCommunitySchema, type Community } from "@shared/schema";
 import { z } from "zod";
-import { Users, Plus, Building2 } from "lucide-react";
+import { Users, Plus, Building2, MapPin, Clock, Shield, Search } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface CityStats {
@@ -45,6 +47,13 @@ const communityIssueFormSchema = insertCommunityIssueSchema.extend({
 
 type CommunityIssueFormData = z.infer<typeof communityIssueFormSchema>;
 
+const communityFormSchema = insertCommunitySchema.extend({
+  name: z.string().min(3, "Name must be at least 3 characters"),
+  description: z.string().min(10, "Description must be at least 10 characters"),
+});
+
+type CommunityFormData = z.infer<typeof communityFormSchema>;
+
 export default function Community() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -52,6 +61,7 @@ export default function Community() {
   const [locationStatus, setLocationStatus] = useState<'pending' | 'success' | 'error'>('pending');
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Scroll to top when page loads
@@ -109,6 +119,21 @@ export default function Community() {
   const isMember = (communityId: string) => {
     return joinedCommunities.some(c => c.id === communityId);
   };
+
+  const communityForm = useForm<CommunityFormData>({
+    resolver: zodResolver(communityFormSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      category: "",
+      location: undefined,
+      latitude: undefined,
+      longitude: undefined,
+      isPrivate: false,
+      rules: undefined,
+      isActive: true,
+    },
+  });
 
   const form = useForm<CommunityIssueFormData>({
     resolver: zodResolver(communityIssueFormSchema),
@@ -185,9 +210,7 @@ export default function Community() {
 
   const joinCommunityMutation = useMutation({
     mutationFn: async (communityId: string) => {
-      return apiRequest(`/api/communities/${communityId}/join`, {
-        method: 'POST',
-      });
+      return apiRequest('POST', `/api/communities/${communityId}/join`);
     },
     onSuccess: () => {
       toast({
@@ -219,9 +242,7 @@ export default function Community() {
 
   const leaveCommunityMutation = useMutation({
     mutationFn: async (communityId: string) => {
-      return apiRequest(`/api/communities/${communityId}/leave`, {
-        method: 'POST',
-      });
+      return apiRequest('POST', `/api/communities/${communityId}/leave`);
     },
     onSuccess: () => {
       toast({
@@ -246,6 +267,43 @@ export default function Community() {
       toast({
         title: "Error",
         description: "Failed to leave community. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const createCommunityMutation = useMutation({
+    mutationFn: async (data: CommunityFormData) => {
+      const response = await apiRequest('POST', '/api/communities', data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Community Created Successfully!",
+        description: "You earned 20 tokens! Check your notifications for achievements.",
+      });
+      communityForm.reset();
+      setIsCreateDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/communities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/communities/user", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/user"] });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error as Error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to create community. Please try again.",
         variant: "destructive",
       });
     },
@@ -316,6 +374,10 @@ export default function Community() {
       ...data,
       files: selectedFiles,
     });
+  };
+
+  const onSubmitCommunity = (data: CommunityFormData) => {
+    createCommunityMutation.mutate(data);
   };
 
   if (isLoading) {
@@ -666,7 +728,464 @@ export default function Community() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="my-communities" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg sm:text-xl font-semibold">My Communities</h2>
+              <Button
+                onClick={() => setIsCreateDialogOpen(true)}
+                data-testid="button-create-community"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Community
+              </Button>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="w-5 h-5" />
+                  Communities I Created
+                </CardTitle>
+                <CardDescription>
+                  Communities you've founded and manage
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {createdCommunities.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Building2 className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground mb-4">
+                      You haven't created any communities yet
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsCreateDialogOpen(true)}
+                      data-testid="button-create-first-community"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Your First Community
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {createdCommunities.map((community) => (
+                      <Card key={community.id} data-testid={`card-created-community-${community.id}`}>
+                        <CardHeader>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <CardTitle className="text-base line-clamp-1">
+                                {community.name}
+                              </CardTitle>
+                              <CardDescription className="flex flex-wrap items-center gap-2 mt-1">
+                                <Badge variant="secondary" className="text-xs">
+                                  {community.category}
+                                </Badge>
+                                {community.isPrivate && (
+                                  <Badge variant="outline" className="text-xs">
+                                    <Shield className="h-3 w-3 mr-1" />
+                                    Private
+                                  </Badge>
+                                )}
+                              </CardDescription>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {community.description}
+                          </p>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Users className="h-3 w-3" />
+                              <span data-testid={`text-created-member-count-${community.id}`}>
+                                {community.memberCount || 0} members
+                              </span>
+                            </div>
+                            {community.createdAt && (
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                <span>
+                                  {formatDistanceToNow(new Date(community.createdAt), { addSuffix: true })}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Communities I Joined
+                </CardTitle>
+                <CardDescription>
+                  All communities you're a member of
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {joinedCommunities.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      You haven't joined any communities yet
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {joinedCommunities.map((community) => (
+                      <Card key={community.id} data-testid={`card-joined-community-${community.id}`}>
+                        <CardHeader>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <CardTitle className="text-base line-clamp-1">
+                                {community.name}
+                              </CardTitle>
+                              <CardDescription className="flex flex-wrap items-center gap-2 mt-1">
+                                <Badge variant="secondary" className="text-xs">
+                                  {community.category}
+                                </Badge>
+                                {community.role && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {community.role}
+                                  </Badge>
+                                )}
+                              </CardDescription>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {community.description}
+                          </p>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Users className="h-3 w-3" />
+                              <span data-testid={`text-joined-member-count-${community.id}`}>
+                                {community.memberCount || 0} members
+                              </span>
+                            </div>
+                          </div>
+                          {community.creatorId !== user?.id && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              onClick={() => leaveCommunityMutation.mutate(community.id)}
+                              disabled={leaveCommunityMutation.isPending}
+                              data-testid={`button-leave-community-${community.id}`}
+                            >
+                              Leave Community
+                            </Button>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="discover" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Search & Filter Communities</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search communities by name or description..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      data-testid="input-search-communities"
+                      className="pl-9"
+                    />
+                  </div>
+                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                    <SelectTrigger className="w-full sm:w-[200px]" data-testid="select-category-filter">
+                      <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="neighborhood">Neighborhood</SelectItem>
+                      <SelectItem value="interest">Interest</SelectItem>
+                      <SelectItem value="district">District</SelectItem>
+                      <SelectItem value="hobby">Hobby</SelectItem>
+                      <SelectItem value="support">Support</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {isLoadingAllCommunities ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[...Array(6)].map((_, i) => (
+                  <Card key={i}>
+                    <CardHeader>
+                      <Skeleton className="h-6 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
+                    </CardHeader>
+                    <CardContent>
+                      <Skeleton className="h-20 w-full" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : filteredCommunities.length === 0 ? (
+              <Card>
+                <CardContent className="py-10 text-center">
+                  <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-lg font-semibold mb-2">No communities found</p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Try adjusting your search or create a new community
+                  </p>
+                  <Button
+                    onClick={() => setIsCreateDialogOpen(true)}
+                    data-testid="button-create-community-empty"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Community
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredCommunities.map((community) => {
+                  const isUserMember = isMember(community.id);
+                  return (
+                    <Card key={community.id} data-testid={`card-discover-community-${community.id}`}>
+                      <CardHeader>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <CardTitle className="text-base line-clamp-1">
+                              {community.name}
+                            </CardTitle>
+                            <CardDescription className="flex flex-wrap items-center gap-2 mt-1">
+                              <Badge variant="secondary" className="text-xs">
+                                {community.category}
+                              </Badge>
+                              {community.isPrivate && (
+                                <Badge variant="outline" className="text-xs">
+                                  <Shield className="h-3 w-3 mr-1" />
+                                  Private
+                                </Badge>
+                              )}
+                            </CardDescription>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {community.description}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            <span data-testid={`text-discover-member-count-${community.id}`}>
+                              {community.memberCount || 0} members
+                            </span>
+                          </div>
+                          {community.location && (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              <span className="line-clamp-1">{community.location}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Created by {community.creatorName || 'Unknown'}
+                        </div>
+                        {isUserMember ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                            onClick={() => leaveCommunityMutation.mutate(community.id)}
+                            disabled={leaveCommunityMutation.isPending}
+                            data-testid={`button-leave-${community.id}`}
+                          >
+                            Leave Community
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            className="w-full"
+                            onClick={() => joinCommunityMutation.mutate(community.id)}
+                            disabled={joinCommunityMutation.isPending}
+                            data-testid={`button-join-${community.id}`}
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Join Community
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
+
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-create-community">
+            <DialogHeader>
+              <DialogTitle>Create New Community</DialogTitle>
+              <DialogDescription>
+                Start a new community and earn 20 tokens! Fill in the details below.
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...communityForm}>
+              <form onSubmit={communityForm.handleSubmit(onSubmitCommunity)} className="space-y-4">
+                <FormField
+                  control={communityForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Community Name</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., Green Valley Neighborhood Watch"
+                          {...field}
+                          data-testid="input-community-name"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={communityForm.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Describe the purpose and goals of your community..."
+                          className="h-24"
+                          {...field}
+                          data-testid="textarea-community-description"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={communityForm.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-community-category">
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="neighborhood">Neighborhood</SelectItem>
+                          <SelectItem value="interest">Interest</SelectItem>
+                          <SelectItem value="district">District</SelectItem>
+                          <SelectItem value="hobby">Hobby</SelectItem>
+                          <SelectItem value="support">Support</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={communityForm.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., Downtown, West District"
+                          {...field}
+                          value={field.value || ""}
+                          data-testid="input-community-location"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Specify a location if your community is location-based
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={communityForm.control}
+                  name="isPrivate"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value ?? false}
+                          onCheckedChange={field.onChange}
+                          data-testid="checkbox-is-private"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Private Community
+                        </FormLabel>
+                        <FormDescription>
+                          Private communities require approval to join
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsCreateDialogOpen(false)}
+                    data-testid="button-cancel-create-community"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={createCommunityMutation.isPending}
+                    data-testid="button-submit-create-community"
+                  >
+                    {createCommunityMutation.isPending ? (
+                      <>
+                        <i className="fas fa-spinner fa-spin mr-2"></i>
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Community
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
